@@ -1,0 +1,83 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0 -- /tmp/claude-0/-home-claude/e41a3836-de0d-574f-a748-03c2fea2b582/scratchpad/venvT/bin/python
+cachedir: .pytest_cache
+rootdir: /home/claude/work
+plugins: platformdirs-4.13.3, anyio-4.15.1
+collecting ... collected 17 items
+
+tests/test_learned_instrument.py::test_a_synthetic_learned_reaches_noise [23:56:12] step 1  loss 740.6078  chi2(cbunc) 1321.096  lr x1.00  0.076 s/step
+[23:56:18] step 100  loss 0.6848  chi2(cbunc) 1.647  lr x0.99  0.058 s/step
+[23:56:24] step 200  loss 0.6169  chi2(cbunc) 1.550  lr x0.97  0.058 s/step
+[23:56:29] step 300  loss 0.6523  chi2(cbunc) 2.358  lr x0.94  0.058 s/step
+[23:56:35] step 400  loss 0.5545  chi2(cbunc) 1.293  lr x0.89  0.058 s/step
+[23:56:41] step 500  loss 0.5673  chi2(cbunc) 1.225  lr x0.83  0.058 s/step
+[23:56:47] step 600  loss 0.5591  chi2(cbunc) 1.175  lr x0.76  0.058 s/step
+[23:56:53] step 700  loss 0.5525  chi2(cbunc) 1.166  lr x0.69  0.059 s/step
+[23:56:59] step 800  loss 0.5170  chi2(cbunc) 1.175  lr x0.61  0.058 s/step
+[23:57:04] step 900  loss 0.5442  chi2(cbunc) 1.088  lr x0.53  0.058 s/step
+[23:57:10] step 1000  loss 0.5118  chi2(cbunc) 1.034  lr x0.44  0.058 s/step
+[23:57:16] step 1100  loss 0.5104  chi2(cbunc) 1.012  lr x0.36  0.059 s/step
+[23:57:23] step 1200  loss 0.5199  chi2(cbunc) 1.101  lr x0.29  0.059 s/step
+[23:57:29] step 1300  loss 0.5250  chi2(cbunc) 1.038  lr x0.22  0.059 s/step
+[23:57:35] step 1400  loss 0.4808  chi2(cbunc) 0.953  lr x0.16  0.059 s/step
+[23:57:41] step 1500  loss 0.5120  chi2(cbunc) 1.022  lr x0.11  0.059 s/step
+[23:57:46] step 1600  loss 0.4981  chi2(cbunc) 0.990  lr x0.08  0.059 s/step
+[23:57:52] step 1700  loss 0.4951  chi2(cbunc) 0.980  lr x0.06  0.059 s/step
+[23:57:58] step 1800  loss 0.4984  chi2(cbunc) 0.983  lr x0.05  0.059 s/step
+
+[learned] steps 1800  34768 samples/s  held-out chi2: all 1.039 (n=3035), bright 1.092 (n=1057), median-robust 1.077
+[23:58:04] step 1  loss 531.1238  chi2(cbunc) 1062.248  lr x1.00  0.214 s/step
+[23:58:21] step 100  loss 34.2651  chi2(cbunc) 68.530  lr x0.96  0.170 s/step
+[23:58:38] step 200  loss 13.3415  chi2(cbunc) 26.683  lr x0.86  0.172 s/step
+[23:58:55] step 300  loss 10.6118  chi2(cbunc) 21.224  lr x0.71  0.171 s/step
+[23:59:13] step 400  loss 11.5678  chi2(cbunc) 23.136  lr x0.53  0.172 s/step
+[23:59:31] step 500  loss 12.1038  chi2(cbunc) 24.208  lr x0.34  0.174 s/step
+[23:59:50] step 600  loss 11.9060  chi2(cbunc) 23.812  lr x0.19  0.177 s/step
+[00:00:09] step 700  loss 12.1423  chi2(cbunc) 24.285  lr x0.09  0.179 s/step
+[00:00:28] step 800  loss 11.6102  chi2(cbunc) 23.220  lr x0.05  0.179 s/step
+
+[structured] steps 800  11413 samples/s  held-out chi2: all 14.248 (n=3035), bright 39.259 (n=909), median-robust 5.424
+PASSED
+tests/test_learned_instrument.py::test_a_synthetic_structured_cannot_fit_nonlinearity 
+fraction of bright pixels with |resid| > 3 sigma: structured 0.567, learned 0.005
+PASSED
+tests/test_learned_instrument.py::test_a_synthetic_linear_part_matches_true_psf 
+linear-part correlation with the true kernel: 0.9964 (per band 0.9976, 0.9904); band weight ratio 0.436 (true 0.429)
+PASSED
+tests/test_learned_instrument.py::test_a_synthetic_predictions_are_per_frame_offset_free per held-out frame chi2: [1.124 0.976 1.008 0.99  1.073 1.061]
+PASSED
+tests/test_learned_instrument.py::test_b_patch_follows_jacobian_linear_sky[0-False] PASSED
+tests/test_learned_instrument.py::test_b_patch_follows_jacobian_linear_sky[33.0-False] PASSED
+tests/test_learned_instrument.py::test_b_patch_follows_jacobian_linear_sky[-110.0-False] PASSED
+tests/test_learned_instrument.py::test_b_patch_follows_jacobian_linear_sky[47.0-True] PASSED
+tests/test_learned_instrument.py::test_b_rotation_follows_J_elongated_source[25.0] PASSED
+tests/test_learned_instrument.py::test_b_rotation_follows_J_elongated_source[90.0] PASSED
+tests/test_learned_instrument.py::test_b_rotation_follows_J_elongated_source[-60.0] PASSED
+tests/test_learned_instrument.py::test_b_nan_masking_and_out_of_grid PASSED
+tests/test_learned_instrument.py::test_b_prefilter_is_nan_aware PASSED
+tests/test_learned_instrument.py::test_b_irac_mask_bits_match_pixelstore PASSED
+tests/test_learned_instrument.py::test_split_deterministic_and_distinct_programs 
+split: {'test': ['58008832', '66701312'], 'val': ['58467840']} ['12005', '14017', '12123']
+PASSED
+tests/test_learned_instrument.py::test_jwst_lw_sky_single_exposure [00:00:39] 1 LW exposures; bands present: ['F356W']; per band {'F356W': 1}
+[00:00:39] grid 1511 x 1510 px at 0.12 arcsec (3.02' x 3.02')
+[00:00:42]   jw02736001001_02103_00004_nrcblong_cal.fits  F356W  bkg 0.1088 MJy/sr  good 0.841
+[00:00:43] wrote /tmp/pytest-of-root/pytest-19/test_jwst_lw_sky_single_exposu0/jwst_lw_sky.fits
+PASSED
+tests/test_learned_instrument.py::test_c_real_small_run_cpu [00:00:43] sky ['F277W', 'F356W', 'F444W'] (2442, 2701) at 0.120 arcsec; device cpu
+[00:00:43] reading 24 IRAC frames
+[00:00:56] AOR 48186112 [test] program 90233: 6 frames, usable pixels 22321 of 393216
+[00:00:56] AOR 58000128 [val] program 12005: 6 frames, usable pixels 16880 of 393216
+[00:00:56] AOR 58467840 [train] program 12123: 6 frames, usable pixels 23507 of 393216
+[00:00:56] AOR 66697472 [test] program 14017: 6 frames, usable pixels 33660 of 393216
+[00:00:56] train pixels 23507, val frames 6, test frames 12
+[00:00:56] [learned] parameters {'linear_base_kernels': 3750, 'linear_basis_bank': 15000, 'hypernetwork_mlp': 1896, 'residual_net_g': 1889, 'variance_head': 1889, 'per_frame_b': 24, 'per_frame_z': 96, 'total': 24544}
+[00:00:56] step 1  loss 124.6320  chi2(cbunc) 8.282  lr x1.00  0.048 s/step
+[00:01:04] [learned] test (all): {"n": 27990, "chi2_mean": 1.2336468696594238, "chi2_median": 0.48280560970306396, "chi2_mad": 0.48176324367523193, "chi2_clip25": 0.8187770247459412, "chi2_sigmodel_mean": 0.8255369067192078, "nll_sigmodel": 0.823698878288269, "mean_resid_sigma": 0.04191829264163971}
+[00:01:04] [structured] parameters {'psf_mlp': 2000, 'colour': 6, 'per_frame_b': 24, 'per_frame_log_gain': 24, 'total': 2054}
+[00:01:04] step 1  loss 4.2074  chi2(cbunc) 8.549  lr x1.00  0.174 s/step
+[00:01:22] [structured] test (all): {"n": 27990, "chi2_mean": 1.0326048135757446, "chi2_median": 0.4555054008960724, "chi2_mad": 0.4539538323879242, "chi2_clip25": 0.6896427273750305, "chi2_sigmodel_mean": 1.0326048135757446, "nll_sigmodel": 0.8503783941268921, "mean_resid_sigma": 0.0509863942861557}
+[00:01:22] wrote /tmp/pytest-of-root/pytest-19/test_c_real_small_run_cpu0/run/metrics.json
+PASSED
+
+======================== 17 passed in 316.12s (0:05:16) ========================

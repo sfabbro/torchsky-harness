@@ -1,0 +1,23 @@
+== variant default: (defaults)
+  v32 default: exit 0 in 20 s
+  v33 default: exit 0 in 21 s
+  stdout: 30 v32 lines, 30 v33 lines; v32 lines missing in v33: 0; extra v33 lines: 0; same order: True
+  33 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 24 top-level keys in v32; 0 differences in them (timings/args excluded); keys only in v33: []
+  args only in v33: ['pixel_box', 'psf_frame', 'psf_group_deg']; changed defaults: {'out': ('/home/claude/work/runs/equiv_default_v32', '/home/claude/work/runs/equiv_default_v33')}
+== variant hybrid_spectral: --spectral rbf --svo-cache /home/claude/work/testdata/svo_cache --spec-q 3 --sky-coeffs hybrid --skip-implicit --explicit-configs fixed
+  v32 hybrid_spectral: exit 0 in 13 s
+  v33 hybrid_spectral: exit 0 in 13 s
+  stdout: 20 v32 lines, 20 v33 lines; v32 lines missing in v33: 0; extra v33 lines: 0; same order: True
+  14 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 24 top-level keys in v32; 0 differences in them (timings/args excluded); keys only in v33: []
+  args only in v33: ['pixel_box', 'psf_frame', 'psf_group_deg']; changed defaults: {'out': ('/home/claude/work/runs/equiv_hybrid_spectral_v32', '/home/claude/work/runs/equiv_hybrid_spectral_v33')}
+== variant chrom_spectral: --explicit-psf chrom --psf-model chrom --spectral rbf --svo-cache /home/claude/work/testdata/svo_cache --spec-q 3
+  v32 chrom_spectral: exit 0 in 35 s
+  v33 chrom_spectral: exit 0 in 36 s
+  stdout: 33 v32 lines, 33 v33 lines; v32 lines missing in v33: 0; extra v33 lines: 0; same order: True
+  36 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 27 top-level keys in v32; 0 differences in them (timings/args excluded); keys only in v33: []
+  args only in v33: ['pixel_box', 'psf_frame', 'psf_group_deg']; changed defaults: {'out': ('/home/claude/work/runs/equiv_chrom_spectral_v32', '/home/claude/work/runs/equiv_chrom_spectral_v33')}
+
+EQUIVALENT

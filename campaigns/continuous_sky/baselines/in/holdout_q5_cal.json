@@ -1,0 +1,37 @@
+{
+ "holdout": [
+  "jw02736001001_02101_00003_nrcb1_cal.fits",
+  "jw02736001001_02101_00003_nrcb2_cal.fits",
+  "jw02736001001_02101_00003_nrcb3_cal.fits",
+  "jw02736001001_02101_00009_nrcb1_cal.fits",
+  "jw02736001001_02101_00009_nrcb3_cal.fits",
+  "jw02736001001_02101_00009_nrcb4_cal.fits",
+  "jw02736001001_02103_00007_nrcb2_cal.fits",
+  "jw02736001001_02103_00007_nrcb3_cal.fits",
+  "jw02736001001_02103_00007_nrcb4_cal.fits",
+  "jw02736001001_02103_00009_nrcb1_cal.fits",
+  "jw02736001001_02103_00009_nrcb3_cal.fits",
+  "jw02736001001_02103_00009_nrcb4_cal.fits",
+  "jw02736001001_02105_00007_nrcb2_cal.fits",
+  "jw02736001001_02105_00007_nrcb3_cal.fits",
+  "jw02736001001_02105_00007_nrcb4_cal.fits",
+  "jw02736001001_02105_00009_nrcb1_cal.fits",
+  "jw02736001001_02105_00009_nrcb3_cal.fits",
+  "jw02736001001_02105_00009_nrcb4_cal.fits",
+  "jw02736001001_02101_00004_nrcblong_cal.fits",
+  "jw02736001001_02101_00007_nrcblong_cal.fits",
+  "jw02736001001_02103_00003_nrcblong_cal.fits",
+  "jw02736001001_02103_00005_nrcblong_cal.fits",
+  "jw02736001001_02105_00002_nrcblong_cal.fits",
+  "jw02736001001_02105_00003_nrcblong_cal.fits"
+ ],
+ "validation_crf": [
+  "027_jw02736001001_02101_00007_nrcb4_o001_crf_rshift_tweakreg.fits",
+  "044_jw02736001001_02103_00003_nrcb1_o001_crf_rshift_tweakreg.fits",
+  "080_jw02736001001_02105_00003_nrcb1_o001_crf_rshift_tweakreg.fits",
+  "109_jw02736001001_02101_00002_nrcblong_o001_crf_rshift_tweakreg.fits",
+  "120_jw02736001001_02103_00004_nrcblong_o001_crf_rshift_tweakreg.fits",
+  "133_jw02736001001_02105_00008_nrcblong_o001_crf_rshift_tweakreg.fits"
+ ],
+ "note": "Q5 2-dither test set of v22_q5_ntest2_e2d, mapped to cal file names"
+}

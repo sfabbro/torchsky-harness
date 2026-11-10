@@ -1,0 +1,116 @@
+(a) pixel-integrated Gaussian, 4x4 Gauss-Legendre vs 32x32 sub-sampling; max |error| over the image, relative to the peak
+    sigma  0.5 (axis ratio 0.5-1): max abs error 8.11e-05, relative to peak 2.04e-04
+    sigma  0.7 (axis ratio 0.5-1): max abs error 3.59e-05, relative to peak 1.36e-04
+    sigma  1.0 (axis ratio 0.5-1): max abs error 1.90e-05, relative to peak 9.90e-05
+    sigma  1.5 (axis ratio 0.5-1): max abs error 6.24e-06, relative to peak 6.01e-05
+    sigma  2.0 (axis ratio 0.5-1): max abs error 1.98e-06, relative to peak 3.36e-05
+    sigma  4.0 (axis ratio 0.5-1): max abs error 1.88e-07, relative to peak 1.06e-05
+    sigma  8.0 (axis ratio 0.5-1): max abs error 1.16e-08, relative to peak 2.64e-06
+    axis-aligned sigma 0.5 against the exact erf-product: GL 4x4 max error 4.53e-06, 32x32 midpoint reference 5.03e-05
+test_a_rasterisation: OK
+
+(b) gradcheck float64 (mu, sigma, theta) of the rasteriser: True; of the rendered coefficient image through sigma=floor+softplus(rho): True
+test_b_gradcheck: OK
+
+[     3.7s] syn initial (smooth component only): exact amplitude solve, 0 splats, 41 matvecs, projected-gradient residual 1.39e-04 (rel), 0 amplitudes at 0, 0.33 s
+[     4.5s] syn round 0 after densify: exact amplitude solve, 5 splats, 41 matvecs, projected-gradient residual 1.20e-04 (rel), 0 amplitudes at 0, 0.71 s
+[     5.1s] syn_r0 step 0 chi2/pix=1.0067
+[    10.2s] syn_r0 step 75 chi2/pix=0.9982
+[    15.0s] syn_r0 step 149 chi2/pix=1.0012
+[    15.6s] syn round 0 final: exact amplitude solve, 5 splats, 41 matvecs, projected-gradient residual 1.93e-05 (rel), 0 amplitudes at 0, 0.55 s
+[    15.6s] syn splat round 0: pruned 0, split 0, added 5, total 5, threshold 110.82240267542433, validation score 1.0036855340003967
+[    16.2s] syn round 1 after densify: exact amplitude solve, 6 splats, 41 matvecs, projected-gradient residual 9.47e-06 (rel), 0 amplitudes at 0, 0.51 s
+[    16.3s] syn_r1 step 0 chi2/pix=0.9995
+[    21.1s] syn_r1 step 75 chi2/pix=0.9968
+[    26.0s] syn_r1 step 149 chi2/pix=0.9992
+[    26.4s] syn round 1 final: exact amplitude solve, 6 splats, 41 matvecs, projected-gradient residual 6.94e-06 (rel), 0 amplitudes at 0, 0.35 s
+[    26.4s] syn splat round 1: pruned 0, split 0, added 1, total 6, threshold 41.27907558588265, validation score 1.0016448616981506
+[    26.4s] syn round 2 after densify: exact amplitude solve, 6 splats, 1 matvecs, projected-gradient residual 6.94e-06 (rel), 0 amplitudes at 0, 0.05 s
+[    26.5s] syn_r2 step 0 chi2/pix=0.9985
+[    31.2s] syn_r2 step 75 chi2/pix=0.9959
+[    36.0s] syn_r2 step 149 chi2/pix=0.9985
+[    36.1s] syn round 2 final: exact amplitude solve, 6 splats, 1 matvecs, projected-gradient residual 2.85e-06 (rel), 0 amplitudes at 0, 0.06 s
+[    36.1s] syn splat round 2: pruned 0, split 0, added 0, total 6, threshold 37.75889456985038, validation score 1.0007186532020569
+[    36.1s] syn: round 2 changed nothing, stopping
+[    36.1s] syn: restored the best validation state (round 2, score 1.0007, 6 splats)
+(c) synthetic recovery: 64x64, 5 bands x 4 dithers (+1 validation), Gaussian PSF sigma 1.2 px, noise 0.5 per pixel [33 s]
+    rounds: [(0, 0, 0, 5, 5, 1.0037), (1, 0, 0, 1, 6, 1.0016), (2, 0, 0, 0, 6, 1.0007)] (round, pruned, split, added, total, validation chi2/pix)
+    final: 6 splats; best validation round 2
+    truth 0 point  at (14.3,15.6): 1 splat(s), position error 0.028 px, band flux [59.0, 56.1, 52.6, 50.7, 52.2] vs [56.8, 54.5, 53.1, 51.4, 50.3], pulls [1.9, 1.3, -0.4, -0.6, 1.7] (sigma_F ~ 1.15)
+        total S/N 103.4, expected position error ~ 0.013 px, flux deviation 4.0 % (max over bands)
+    truth 1 point  at (45.7,12.2): 1 splat(s), position error 0.039 px, band flux [29.8, 25.0, 23.5, 22.6, 22.1] vs [26.8, 24.5, 23.1, 21.4, 20.3], pulls [2.6, 0.4, 0.4, 1.0, 1.6] (sigma_F ~ 1.15)
+        total S/N 45.3, expected position error ~ 0.029 px, flux deviation 11.2 % (max over bands)
+    truth 2 point  at (30.1,40.4): 1 splat(s), position error 0.048 px, band flux [14.3, 15.2, 15.5, 15.8, 15.9] vs [15.0, 15.0, 15.0, 15.0, 15.0], pulls [-0.6, 0.2, 0.5, 0.7, 0.8] (sigma_F ~ 1.15)
+        total S/N 29.1, expected position error ~ 0.045 px, flux deviation 6.1 % (max over bands)
+    truth 3 point  at (52.4,50.8): 1 splat(s), position error 0.254 px, band flux [4.9, 4.9, 4.7, 4.0, 3.3] vs [6.7, 5.8, 5.2, 4.5, 4.1], pulls [-1.6, -0.8, -0.5, -0.5, -0.7] (sigma_F ~ 1.15)
+        total S/N 10.4, expected position error ~ 0.125 px, flux deviation 27.2 % (max over bands)
+    truth 4 galaxy at (20.5,46.2): 1 splat(s), position error 0.014 px, band flux [133.5, 124.9, 120.1, 114.5, 110.4] vs [146.4, 136.7, 130.5, 123.2, 118.4], pulls [-5.8, -5.3, -4.6, -3.9, -3.6] (sigma_F ~ 2.22)
+        total S/N 132.1, expected position error ~ 0.019 px, flux deviation 8.8 % (max over bands)
+    truth 5 galaxy at (47.8,31.4): 1 splat(s), position error 0.033 px, band flux [90.8, 85.7, 83.3, 81.7, 81.4] vs [87.1, 85.1, 83.8, 82.2, 81.2], pulls [1.8, 0.3, -0.2, -0.2, 0.1] (sigma_F ~ 2.05)
+        total S/N 91.4, expected position error ~ 0.025 px, flux deviation 4.2 % (max over bands)
+    false splats (attached to no true source): 0
+[    36.5s] syn initial (smooth component only): exact amplitude solve, 0 splats, 41 matvecs, projected-gradient residual 5.59e-05 (rel), 0 amplitudes at 0, 0.37 s
+[    37.0s] syn round 0 after densify: exact amplitude solve, 0 splats, 41 matvecs, projected-gradient residual 6.88e-06 (rel), 0 amplitudes at 0, 0.47 s
+[    37.0s] syn splat round 0: pruned 0, split 0, added 0, total 0, threshold 25.81093672291973, validation score 0.9896873354911804
+[    37.0s] syn: round 0 changed nothing, stopping
+[    37.0s] syn: restored the best validation state (round 0, score 0.9897, 0 splats)
+[    37.7s] syn initial (smooth component only): exact amplitude solve, 0 splats, 41 matvecs, projected-gradient residual 1.34e-04 (rel), 0 amplitudes at 0, 0.56 s
+[    38.1s] syn round 0 after densify: exact amplitude solve, 0 splats, 41 matvecs, projected-gradient residual 3.25e-06 (rel), 0 amplitudes at 0, 0.37 s
+[    38.1s] syn splat round 0: pruned 0, split 0, added 0, total 0, threshold 29.53033216295395, validation score 1.0040570497512817
+[    38.1s] syn: round 0 changed nothing, stopping
+[    38.1s] syn: restored the best validation state (round 0, score 1.0041, 0 splats)
+[    38.6s] syn initial (smooth component only): exact amplitude solve, 0 splats, 41 matvecs, projected-gradient residual 1.13e-04 (rel), 0 amplitudes at 0, 0.46 s
+[    39.1s] syn round 0 after densify: exact amplitude solve, 0 splats, 41 matvecs, projected-gradient residual 2.51e-05 (rel), 0 amplitudes at 0, 0.45 s
+[    39.1s] syn splat round 0: pruned 0, split 0, added 0, total 0, threshold 18.188466150511708, validation score 1.005169975757599
+[    39.1s] syn: round 0 changed nothing, stopping
+[    39.1s] syn: restored the best validation state (round 0, score 1.0052, 0 splats)
+    pure-noise control (no sources, 3 realisations): splats created [0, 0, 0]; smooth-only validation chi2/pix 1.0052
+test_c_recovery: OK
+
+(d) projected CG + Jacobi : n = 48 unknowns (3 splats), 301 matvecs, 1 amplitudes at 0 (bvls: 1), |x - x_bvls| / |x_bvls| = 1.62e-06, objective gap 3.53e-13 (objective scale 1.94e-01)
+(d) projected CG          : n = 48 unknowns (3 splats), 301 matvecs, 1 amplitudes at 0 (bvls: 1), |x - x_bvls| / |x_bvls| = 3.59e-06, objective gap 3.17e-13 (objective scale 1.94e-01)
+    unconstrained: |x - pinv| / |pinv| = 1.72e-06
+    penalty quadratic form on the smooth grid: 6.465973e-01 vs SpectralSky.penalty-form 1.121416e-04 + spatial prior 6.464852e-01 = 6.465974e-01
+    Fisher diagonal of the broadband amplitude, analytic approximation / exact: [1.12, 1.08, 0.66]
+    source-1 mean band flux with cosmic-ray-like outliers next to it: Gaussian 289.11, Huber-IRLS 13.39, truth 10.19
+test_d_linear_solve: OK
+
+(e) end-to-end --quick run: exit 0 in 209 s; log /home/claude/work/runs/v32_quick/stdout.log
+    [    27.0s] explicit_fixedgeom_3d: splat2 sky, smooth component 64x64 cells from the coarse low-pass of the coadd initialisation, no splats yet
+    [    62.9s] explicit_fixedgeom_3d splat round 0: pruned 0, split 0, added 6, total 6, threshold 114.12318434738725, validation score None
+    [   116.5s] explicit_fixedgeom_3d splat round 1: pruned 2, split 5, added 3, total 12, threshold 50.26176274966903, validation score None
+    [   198.7s] explicit_fixedgeom_3d splat round 2: pruned 8, split 10, added 6, total 20, threshold 50.33336378471466, validation score None
+    rounds (round, pruned, split, added, total): [(0, 0, 0, 6, 6), (1, 2, 5, 3, 12), (2, 8, 10, 6, 20)]
+    splat catalogue: 20 splats, sigma min 0.5507295727729797; sky cube finite (6, 256, 256)
+test_e_end_to_end_quick: OK
+
+(f) split_tests with off-image, NaN, huge-sigma and edge splats: no exception; candidates 3, skipped off-image/non-finite 5
+    sanitize(): 4 of 8 splats dropped
+[   257.7s] rg initial (smooth component only): exact amplitude solve, 0 splats, 41 matvecs, projected-gradient residual 1.39e-04 (rel), 0 amplitudes at 0, 0.49 s
+[   257.7s] WARNING: split test failed (RuntimeError('synthetic device-side failure')); no splits this round
+[   258.3s] rg round 0 after densify: exact amplitude solve, 5 splats, 41 matvecs, projected-gradient residual 1.20e-04 (rel), 0 amplitudes at 0, 0.56 s
+[   258.4s] rg_r0 step 0 chi2/pix=1.0067
+[   259.3s] rg_r0 step 20 chi2/pix=1.0039
+[   260.5s] rg_r0 step 39 chi2/pix=1.0002
+[   261.0s] rg round 0 final: exact amplitude solve, 5 splats, 41 matvecs, projected-gradient residual 5.14e-05 (rel), 0 amplitudes at 0, 0.43 s
+[   261.0s] rg splat round 0: pruned 0, split 0, added 5, total 5, threshold 110.82240267542433, validation score 1.006125819683075
+[   261.0s] WARNING: split test failed (RuntimeError('synthetic device-side failure')); no splits this round
+[   261.5s] rg round 1 after densify: exact amplitude solve, 8 splats, 41 matvecs, projected-gradient residual 7.31e-05 (rel), 0 amplitudes at 0, 0.51 s
+[   261.6s] rg_r1 step 0 chi2/pix=0.9990
+[   262.6s] rg_r1 step 20 chi2/pix=0.9991
+[   264.1s] rg_r1 step 39 chi2/pix=0.9970
+[   264.6s] rg round 1 final: exact amplitude solve, 8 splats, 41 matvecs, projected-gradient residual 4.83e-05 (rel), 0 amplitudes at 0, 0.51 s
+[   264.6s] rg splat round 1: pruned 0, split 0, added 3, total 8, threshold 34.82277048298268, validation score 1.0024850845336915
+[   264.7s] WARNING: split test failed (RuntimeError('synthetic device-side failure')); no splits this round
+[   265.2s] rg round 2 after densify: exact amplitude solve, 8 splats, 41 matvecs, projected-gradient residual 2.60e-05 (rel), 0 amplitudes at 0, 0.53 s
+[   265.3s] rg_r2 step 0 chi2/pix=0.9983
+[   266.1s] rg_r2 step 20 chi2/pix=0.9987
+[   267.5s] rg_r2 step 39 chi2/pix=0.9964
+[   268.0s] rg round 2 final: exact amplitude solve, 8 splats, 41 matvecs, projected-gradient residual 3.01e-05 (rel), 0 amplitudes at 0, 0.48 s
+[   268.0s] rg splat round 2: pruned 0, split 0, added 0, total 8, threshold 27.14020292272022, validation score 1.0018460750579834
+[   268.0s] rg: round 2 changed nothing, stopping
+[   268.0s] rg: restored the best validation state (round 2, score 1.0018, 8 splats)
+    fit_splat2 with split_tests raising: 3 rounds completed, 8 splats, split_test errors logged: 3
+test_f_edge_regression: OK
+
+ALL OK

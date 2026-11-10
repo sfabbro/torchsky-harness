@@ -1,0 +1,31 @@
+    [2 instr, drizzle start] 27 s, final chi2/N 0.937, sky rel. L2 error (2 px smoothed) 0.216 -> 0.169
+        A/F150W: EE(1 px) truth 0.192 start 0.385 learned 0.616 | EE(2 px) truth 0.572 start 0.859 learned 0.947
+        B/F277W: EE(1 px) truth 0.572 start 0.385 learned 0.800 | EE(2 px) truth 0.959 start 0.859 learned 0.966
+        held-out dithers, rel. L2 prediction error per instrument: start ['0.216', '0.307'] -> learned ['0.013', '0.017']
+        common-mode (sky-frame kernels, f <= 0.25 cyc/px), residual of K_true vs g*K_learned: raw 0.522, one free g(f) 0.010, one Gaussian g (s2 = +1.84 px^2) 0.011   [start kernels: raw 0.362, free g 0.222, Gaussian g 0.229]
+        relative kernels K_i/K_A (Fourier, where |K_A| > 0.1), rel. error: learned ['-', '0.034'] vs start ['-', '0.551']
+[    28.5s] sky init: Richardson-Lucy x 30 with the library kernels in 0.0 s; fraction of flux changed (L1 of the change over L1 of image - background) F150W 0.242, F277W 0.805
+    [2 instr, RL start] 27 s, final chi2/N 0.996, sky rel. L2 error (2 px smoothed) 0.118 -> 0.131
+        A/F150W: EE(1 px) truth 0.192 start 0.385 learned 0.379 | EE(2 px) truth 0.572 start 0.859 learned 0.846
+        B/F277W: EE(1 px) truth 0.572 start 0.385 learned 0.712 | EE(2 px) truth 0.959 start 0.859 learned 0.965
+        held-out dithers, rel. L2 prediction error per instrument: start ['0.217', '0.230'] -> learned ['0.011', '0.016']
+        common-mode (sky-frame kernels, f <= 0.25 cyc/px), residual of K_true vs g*K_learned: raw 0.318, one free g(f) 0.010, one Gaussian g (s2 = +1.26 px^2) 0.026   [start kernels: raw 0.362, free g 0.222, Gaussian g 0.229]
+        relative kernels K_i/K_A (Fourier, where |K_A| > 0.1), rel. error: learned ['-', '0.034'] vs start ['-', '0.551']
+[    55.9s] sky init: Richardson-Lucy x 30 with the library kernels in 0.0 s; fraction of flux changed (L1 of the change over L1 of image - background) F150W 0.242, F277W 0.802
+    [2 instr, rolls 0 and 70 deg, RL start] 27 s, final chi2/N 0.998, sky rel. L2 error (2 px smoothed) 0.118 -> 0.125
+        A/F150W: EE(1 px) truth 0.192 start 0.385 learned 0.378 | EE(2 px) truth 0.572 start 0.859 learned 0.845
+        B/F277W: EE(1 px) truth 0.572 start 0.385 learned 0.719 | EE(2 px) truth 0.959 start 0.859 learned 0.966
+        held-out dithers, rel. L2 prediction error per instrument: start ['0.215', '0.229'] -> learned ['0.011', '0.015']
+        common-mode (sky-frame kernels, f <= 0.25 cyc/px), residual of K_true vs g*K_learned: raw 0.315, one free g(f) 0.009, one Gaussian g (s2 = +1.26 px^2) 0.025   [start kernels: raw 0.362, free g 0.222, Gaussian g 0.229]
+        relative kernels K_i/K_A (Fourier, where |K_A| > 0.1), rel. error: learned ['-', '0.032'] vs start ['-', '0.551']
+[    83.1s] sky init: Richardson-Lucy x 30 with the library kernels in 0.0 s; fraction of flux changed (L1 of the change over L1 of image - background) F150W 0.242, F277W 0.805, F444W 0.508
+    [3 instr, RL start] 38 s, final chi2/N 0.977, sky rel. L2 error (2 px smoothed) 0.111 -> 0.131
+        A/F150W: EE(1 px) truth 0.192 start 0.385 learned 0.411 | EE(2 px) truth 0.572 start 0.859 learned 0.861
+        B/F277W: EE(1 px) truth 0.572 start 0.385 learned 0.727 | EE(2 px) truth 0.959 start 0.859 learned 0.964
+        C/F444W: EE(1 px) truth 0.327 start 0.385 learned 0.424 | EE(2 px) truth 0.792 start 0.859 learned 0.889
+        held-out dithers, rel. L2 prediction error per instrument: start ['0.168', '0.240', '0.073'] -> learned ['0.010', '0.016', '0.007']
+        common-mode (sky-frame kernels, f <= 0.25 cyc/px), residual of K_true vs g*K_learned: raw 0.317, one free g(f) 0.009, one Gaussian g (s2 = +1.34 px^2) 0.023   [start kernels: raw 0.321, free g 0.194, Gaussian g 0.198]
+        relative kernels K_i/K_A (Fourier, where |K_A| > 0.1), rel. error: learned ['-', '0.035', '0.011'] vs start ['-', '0.551', '0.092']
+(h) diagnostic complete (no pass/fail criterion)
+
+ALL REQUESTED TESTS DONE

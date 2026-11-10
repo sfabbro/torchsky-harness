@@ -1,0 +1,23 @@
+== variant default: (defaults)
+  v38 default: exit 0 in 39 s
+  v39 default: exit 0 in 17 s
+  stdout: 30 v38 lines, 30 v39 lines; v38 lines missing in v39: 0; extra v39 lines: 0; same order: True
+  33 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 24 top-level keys in v38; 0 differences in them (timings/args excluded); keys only in v39: []
+  args only in v39: ['lib_chrom_smooth', 'lib_chromatic']; changed defaults: {'out': ('/home/claude/work/runs/equiv_default_v38', '/home/claude/work/runs/equiv_default_v39')}
+== variant chrom_spectral: --explicit-psf chrom --psf-model chrom --spectral rbf --svo-cache /home/claude/work/testdata/svo_cache --spec-q 3
+  v38 chrom_spectral: exit 0 in 31 s
+  v39 chrom_spectral: exit 0 in 32 s
+  stdout: 33 v38 lines, 33 v39 lines; v38 lines missing in v39: 0; extra v39 lines: 0; same order: True
+  36 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 27 top-level keys in v38; 0 differences in them (timings/args excluded); keys only in v39: []
+  args only in v39: ['lib_chrom_smooth', 'lib_chromatic']; changed defaults: {'out': ('/home/claude/work/runs/equiv_chrom_spectral_v38', '/home/claude/work/runs/equiv_chrom_spectral_v39')}
+== variant e2data: --hst-dir /home/claude/work/testdata/hst_all --lam-lo 0.35 --spectral rbf --svo-cache /home/claude/work/testdata/svo_cache --spec-q 3 --psf-frame detector --psf-model lib --explicit-psf lib --lib-source gauss --lib-learn-table --lib-res off --psf-window-arcsec 3.0 --sample-mode bicubic --halo-px 16 --skip-implicit --explicit-configs explicit
+  v38 e2data: exit 0 in 65 s
+  v39 e2data: exit 0 in 52 s
+  stdout: 66 v38 lines, 66 v39 lines; v38 lines missing in v39: 0; extra v39 lines: 0; same order: True
+  18 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 30 top-level keys in v38; 0 differences in them (timings/args excluded); keys only in v39: []
+  args only in v39: ['lib_chrom_smooth', 'lib_chromatic']; changed defaults: {'out': ('/home/claude/work/runs/equiv_e2data_v38', '/home/claude/work/runs/equiv_e2data_v39')}
+
+EQUIVALENT

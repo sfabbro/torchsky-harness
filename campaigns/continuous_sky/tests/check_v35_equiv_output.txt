@@ -1,0 +1,16 @@
+== variant default: (defaults)
+  v34 default: exit 0 in 14 s
+  v35 default: exit 0 in 14 s
+  stdout: 30 v34 lines, 30 v35 lines; v34 lines missing in v35: 0; extra v35 lines: 0; same order: True
+  33 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 24 top-level keys in v34; 0 differences in them (timings/args excluded); keys only in v35: []
+  args only in v35: ['lib_res_hidden', 'lib_res_l2', 'psf_lib', 'psf_window_arcsec', 'rl_iters', 'sample_mode', 'sky_init']; changed defaults: {'out': ('/home/claude/work/runs/equiv_default_v34', '/home/claude/work/runs/equiv_default_v35')}
+== variant chrom_spectral: --explicit-psf chrom --psf-model chrom --spectral rbf --svo-cache /home/claude/work/testdata/svo_cache --spec-q 3
+  v34 chrom_spectral: exit 0 in 25 s
+  v35 chrom_spectral: exit 0 in 25 s
+  stdout: 33 v34 lines, 33 v35 lines; v34 lines missing in v35: 0; extra v35 lines: 0; same order: True
+  36 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 27 top-level keys in v34; 0 differences in them (timings/args excluded); keys only in v35: []
+  args only in v35: ['lib_res_hidden', 'lib_res_l2', 'psf_lib', 'psf_window_arcsec', 'rl_iters', 'sample_mode', 'sky_init']; changed defaults: {'out': ('/home/claude/work/runs/equiv_chrom_spectral_v34', '/home/claude/work/runs/equiv_chrom_spectral_v35')}
+
+EQUIVALENT

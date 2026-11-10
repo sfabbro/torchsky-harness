@@ -1,0 +1,334 @@
+{
+ "n": {
+  "train": 36,
+  "val": 6,
+  "held": 6
+ },
+ "budget_min": 30.0,
+ "heldout_truth_chi2": 1.0033117632071178,
+ "registration_prepass": {
+  "iters": [
+   {
+    "iter": 0,
+    "rms_translation_mas": 22.21969985961914,
+    "seconds": 19.837018543999875
+   },
+   {
+    "iter": 1,
+    "rms_translation_mas": 36.594600677490234,
+    "seconds": 20.267463571999997
+   }
+  ]
+ },
+ "offset_residual_after_prepass_mas": 12.775595743025047,
+ "heldout_trajectory": [
+  {
+   "fraction": 0.0,
+   "step": 0,
+   "chi2": 19.257800111812227,
+   "chi2_snr5": 159.21913839963253
+  },
+  {
+   "fraction": 0.15,
+   "step": 319,
+   "chi2": 1.3625117733568308,
+   "chi2_snr5": 3.9594305749399115
+  },
+  {
+   "fraction": 0.3,
+   "step": 624,
+   "chi2": 1.2180237454268996,
+   "chi2_snr5": 2.4515641595797515
+  },
+  {
+   "fraction": 0.5,
+   "step": 890,
+   "chi2": 1.5547977437986158,
+   "chi2_snr5": 5.913692178538742
+  },
+  {
+   "fraction": 0.75,
+   "step": 1165,
+   "chi2": 1.3601006811315364,
+   "chi2_snr5": 3.8694570812352027
+  },
+  {
+   "fraction": 1.0,
+   "step": 1391,
+   "chi2": 1.273635589824673,
+   "chi2_snr5": 2.9902735436197574
+  }
+ ],
+ "heldout_final_per_exposure": {
+  "A1_0": {
+   "chi2": 1.7959892749786377,
+   "n": 1600,
+   "chi2_bright": 9.743423461914062,
+   "n_bright": 122
+  },
+  "A1_1": {
+   "chi2": 1.303836464881897,
+   "n": 1600,
+   "chi2_bright": 3.8433401584625244,
+   "n_bright": 120
+  },
+  "A2_0": {
+   "chi2": 1.082403540611267,
+   "n": 1600,
+   "chi2_bright": 1.3131784200668335,
+   "n_bright": 156
+  },
+  "A2_1": {
+   "chi2": 1.1153289079666138,
+   "n": 1600,
+   "chi2_bright": 1.3558968305587769,
+   "n_bright": 169
+  },
+  "B1_0": {
+   "chi2": 1.1067571640014648,
+   "n": 1156,
+   "chi2_bright": 1.1539874076843262,
+   "n_bright": 120
+  },
+  "B1_1": {
+   "chi2": 1.1595232486724854,
+   "n": 1156,
+   "chi2_bright": 1.6457819938659668,
+   "n_bright": 125
+  }
+ },
+ "fit": {
+  "steps": 1391,
+  "seconds": 1801.389197315,
+  "s_per_step": 1.2950317737706687
+ },
+ "tau": {
+  "k_space": {
+   "mode": "learned",
+   "init": 0.3,
+   "value": 0.27668121457099915
+  },
+  "k_time": {
+   "mode": "learned",
+   "init": 0.3,
+   "value": 1.9333419913891703e-06
+  },
+  "k_lambda": {
+   "mode": "learned",
+   "init": 1.0,
+   "value": 3.528741581249051e-05
+  },
+  "k_exp": {
+   "mode": "learned",
+   "init": 0.3,
+   "value": 0.02295873314142227
+  },
+  "g_space": {
+   "mode": "learned",
+   "init": 0.02,
+   "value": 0.20451238751411438
+  },
+  "g_time": {
+   "mode": "learned",
+   "init": 0.02,
+   "value": 0.029890893027186394
+  },
+  "g_exp": {
+   "mode": "learned",
+   "init": 0.02,
+   "value": 0.004830608144402504
+  },
+  "D_static": {
+   "mode": "learned",
+   "init": 0.005,
+   "value": 0.031775280833244324
+  },
+  "D_drift": {
+   "mode": "learned",
+   "init": 0.005,
+   "value": 1.0000003385357559e-06
+  },
+  "D_exp": {
+   "mode": "learned",
+   "init": 0.005,
+   "value": 0.0007772447424940765
+  }
+ },
+ "effective_variability_model_internal": {
+  "k_space": 0.5983695808424206,
+  "k_time": 1.0400712314972144e-06,
+  "k_lambda": 4.556338647143917e-06,
+  "k_exp": 0.05927240448947135,
+  "g_space": 0.20451238751411438,
+  "g_time": 0.029890893027186394,
+  "g_exp": 0.004830034306524289,
+  "D_static": 31.775280833244324,
+  "D_drift": 0.0010000003385357559,
+  "D_exp": 1.90365036496766
+ },
+ "relative_kernels": {
+  "space_x (injected)": {
+   "true_rms": 0.8075538586265454,
+   "learned_rms": 0.6985120895446707,
+   "error_rms": 0.11239882446006337,
+   "per_filter": [
+    {
+     "filter": "A1",
+     "true_rms": 0.347002031333235,
+     "learned_rms": 0.3172461439980951,
+     "error_rms": 0.03320387848359249
+    },
+    {
+     "filter": "A2",
+     "true_rms": 0.8915659683673925,
+     "learned_rms": 0.7895725088301198,
+     "error_rms": 0.10603685739503653
+    },
+    {
+     "filter": "B1",
+     "true_rms": 1.1840935761790088,
+     "learned_rms": 0.9887176158057973,
+     "error_rms": 0.1979557375015611
+    }
+   ]
+  },
+  "space_y (not injected)": {
+   "true_rms": 0.0,
+   "learned_rms": 0.0014814319140994934,
+   "error_rms": 0.0014814319140994934,
+   "per_filter": [
+    {
+     "filter": "A1",
+     "true_rms": 0.0,
+     "learned_rms": 0.001221682500897672,
+     "error_rms": 0.001221682500897672
+    },
+    {
+     "filter": "A2",
+     "true_rms": 0.0,
+     "learned_rms": 0.0014940824561778133,
+     "error_rms": 0.0014940824561778133
+    },
+    {
+     "filter": "B1",
+     "true_rms": 0.0,
+     "learned_rms": 0.0017285307852229954,
+     "error_rms": 0.0017285307852229954
+    }
+   ]
+  },
+  "lambda (injected)": {
+   "true_rms": 0.6863986066539249,
+   "learned_rms": 4.351451954478816e-06,
+   "error_rms": 0.6864013997729491,
+   "per_filter": [
+    {
+     "filter": "A1",
+     "true_rms": 0.25660130328546643,
+     "learned_rms": 1.1586957458408891e-06,
+     "error_rms": 0.2566001463559119
+    },
+    {
+     "filter": "A2",
+     "true_rms": 0.68287289380004,
+     "learned_rms": 1.1864170909850453e-06,
+     "error_rms": 0.682871725972086
+    },
+    {
+     "filter": "B1",
+     "true_rms": 1.1197216228762683,
+     "learned_rms": 1.0709243026610512e-05,
+     "error_rms": 1.1197323269908495
+    }
+   ]
+  },
+  "epoch (not injected)": {
+   "true_rms": 0.0,
+   "learned_rms": 0.036977054489683386,
+   "error_rms": 0.036977054489683386,
+   "per_filter": [
+    {
+     "filter": "A1",
+     "true_rms": 0.0,
+     "learned_rms": 0.014576561393759716,
+     "error_rms": 0.014576561393759716
+    },
+    {
+     "filter": "A2",
+     "true_rms": 0.0,
+     "learned_rms": 0.0594788104051311,
+     "error_rms": 0.0594788104051311
+    },
+    {
+     "filter": "B1",
+     "true_rms": 0.0,
+     "learned_rms": 0.03687579167015933,
+     "error_rms": 0.03687579167015933
+    }
+   ]
+  },
+  "exposure (not injected)": {
+   "true_rms": 0.0,
+   "learned_rms": 0.02181875876443094,
+   "error_rms": 0.02181875876443094,
+   "per_filter": [
+    {
+     "filter": "A1",
+     "true_rms": 0.0,
+     "learned_rms": 0.006376574155672758,
+     "error_rms": 0.006376574155672758
+    },
+    {
+     "filter": "A2",
+     "true_rms": 0.0,
+     "learned_rms": 0.039553533095284955,
+     "error_rms": 0.039553533095284955
+    },
+    {
+     "filter": "B1",
+     "true_rms": 0.0,
+     "learned_rms": 0.019526169042335107,
+     "error_rms": 0.019526169042335107
+    }
+   ]
+  }
+ },
+ "relative_throughput": {
+  "y (injected): learned": 0.10476506253083546,
+  "x (not injected): learned": -0.016209676861763,
+  "epoch (not injected): learned": -0.014369533707698187,
+  "y (injected): truth": 0.1281751934239976,
+  "x: truth": 0.0,
+  "epoch: truth": 0.0
+ },
+ "relative_offsets": {
+  "train_true_rms_mas": 41.23051833336916,
+  "train_residual_rms_mas": 23.177139058675028,
+  "held_true_rms_mas": 45.620342158442355,
+  "held_residual_rms_mas": 22.312266451618168
+ },
+ "gauge_dependent": {
+  "blur_floor_m2": 0.0012,
+  "dilation": 1.4777430295944214,
+  "reference_filter": "A1",
+  "reference_core_m2": 0.001167965354397893,
+  "gauges": {
+   "throughput_gauge_max_abs_mean_log_g": 2.8399364637721192e-08,
+   "common_shift_mas": [
+    -0.01773817650973797,
+    -0.07809408754110336
+   ],
+   "common_blur_core_m2_arcsec2": 0.002881956131507953,
+   "background_mean_per_filter": {
+    "A1": 5.524892330169678,
+    "A2": 5.449339389801025,
+    "B1": 5.685450077056885
+   },
+   "sky_band_p05": {
+    "A1": -0.14354698359966278,
+    "A2": -0.2039952576160431,
+    "B1": -0.2253103256225586
+   }
+  }
+ }
+}

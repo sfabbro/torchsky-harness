@@ -1,0 +1,92 @@
+{
+ "holdout": [
+  "iczgz2nqq",
+  "iczgz2nsq",
+  "iczgz4kcq",
+  "iczgz4keq",
+  "iczgz5cvq",
+  "iczgz5cxq",
+  "iczgz5czq",
+  "iczgz5d1q",
+  "iczgz6j1q",
+  "iczgz6j3q",
+  "iczgz6j5q",
+  "iczgz6j7q",
+  "iczgz7gjq",
+  "iczgz7glq",
+  "iczgz7gnq",
+  "iczgz7gpq",
+  "iczgz7gyq",
+  "iczgz7h0q",
+  "iczgz7h2q",
+  "iczgz7h4q"
+ ],
+ "test": "T3",
+ "note": "epoch held out (reverse): programmes [14096] test, [16729] train",
+ "params": {
+  "mode": "t3",
+  "manifest": "hst/hst_imaging_unique.csv",
+  "jwst_glob": "*_cal.fits",
+  "instruments": "WFC3/IR",
+  "out": "scripts/holdout_t3.json",
+  "n_dithers": 2,
+  "roll_tol": 2.0,
+  "t2_n_rolls": 1,
+  "min_separation": 5.0,
+  "test_programs": "16729",
+  "train_programs": "14096",
+  "both_directions": true
+ },
+ "summary": {
+  "n_holdout_names": 20,
+  "n_records": 88,
+  "per_band": {
+   "WFC3/IR:F153M": {
+    "n_test": 0,
+    "n_train": 2
+   },
+   "WFC3/IR:F105W": {
+    "n_test": 20,
+    "n_train": 6
+   },
+   "WFC3/IR:F160W": {
+    "n_test": 0,
+    "n_train": 20
+   },
+   "WFC3/IR:F140W": {
+    "n_test": 0,
+    "n_train": 20
+   },
+   "WFC3/IR:F125W": {
+    "n_test": 0,
+    "n_train": 8
+   },
+   "WFC3/IR:F110W": {
+    "n_test": 0,
+    "n_train": 12
+   }
+  }
+ },
+ "warnings": [
+  "WFC3/IR:F125W: no training exposure of this band in programmes [16729]: its exposures stay in training, not held out",
+  "WFC3/IR:F140W: no training exposure of this band in programmes [16729]: its exposures stay in training, not held out",
+  "WFC3/IR:F160W: no training exposure of this band in programmes [16729]: its exposures stay in training, not held out"
+ ],
+ "generator": "scripts/make_holdout.py",
+ "dropped_uncovered": [
+  "WFC3/IR:F125W",
+  "WFC3/IR:F140W",
+  "WFC3/IR:F160W"
+ ],
+ "train_programs": [
+  16729
+ ],
+ "test_programs": [
+  14096
+ ],
+ "inputs": {
+  "manifest_skipped": {
+   "unsupported_instrument_or_product": 8
+  }
+ }
+}

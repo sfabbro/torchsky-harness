@@ -1,0 +1,16 @@
+== variant default: (defaults)
+  v35 default: exit 0 in 13 s
+  v36 default: exit 0 in 14 s
+  stdout: 30 v35 lines, 30 v36 lines; v35 lines missing in v36: 0; extra v36 lines: 0; same order: True
+  33 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 24 top-level keys in v35; 0 differences in them (timings/args excluded); keys only in v36: []
+  args only in v36: ['lib_gauss_sigma', 'lib_learn_table', 'lib_res', 'lib_source', 'lib_table_os', 'lib_table_tv']; changed defaults: {'out': ('/home/claude/work/runs/equiv_default_v35', '/home/claude/work/runs/equiv_default_v36')}
+== variant chrom_spectral: --explicit-psf chrom --psf-model chrom --spectral rbf --svo-cache /home/claude/work/testdata/svo_cache --spec-q 3
+  v35 chrom_spectral: exit 0 in 25 s
+  v36 chrom_spectral: exit 0 in 26 s
+  stdout: 33 v35 lines, 33 v36 lines; v35 lines missing in v36: 0; extra v36 lines: 0; same order: True
+  36 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 27 top-level keys in v35; 0 differences in them (timings/args excluded); keys only in v36: []
+  args only in v36: ['lib_gauss_sigma', 'lib_learn_table', 'lib_res', 'lib_source', 'lib_table_os', 'lib_table_tv']; changed defaults: {'out': ('/home/claude/work/runs/equiv_chrom_spectral_v35', '/home/claude/work/runs/equiv_chrom_spectral_v36')}
+
+EQUIVALENT

@@ -1,0 +1,70 @@
+{
+ "holdout": [
+  "iepl79pmq",
+  "iepl79poq",
+  "iepl79pqq",
+  "iepl84jmq",
+  "iepl84joq",
+  "iepl84jqq"
+ ],
+ "test": "T3",
+ "note": "epoch held out: programmes [16729] test, [14096] train",
+ "params": {
+  "mode": "t3",
+  "manifest": "hst/hst_imaging_unique.csv",
+  "jwst_glob": "*_cal.fits",
+  "instruments": "WFC3/IR",
+  "out": "scripts/holdout_t3.json",
+  "n_dithers": 2,
+  "roll_tol": 2.0,
+  "t2_n_rolls": 1,
+  "min_separation": 5.0,
+  "test_programs": "16729",
+  "train_programs": "14096",
+  "both_directions": true
+ },
+ "summary": {
+  "n_holdout_names": 6,
+  "n_records": 88,
+  "per_band": {
+   "WFC3/IR:F153M": {
+    "n_test": 0,
+    "n_train": 2
+   },
+   "WFC3/IR:F105W": {
+    "n_test": 6,
+    "n_train": 20
+   },
+   "WFC3/IR:F160W": {
+    "n_test": 0,
+    "n_train": 20
+   },
+   "WFC3/IR:F140W": {
+    "n_test": 0,
+    "n_train": 20
+   },
+   "WFC3/IR:F125W": {
+    "n_test": 0,
+    "n_train": 8
+   },
+   "WFC3/IR:F110W": {
+    "n_test": 0,
+    "n_train": 12
+   }
+  }
+ },
+ "warnings": [],
+ "generator": "scripts/make_holdout.py",
+ "dropped_uncovered": [],
+ "train_programs": [
+  14096
+ ],
+ "test_programs": [
+  16729
+ ],
+ "inputs": {
+  "manifest_skipped": {
+   "unsupported_instrument_or_product": 8
+  }
+ }
+}

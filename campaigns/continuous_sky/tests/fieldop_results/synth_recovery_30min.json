@@ -1,0 +1,1040 @@
+{
+ "config": {
+  "field": "SMACS",
+  "split": "dither",
+  "protocol_root": "/arc/projects/ots/adass2026/protocol/v1",
+  "splits": "",
+  "box_id": 0,
+  "all_box_files": 0,
+  "method_name": "fieldop",
+  "out": "out_fieldop",
+  "data_root": "",
+  "rate_dir": "",
+  "svo_cache": "",
+  "shifts_from": "",
+  "filters": "",
+  "max_exposures": 0,
+  "n_val_groups": 1,
+  "epoch_min_days": 1.0,
+  "epoch_axes": 1,
+  "write_pred": 1,
+  "pix_default": 0.031,
+  "sky_pitch": 0.06,
+  "sky_margin": 2.0,
+  "data_margin": 1.0,
+  "spec_k": 12,
+  "sky_neg": 1.0,
+  "sky_precond": 0.02,
+  "sky_precond_cap": 2000.0,
+  "sky_tv": 0.0,
+  "xfit": 1,
+  "xfit_frac": 0.6,
+  "kernel_extent": 1.5,
+  "render_pitch": 0.02,
+  "render_os_pix": 6.0,
+  "interp": "bspline",
+  "level_factor": 2,
+  "level_nh": 16,
+  "level_overlap": 0.5,
+  "region_px": 29,
+  "n_lambda": 3,
+  "render": "fft",
+  "quad_nrad": 12,
+  "quad_naz": 48,
+  "k_hidden": 32,
+  "k_layers": 3,
+  "dh": 16,
+  "enc_r0": 0.0,
+  "render_jitter": 1,
+  "enc_nrad": 8,
+  "enc_mmax": 12,
+  "filter_input": "curve",
+  "k_space": "learned",
+  "k_time": "learned",
+  "k_lambda": "learned",
+  "k_exp": "learned",
+  "warm_kernel_steps": 300,
+  "tau_mode": "learned",
+  "tau0_code": 0.3,
+  "tau0_g": 0.02,
+  "tau0_D": 0.005,
+  "tau_prior": 0.001,
+  "tau_start": 0.35,
+  "val_every": 2,
+  "val_nuis_steps": 2,
+  "lr_tau": 0.02,
+  "tau_accum": 4,
+  "em_damp": 0.5,
+  "amplitude": "structured",
+  "gauge_ref_inst": -1,
+  "gauge_shift": 0.0001,
+  "distortion": 1,
+  "affine_prior": 0.01,
+  "input_level": "cal",
+  "nonlin": 0,
+  "pattern_grid": 0,
+  "stripes": 0,
+  "stripe_l2": 0.001,
+  "floor0": 0.01,
+  "loss": "huber",
+  "huber_delta": 3.0,
+  "budget_min": 30.0,
+  "steps": 1000000,
+  "batch_patches": 4,
+  "patch_arcsec": 2.5,
+  "inner_sky": 1,
+  "lr_op": 0.001,
+  "lr_sky": 0.3,
+  "lr_bkg": 0.1,
+  "lr_affine": 0.1,
+  "lr_codes": 0.02,
+  "clip": 10.0,
+  "prior_pixels": 0.0,
+  "is_frac": 0.5,
+  "is_snr": 10.0,
+  "is_refresh": 200,
+  "held_steps": 120,
+  "reg_prepass_iters": 2,
+  "reg_prepass_steps": 150,
+  "pred_margin": 0.3,
+  "log_every": 50,
+  "seed": 0,
+  "device": "auto",
+  "ckpt_kernel": 0
+ },
+ "n": {
+  "train": 27,
+  "val": 6,
+  "held": 3
+ },
+ "heldout_chi2_warm_start": 16.60271349470689,
+ "heldout_chi2_truth": 1.0355088313420613,
+ "registration_prepass": {
+  "iters": [
+   {
+    "iter": 0,
+    "rms_translation_mas": 27.520292282104492,
+    "seconds": 33.56076911499986
+   },
+   {
+    "iter": 1,
+    "rms_translation_mas": 40.50667190551758,
+    "seconds": 35.424312448999444
+   }
+  ]
+ },
+ "offset_residual_after_prepass_mas": 9.929176277959355,
+ "heldout_chi2": 4.004213975800009,
+ "heldout_chi2_bright_snr5": 14.646479200288745,
+ "heldout_per_exposure": {
+  "A1_0": {
+   "chi2": 5.506895542144775,
+   "n": 1122,
+   "chi2_bright": 29.307361602783203,
+   "n_bright": 161
+  },
+  "A2_0": {
+   "chi2": 3.12868332862854,
+   "n": 1190,
+   "chi2_bright": 9.116471290588379,
+   "n_bright": 221
+  },
+  "B1_0": {
+   "chi2": 2.1208009719848633,
+   "n": 342,
+   "chi2_bright": 3.805809497833252,
+   "n_bright": 105
+  }
+ },
+ "fit": {
+  "steps": 1359,
+  "seconds": 1800.709304168,
+  "s_per_step": 1.3250252422133921
+ },
+ "tau": {
+  "k_space": {
+   "mode": "learned",
+   "init": 0.3,
+   "value": 0.1746620535850525
+  },
+  "k_time": {
+   "mode": "learned",
+   "init": 0.3,
+   "value": 0.3465481996536255
+  },
+  "k_lambda": {
+   "mode": "learned",
+   "init": 1.0,
+   "value": 0.9503580927848816
+  },
+  "k_exp": {
+   "mode": "learned",
+   "init": 0.3,
+   "value": 0.018210923299193382
+  },
+  "g_space": {
+   "mode": "learned",
+   "init": 0.02,
+   "value": 0.006574873346835375
+  },
+  "g_time": {
+   "mode": "learned",
+   "init": 0.02,
+   "value": 0.01011978555470705
+  },
+  "g_exp": {
+   "mode": "learned",
+   "init": 0.02,
+   "value": 0.0030932126101106405
+  },
+  "D_static": {
+   "mode": "learned",
+   "init": 0.005,
+   "value": 0.013962417840957642
+  },
+  "D_drift": {
+   "mode": "learned",
+   "init": 0.005,
+   "value": 0.0011303102364763618
+  },
+  "D_exp": {
+   "mode": "learned",
+   "init": 0.005,
+   "value": 0.0009585251100361347
+  }
+ },
+ "effective_variability": {
+  "k_space": 0.23144158123797248,
+  "k_time": 0.038833191586416564,
+  "k_lambda": 0.03918564393363664,
+  "k_exp": 0.040919317738674126,
+  "g_space": 0.006574873346835375,
+  "g_time": 0.01011978555470705,
+  "g_exp": 0.003092921121395434,
+  "D_static": 13.962417840957642,
+  "D_drift": 1.1303102364763618,
+  "D_exp": 2.3476465845239103
+ },
+ "gauges": {
+  "throughput_gauge_max_abs_mean_log_g": 1.1677214750704934e-08,
+  "common_shift_mas": [
+   1.0341919660568237,
+   -0.05566701292991638
+  ],
+  "common_blur_core_m2_arcsec2": 0.0026304888694236674,
+  "background_mean_per_filter": {
+   "A1": 2.6944267749786377,
+   "A2": 2.7677836418151855,
+   "B1": 2.8404035568237305
+  },
+  "sky_band_p05": {
+   "A1": 0.0008959383703768253,
+   "A2": -0.007457726635038853,
+   "B1": 0.12318819016218185
+  }
+ },
+ "offsets": {
+  "true_rms_mas": 41.001128559881536,
+  "residual_rms_mas": 11.226060685850198,
+  "heldout_true_rms_mas": 53.62574597408111,
+  "heldout_residual_rms_mas": 6.605050066863307
+ },
+ "psf_space": {
+  "learned_m2_r<0.3": [
+   0.0005316708120517433,
+   0.0028699522372335196
+  ],
+  "truth_m2_r<0.3": [
+   0.008183891884982586,
+   0.010781657882034779
+  ],
+  "learned_ratio": 5.3979871984287335,
+  "truth_ratio": 1.3174242809608818
+ },
+ "tau_trajectory": [
+  [
+   0,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 1.0
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    }
+   },
+   10.034608220239377
+  ],
+  [
+   100,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 1.0
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    }
+   },
+   11.31685965970987
+  ],
+  [
+   200,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 1.0
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    }
+   },
+   10.274450186118866
+  ],
+  [
+   300,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 1.0
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    }
+   },
+   9.22862827006857
+  ],
+  [
+   400,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 1.0
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    }
+   },
+   9.58253377074564
+  ],
+  [
+   500,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 1.0
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    }
+   },
+   10.641415002818228
+  ],
+  [
+   600,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 1.0
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    }
+   },
+   11.125264662989471
+  ],
+  [
+   700,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.29003167152404785
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.304523766040802
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 0.9559168815612793
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.02686423435807228
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.022062432020902634
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.020240241661667824
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.0033734722528606653
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0057086031883955
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004368464928120375
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0010287845507264137
+    }
+   },
+   11.55658991448497
+  ],
+  [
+   800,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.2635071277618408
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.3015821576118469
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 0.9355601072311401
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.01897161453962326
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019150009378790855
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.018741192296147346
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.0031630569137632847
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.007121991366147995
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.003391774371266365
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0009829583577811718
+    }
+   },
+   11.584375933311524
+  ],
+  [
+   900,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.2232976108789444
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.3434290885925293
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 0.9315409660339355
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.018708277493715286
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.015452048741281033
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.016795597970485687
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.003141373163089156
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.008490724489092827
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0026872577145695686
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0009752879850566387
+    }
+   },
+   11.70537070019278
+  ],
+  [
+   1000,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.20390255749225616
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.3528800904750824
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 0.9321995377540588
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.018479378893971443
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.012464397586882114
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.01473547425121069
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.003123609581962228
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.010305088013410568
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.00216333637945354
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0009683542884886265
+    }
+   },
+   11.4264354525619
+  ],
+  [
+   1100,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.18626123666763306
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.3625330626964569
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 0.9350003600120544
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.018372703343629837
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.010174564085900784
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.013214636594057083
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.0031112476717680693
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.011740162968635559
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0018071222584694624
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0009640311473049223
+    }
+   },
+   11.361075545302704
+  ],
+  [
+   1200,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.17504769563674927
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.3570927083492279
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 0.9396979808807373
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.018279539421200752
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.008465387858450413
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.01171896606683731
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.0031011353712528944
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0129607655107975
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.001485757646150887
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0009608747786842287
+    }
+   },
+   11.1114912520259
+  ],
+  [
+   1300,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.17145703732967377
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.34527653455734253
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 0.9457220435142517
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.018233036622405052
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.007180952467024326
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.010787617415189743
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.003095687832683325
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.013624019920825958
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0012563720811158419
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0009592622518539429
+    }
+   },
+   11.114050816441456
+  ]
+ ]
+}

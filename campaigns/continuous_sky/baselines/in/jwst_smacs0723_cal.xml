@@ -1,0 +1,1498 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vos:node xmlns:vos="http://www.ivoa.net/xml/VOSpace/v2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal" xsi:type="vos:ContainerNode">
+  <vos:properties>
+    <vos:property uri="ivo://cadc.nrc.ca/vospace/core#inheritPermissions">true</vos:property>
+    <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+    <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:40:04.188</vos:property>
+    <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+    <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+    <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">15872371200</vos:property>
+  </vos:properties>
+  <vos:nodes>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00004_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:46.175</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00003_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:06.017</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00001_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:32.463</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00009_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:03.243</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00006_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:46.179</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00007_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:55.101</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00002_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:43.643</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00003_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:38.236</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00002_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:14.434</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00007_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:32.054</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00008_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:25.140</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00001_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:29.666</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00005_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:27.055</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00001_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:07.583</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00006_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:28.503</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00001_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:10.086</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00005_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:47.937</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00001_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:01.548</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00004_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:24.379</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00004_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:09.931</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00006_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:51.738</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00002_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:36.716</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00002_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:33.844</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00004_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:10.098</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00008_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:02.821</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00002_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:05.705</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00007_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:22.426</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00005_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:26.883</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00007_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:19.024</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00008_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:35.872</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00009_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:02.997</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00009_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:28.390</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00002_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:01.591</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00002_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:05.798</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00003_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:05.893</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00005_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:24.363</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00008_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:36.590</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00004_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:11.684</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00004_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:16.205</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00004_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:23.807</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00004_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:09.096</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00006_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:52.734</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00005_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:47.971</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00007_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:59.009</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00009_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:29.073</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00005_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:13.485</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00009_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:05.010</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00001_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:29.765</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00003_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:38.203</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00009_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:07.423</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00007_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:32.299</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00003_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:16.846</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00006_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:16.960</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00005_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:13.510</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00001_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:01.520</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00003_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:40.396</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00009_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:29.062</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00009_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:40:04.179</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00003_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:05.888</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00005_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:49.331</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00005_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:47.803</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00005_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:25.129</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00001_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:08.407</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00006_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:28.806</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00001_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:32.382</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00009_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:05.653</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00007_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:21.516</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00003_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:05.733</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00002_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:58.407</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00002_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:13.610</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00006_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:22.445</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00009_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:07.410</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00009_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:40.277</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00005_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:23.740</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00008_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:33.111</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00005_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:50.464</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00007_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:33.659</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00002_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:01.513</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00007_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:55.688</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00007_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:30.260</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00006_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:52.266</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00003_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:19.149</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00001_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:01.527</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00004_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:42.287</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00007_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:56.239</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00003_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:05.779</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00001_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:15.623</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00005_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:12.405</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00005_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:25.737</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00009_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:40.217</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00008_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:00.355</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00006_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:27.037</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00009_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:28.157</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00003_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:18.258</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00002_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:33.828</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00006_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:48.879</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00007_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:32.067</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00001_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:13.316</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00004_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:44.278</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00003_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:41.656</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00004_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:44.321</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00008_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:26.056</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00005_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:24.348</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00002_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:14.823</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00002_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:36.617</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00006_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:14.963</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00006_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:16.855</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00003_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:40.330</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00001_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:01.609</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00006_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:51.441</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00007_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:21.108</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00003_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:18.473</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00007_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:55.983</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00008_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:38.137</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00004_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:22.007</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00009_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:38.150</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00007_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:21.469</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00004_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:21.929</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00008_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:59.237</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00008_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:02.199</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00004_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:20.435</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00006_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:21.986</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00001_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:09.967</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00008_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:24.520</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00008_nrcblong_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:26.118</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00008_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:37.326</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00008_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:01.237</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00002_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:13.723</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00009_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:38.552</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00006_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:15.712</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00002_nrcb2_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:12.673</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02103_00004_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:45.554</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00008_nrcb3_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:25.047</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02101_00001_nrcb1_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:38:01.542</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/torchsky-data/jwst_smacs0723/cal/jw02736001001_02105_00003_nrcb4_cal.fits" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-07-28T23:39:18.517</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">117573120</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+  </vos:nodes>
+</vos:node>

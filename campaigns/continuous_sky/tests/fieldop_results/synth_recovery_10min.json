@@ -1,0 +1,533 @@
+{
+ "config": {
+  "field": "SMACS",
+  "split": "dither",
+  "protocol_root": "/arc/projects/ots/adass2026/protocol/v1",
+  "splits": "",
+  "box_id": 0,
+  "all_box_files": 0,
+  "method_name": "fieldop",
+  "out": "out_fieldop",
+  "data_root": "",
+  "rate_dir": "",
+  "svo_cache": "",
+  "shifts_from": "",
+  "filters": "",
+  "max_exposures": 0,
+  "n_val_groups": 1,
+  "epoch_min_days": 1.0,
+  "epoch_axes": 1,
+  "write_pred": 1,
+  "pix_default": 0.031,
+  "sky_pitch": 0.06,
+  "sky_margin": 2.0,
+  "data_margin": 1.0,
+  "spec_k": 12,
+  "sky_neg": 1.0,
+  "sky_precond": 0.02,
+  "sky_precond_cap": 2000.0,
+  "sky_tv": 0.0,
+  "xfit": 1,
+  "xfit_frac": 0.6,
+  "kernel_extent": 1.5,
+  "render_pitch": 0.02,
+  "render_os_pix": 6.0,
+  "interp": "bspline",
+  "level_factor": 2,
+  "level_nh": 16,
+  "level_overlap": 0.5,
+  "region_px": 29,
+  "n_lambda": 3,
+  "render": "fft",
+  "quad_nrad": 12,
+  "quad_naz": 48,
+  "k_hidden": 32,
+  "k_layers": 3,
+  "dh": 16,
+  "enc_r0": 0.0,
+  "render_jitter": 1,
+  "enc_nrad": 8,
+  "enc_mmax": 12,
+  "filter_input": "curve",
+  "k_space": "learned",
+  "k_time": "learned",
+  "k_lambda": "learned",
+  "k_exp": "learned",
+  "warm_kernel_steps": 300,
+  "tau_mode": "learned",
+  "tau0_code": 0.3,
+  "tau0_g": 0.02,
+  "tau0_D": 0.005,
+  "tau_prior": 0.001,
+  "tau_start": 0.35,
+  "val_every": 2,
+  "val_nuis_steps": 2,
+  "lr_tau": 0.02,
+  "tau_accum": 4,
+  "em_damp": 0.5,
+  "amplitude": "structured",
+  "gauge_ref_inst": -1,
+  "gauge_shift": 0.0001,
+  "distortion": 1,
+  "affine_prior": 0.01,
+  "input_level": "cal",
+  "nonlin": 0,
+  "pattern_grid": 0,
+  "stripes": 0,
+  "stripe_l2": 0.001,
+  "floor0": 0.01,
+  "loss": "huber",
+  "huber_delta": 3.0,
+  "budget_min": 10.0,
+  "steps": 1000000,
+  "batch_patches": 4,
+  "patch_arcsec": 2.5,
+  "inner_sky": 1,
+  "lr_op": 0.001,
+  "lr_sky": 0.3,
+  "lr_bkg": 0.1,
+  "lr_affine": 0.1,
+  "lr_codes": 0.02,
+  "clip": 10.0,
+  "prior_pixels": 0.0,
+  "is_frac": 0.5,
+  "is_snr": 10.0,
+  "is_refresh": 200,
+  "held_steps": 120,
+  "reg_prepass_iters": 2,
+  "reg_prepass_steps": 150,
+  "pred_margin": 0.3,
+  "log_every": 50,
+  "seed": 0,
+  "device": "auto",
+  "ckpt_kernel": 0
+ },
+ "n": {
+  "train": 27,
+  "val": 6,
+  "held": 3
+ },
+ "heldout_chi2_warm_start": 16.60271349470689,
+ "heldout_chi2_truth": 1.0355088313420613,
+ "registration_prepass": {
+  "iters": [
+   {
+    "iter": 0,
+    "rms_translation_mas": 27.520292282104492,
+    "seconds": 35.65844956000001
+   },
+   {
+    "iter": 1,
+    "rms_translation_mas": 40.50667190551758,
+    "seconds": 36.09774757100058
+   }
+  ]
+ },
+ "offset_residual_after_prepass_mas": 9.929176277959355,
+ "heldout_chi2": 2.9546611817510127,
+ "heldout_chi2_bright_snr5": 11.297644704725684,
+ "heldout_per_exposure": {
+  "A1_0": {
+   "chi2": 3.9293394088745117,
+   "n": 1122,
+   "chi2_bright": 21.817190170288086,
+   "n_bright": 141
+  },
+  "A2_0": {
+   "chi2": 2.2183549404144287,
+   "n": 1190,
+   "chi2_bright": 6.090250015258789,
+   "n_bright": 188
+  },
+  "B1_0": {
+   "chi2": 2.3190338611602783,
+   "n": 342,
+   "chi2_bright": 5.072142124176025,
+   "n_bright": 81
+  }
+ },
+ "fit": {
+  "steps": 428,
+  "seconds": 600.9114766500006,
+  "s_per_step": 1.4039987772196276
+ },
+ "tau": {
+  "k_space": {
+   "mode": "learned",
+   "init": 0.3,
+   "value": 0.32823967933654785
+  },
+  "k_time": {
+   "mode": "learned",
+   "init": 0.3,
+   "value": 0.19280605018138885
+  },
+  "k_lambda": {
+   "mode": "learned",
+   "init": 1.0,
+   "value": 0.9299867749214172
+  },
+  "k_exp": {
+   "mode": "learned",
+   "init": 0.3,
+   "value": 0.02044035494327545
+  },
+  "g_space": {
+   "mode": "learned",
+   "init": 0.02,
+   "value": 0.01248313020914793
+  },
+  "g_time": {
+   "mode": "learned",
+   "init": 0.02,
+   "value": 0.011966081336140633
+  },
+  "g_exp": {
+   "mode": "learned",
+   "init": 0.02,
+   "value": 0.0015970028471201658
+  },
+  "D_static": {
+   "mode": "learned",
+   "init": 0.005,
+   "value": 0.008113951422274113
+  },
+  "D_drift": {
+   "mode": "learned",
+   "init": 0.005,
+   "value": 0.003049262799322605
+  },
+  "D_exp": {
+   "mode": "learned",
+   "init": 0.005,
+   "value": 0.0005773978773504496
+  }
+ },
+ "effective_variability": {
+  "k_space": 0.24922034003879806,
+  "k_time": 0.033807832376576266,
+  "k_lambda": 0.0190831032489911,
+  "k_exp": 0.03335224432883212,
+  "g_space": 0.01248313020914793,
+  "g_time": 0.011966081336140633,
+  "g_exp": 0.0015967415538987312,
+  "D_static": 8.113951422274113,
+  "D_drift": 3.049262799322605,
+  "D_exp": 1.4139655618961022
+ },
+ "gauges": {
+  "throughput_gauge_max_abs_mean_log_g": 1.6169189320791588e-09,
+  "common_shift_mas": [
+   2.630289077758789,
+   0.4563474953174591
+  ],
+  "common_blur_core_m2_arcsec2": 0.000917574752950006,
+  "background_mean_per_filter": {
+   "A1": 4.027645587921143,
+   "A2": 4.053905487060547,
+   "B1": 4.3829169273376465
+  },
+  "sky_band_p05": {
+   "A1": -0.05683111771941185,
+   "A2": -0.07926373928785324,
+   "B1": -0.4658079445362091
+  }
+ },
+ "offsets": {
+  "true_rms_mas": 41.001128559881536,
+  "residual_rms_mas": 9.54015283045818,
+  "heldout_true_rms_mas": 53.62574597408111,
+  "heldout_residual_rms_mas": 4.498086351489005
+ },
+ "psf_space": {
+  "learned_core_m2": [
+   0.0004517232213552526,
+   0.002599910545552144
+  ],
+  "learned_ratio": 5.755538840248095,
+  "truth_ratio_full_m2": 1.5117017083195454,
+  "truth_core_only_ratio": 1.4490330162978993
+ },
+ "tau_trajectory": [
+  [
+   0,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 1.0
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    }
+   },
+   10.03460840876841
+  ],
+  [
+   100,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 1.0
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    }
+   },
+   12.115292628284445
+  ],
+  [
+   200,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 1.0
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.30000004172325134
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.019999997690320015
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004999999888241291
+    }
+   },
+   11.286652447011821
+  ],
+  [
+   300,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.27441999316215515
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.25768399238586426
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 0.9457151889801025
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.02120954915881157
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.0163450725376606
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.016321424394845963
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.001627179328352213
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.006193563807755709
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.004041127860546112
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0005849256995134056
+    }
+   },
+   10.498098762700053
+  ],
+  [
+   400,
+   {
+    "k_space": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.31321412324905396
+    },
+    "k_time": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.20377488434314728
+    },
+    "k_lambda": {
+     "mode": "learned",
+     "init": 1.0,
+     "value": 0.9314317107200623
+    },
+    "k_exp": {
+     "mode": "learned",
+     "init": 0.3,
+     "value": 0.020468976348638535
+    },
+    "g_space": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.013059300370514393
+    },
+    "g_time": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.012668243609368801
+    },
+    "g_exp": {
+     "mode": "learned",
+     "init": 0.02,
+     "value": 0.0015974907437339425
+    },
+    "D_static": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.007718552369624376
+    },
+    "D_drift": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0032098405063152313
+    },
+    "D_exp": {
+     "mode": "learned",
+     "init": 0.005,
+     "value": 0.0005776836187578738
+    }
+   },
+   9.674718315085745
+  ]
+ ]
+}

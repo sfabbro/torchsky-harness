@@ -1,0 +1,23 @@
+== variant default: (defaults)
+  v31 default: exit 0 in 18 s
+  v32 default: exit 0 in 17 s
+  stdout: 30 v31 lines, 30 v32 lines; v31 lines missing in v32: 0; extra v32 lines: 0; same order: True
+  33 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 24 top-level keys in v31; 0 differences in them (timings/args excluded); keys only in v32: []
+  args only in v32: ['splat_fpr', 'splat_max', 'splat_max_rounds', 'splat_prune_snr', 'splat_round_min', 'splat_sigma_floor', 'splat_smooth_px', 'splat_solve_every', 'splat_solve_iters', 'splat_split_steps']; changed defaults: {'out': ('/home/claude/work/runs/equiv_default_v31', '/home/claude/work/runs/equiv_default_v32')}
+== variant hybrid_spectral: --spectral rbf --svo-cache /home/claude/work/testdata/svo_cache --spec-q 3 --sky-coeffs hybrid --skip-implicit --explicit-configs fixed
+  v31 hybrid_spectral: exit 0 in 12 s
+  v32 hybrid_spectral: exit 0 in 11 s
+  stdout: 20 v31 lines, 20 v32 lines; v31 lines missing in v32: 0; extra v32 lines: 0; same order: True
+  14 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 24 top-level keys in v31; 0 differences in them (timings/args excluded); keys only in v32: []
+  args only in v32: ['splat_fpr', 'splat_max', 'splat_max_rounds', 'splat_prune_snr', 'splat_round_min', 'splat_sigma_floor', 'splat_smooth_px', 'splat_solve_every', 'splat_solve_iters', 'splat_split_steps']; changed defaults: {'out': ('/home/claude/work/runs/equiv_hybrid_spectral_v31', '/home/claude/work/runs/equiv_hybrid_spectral_v32')}
+== variant chrom_spectral: --explicit-psf chrom --psf-model chrom --spectral rbf --svo-cache /home/claude/work/testdata/svo_cache --spec-q 3
+  v31 chrom_spectral: exit 0 in 30 s
+  v32 chrom_spectral: exit 0 in 32 s
+  stdout: 33 v31 lines, 33 v32 lines; v31 lines missing in v32: 0; extra v32 lines: 0; same order: True
+  36 output files compared bitwise (cubes, states, npy), differences: 0
+  metrics.json: 27 top-level keys in v31; 0 differences in them (timings/args excluded); keys only in v32: []
+  args only in v32: ['splat_fpr', 'splat_max', 'splat_max_rounds', 'splat_prune_snr', 'splat_round_min', 'splat_sigma_floor', 'splat_smooth_px', 'splat_solve_every', 'splat_solve_iters', 'splat_split_steps']; changed defaults: {'out': ('/home/claude/work/runs/equiv_chrom_spectral_v31', '/home/claude/work/runs/equiv_chrom_spectral_v32')}
+
+EQUIVALENT

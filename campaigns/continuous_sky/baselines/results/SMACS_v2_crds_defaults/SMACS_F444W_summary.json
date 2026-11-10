@@ -1,0 +1,527 @@
+{
+ "tag": "SMACS_F444W",
+ "field": "SMACS",
+ "band": "F444W",
+ "split": "dither",
+ "tile": null,
+ "split_source": "protocol splits_SMACS.json",
+ "nondefault_params": {
+  "image3.tweakreg run separately": "tweakreg run on training+held-out via TweakRegStep; Image3Pipeline then run on the training _tweakreg exposures with tweakreg and source_catalog skipped"
+ },
+ "tweakreg_params": {},
+ "resample_params": {},
+ "train": [
+  "jw02736001001_02105_00001_nrcblong",
+  "jw02736001001_02105_00004_nrcblong",
+  "jw02736001001_02105_00005_nrcblong",
+  "jw02736001001_02105_00006_nrcblong",
+  "jw02736001001_02105_00007_nrcblong",
+  "jw02736001001_02105_00008_nrcblong",
+  "jw02736001001_02105_00009_nrcblong"
+ ],
+ "heldout": [
+  "jw02736001001_02105_00002_nrcblong",
+  "jw02736001001_02105_00003_nrcblong"
+ ],
+ "versions": {
+  "jwst": "3.0.0",
+  "stcal": "1.20.0"
+ },
+ "tweakreg_attempts": [
+  {
+   "rung": 0,
+   "params": {},
+   "n_bad": 0,
+   "n": 9
+  }
+ ],
+ "crds_pars_tweakreg": [
+  "PARS-TWEAKREGSTEP parameters found: /arc/projects/ots/adass2026/crds_cache/references/jwst/nircam/jwst_nircam_pars-tweakregstep_0045.asdf"
+ ],
+ "tweakreg_table": [
+  {
+   "rootname": "jw02736001001_02105_00001_nrcblong",
+   "file": "jw02736001001_02105_00001_nrcblong_cal.fits",
+   "group_id": "jw02736001001_02105_1",
+   "status": "REFERENCE",
+   "ref_x": 1024.0,
+   "ref_y": 1024.0,
+   "d_east_mas": 0.0,
+   "d_north_mas": 0.0,
+   "tile_dx_west_mas": -0.0,
+   "tile_dy_north_mas": 0.0,
+   "heldout": false
+  },
+  {
+   "rootname": "jw02736001001_02105_00004_nrcblong",
+   "file": "jw02736001001_02105_00004_nrcblong_cal.fits",
+   "group_id": "jw02736001001_02105_4",
+   "status": "SUCCESS",
+   "nmatches": 138,
+   "rmse_arcsec": 0.046338,
+   "mae_arcsec": 0.0169749,
+   "init_dx_arcsec": 0.0177092,
+   "init_dy_arcsec": 0.0158,
+   "init_significance": 152.131,
+   "init_matches": 165,
+   "ref_x": 1024.0,
+   "ref_y": 1024.0,
+   "d_east_mas": -2.5116815820950773,
+   "d_north_mas": -1.2187670392904693,
+   "tile_dx_west_mas": 2.5116815820950773,
+   "tile_dy_north_mas": -1.2187670392904693,
+   "heldout": false
+  },
+  {
+   "rootname": "jw02736001001_02105_00005_nrcblong",
+   "file": "jw02736001001_02105_00005_nrcblong_cal.fits",
+   "group_id": "jw02736001001_02105_5",
+   "status": "SUCCESS",
+   "nmatches": 132,
+   "rmse_arcsec": 0.0195445,
+   "mae_arcsec": 0.010443,
+   "init_dx_arcsec": 0.0157855,
+   "init_dy_arcsec": 0.014993,
+   "init_significance": 148.786,
+   "init_matches": 159,
+   "ref_x": 1024.0,
+   "ref_y": 1024.0,
+   "d_east_mas": -0.40082851575506684,
+   "d_north_mas": -1.4424674191104714,
+   "tile_dx_west_mas": 0.40082851575506684,
+   "tile_dy_north_mas": -1.4424674191104714,
+   "heldout": false
+  },
+  {
+   "rootname": "jw02736001001_02105_00006_nrcblong",
+   "file": "jw02736001001_02105_00006_nrcblong_cal.fits",
+   "group_id": "jw02736001001_02105_6",
+   "status": "SUCCESS",
+   "nmatches": 135,
+   "rmse_arcsec": 0.0298465,
+   "mae_arcsec": 0.0117196,
+   "init_dx_arcsec": 0.016566,
+   "init_dy_arcsec": 0.0154134,
+   "init_significance": 154.335,
+   "init_matches": 164,
+   "ref_x": 1024.0,
+   "ref_y": 1024.0,
+   "d_east_mas": -1.4113702395428214,
+   "d_north_mas": -1.0440435460168374,
+   "tile_dx_west_mas": 1.4113702395428214,
+   "tile_dy_north_mas": -1.0440435460168374,
+   "heldout": false
+  },
+  {
+   "rootname": "jw02736001001_02105_00007_nrcblong",
+   "file": "jw02736001001_02105_00007_nrcblong_cal.fits",
+   "group_id": "jw02736001001_02105_7",
+   "status": "SUCCESS",
+   "nmatches": 131,
+   "rmse_arcsec": 0.0121973,
+   "mae_arcsec": 0.0100504,
+   "init_dx_arcsec": 0.0173857,
+   "init_dy_arcsec": 0.0157805,
+   "init_significance": 148.031,
+   "init_matches": 157,
+   "ref_x": 1024.0,
+   "ref_y": 1024.0,
+   "d_east_mas": 0.8817964780624525,
+   "d_north_mas": -1.6177654288185295,
+   "tile_dx_west_mas": -0.8817964780624525,
+   "tile_dy_north_mas": -1.6177654288185295,
+   "heldout": false
+  },
+  {
+   "rootname": "jw02736001001_02105_00008_nrcblong",
+   "file": "jw02736001001_02105_00008_nrcblong_cal.fits",
+   "group_id": "jw02736001001_02105_8",
+   "status": "SUCCESS",
+   "nmatches": 135,
+   "rmse_arcsec": 0.0354061,
+   "mae_arcsec": 0.0132208,
+   "init_dx_arcsec": 0.0161818,
+   "init_dy_arcsec": 0.0161818,
+   "init_significance": 151.561,
+   "init_matches": 162,
+   "ref_x": 1024.0,
+   "ref_y": 1024.0,
+   "d_east_mas": 1.0548717107515755,
+   "d_north_mas": -0.34703841720329365,
+   "tile_dx_west_mas": -1.0548717107515755,
+   "tile_dy_north_mas": -0.34703841720329365,
+   "heldout": false
+  },
+  {
+   "rootname": "jw02736001001_02105_00009_nrcblong",
+   "file": "jw02736001001_02105_00009_nrcblong_cal.fits",
+   "group_id": "jw02736001001_02105_9",
+   "status": "SUCCESS",
+   "nmatches": 128,
+   "rmse_arcsec": 0.0296279,
+   "mae_arcsec": 0.0122663,
+   "init_dx_arcsec": 0.0161818,
+   "init_dy_arcsec": 0.0161818,
+   "init_significance": 142.03,
+   "init_matches": 150,
+   "ref_x": 1024.0,
+   "ref_y": 1024.0,
+   "d_east_mas": 1.4500183987341577,
+   "d_north_mas": -0.9799463384752016,
+   "tile_dx_west_mas": -1.4500183987341577,
+   "tile_dy_north_mas": -0.9799463384752016,
+   "heldout": false
+  },
+  {
+   "rootname": "jw02736001001_02105_00002_nrcblong",
+   "file": "jw02736001001_02105_00002_nrcblong_cal.fits",
+   "group_id": "jw02736001001_02105_2",
+   "status": "SUCCESS",
+   "nmatches": 140,
+   "rmse_arcsec": 0.0349545,
+   "mae_arcsec": 0.013541,
+   "init_dx_arcsec": 0.0165568,
+   "init_dy_arcsec": 0.0154317,
+   "init_significance": 154.828,
+   "init_matches": 168,
+   "ref_x": 1024.0,
+   "ref_y": 1024.0,
+   "d_east_mas": 2.033112589321274,
+   "d_north_mas": 2.70680793619249,
+   "tile_dx_west_mas": -2.033112589321274,
+   "tile_dy_north_mas": 2.70680793619249,
+   "heldout": true
+  },
+  {
+   "rootname": "jw02736001001_02105_00003_nrcblong",
+   "file": "jw02736001001_02105_00003_nrcblong_cal.fits",
+   "group_id": "jw02736001001_02105_3",
+   "status": "SUCCESS",
+   "nmatches": 131,
+   "rmse_arcsec": 0.0384345,
+   "mae_arcsec": 0.014702,
+   "init_dx_arcsec": 0.0177871,
+   "init_dy_arcsec": 0.0141753,
+   "init_significance": 145.255,
+   "init_matches": 157,
+   "ref_x": 1024.0,
+   "ref_y": 1024.0,
+   "d_east_mas": 2.5703539957847434,
+   "d_north_mas": -3.1234032576321624,
+   "tile_dx_west_mas": -2.5703539957847434,
+   "tile_dy_north_mas": -3.1234032576321624,
+   "heldout": true
+  }
+ ],
+ "tweakreg_n_failed": 0,
+ "tweakreg_n_success": 8,
+ "tweakreg_n_reference": 1,
+ "excluded_unaligned_training": [],
+ "crds_pars_image3": [
+  "PARS-TWEAKREGSTEP parameters found: /arc/projects/ots/adass2026/crds_cache/references/jwst/nircam/jwst_nircam_pars-tweakregstep_0045.asdf",
+  "PARS-RESAMPLESTEP parameters found: /arc/projects/ots/adass2026/crds_cache/references/jwst/nircam/jwst_nircam_pars-resamplestep_0001.asdf",
+  "PARS-SOURCECATALOGSTEP parameters found: /arc/projects/ots/adass2026/crds_cache/references/jwst/nircam/jwst_nircam_pars-sourcecatalogstep_0001.asdf"
+ ],
+ "effective_step_config": {
+  "assign_mtwcs": {},
+  "tweakreg": {
+   "fitgeometry": "shift",
+   "kernel_fwhm": 2.302,
+   "separation": 2.0,
+   "tolerance": 1.0,
+   "class": "jwst.tweakreg.tweakreg_step.TweakRegStep",
+   "name": "tweakreg"
+  },
+  "skymatch": {},
+  "outlier_detection": {},
+  "resample": {
+   "weight_type": "exptime",
+   "class": "jwst.resample.resample_step.ResampleStep",
+   "name": "resample"
+  },
+  "source_catalog": {
+   "kernel_fwhm": 2.302,
+   "class": "jwst.source_catalog.source_catalog_step.SourceCatalogStep",
+   "name": "source_catalog"
+  }
+ },
+ "i2d": "/arc/projects/ots/adass2026/baselines/stage3_blot/SMACS/dither/SMACS_F444W_train_i2d.fits",
+ "i2d_header": {
+  "shape": [
+   2259,
+   2272
+  ],
+  "bunit": "MJy/sr",
+  "pixar_sr": 9.33051740572604e-14,
+  "pixar_a2": 0.003969684519778267,
+  "xpix": 1.75015090173426e-05
+ },
+ "heldout_results": [
+  {
+   "rootname": "jw02736001001_02105_00002_nrcblong",
+   "n_model_valid": 4171997,
+   "seconds": 4.0,
+   "prelim_score": {
+    "n_valid": 92369,
+    "offset": 0.002140045166015625,
+    "model_sky": 0.2613374590873718,
+    "chi2_per_n_snr_gt5": 4.289084244777428,
+    "n_snr_gt5": 16995,
+    "bins": {
+     "<1": {
+      "n": 58946,
+      "chi2_per_n": 1.0975068640467789
+     },
+     "1-5": {
+      "n": 16428,
+      "chi2_per_n": 0.9757141201799928
+     },
+     "5-20": {
+      "n": 12665,
+      "chi2_per_n": 1.1239344489642515
+     },
+     "20-50": {
+      "n": 3584,
+      "chi2_per_n": 2.969668102171127
+     },
+     "50-200": {
+      "n": 746,
+      "chi2_per_n": 64.36335987356411
+     },
+     ">200": {
+      "n": 0,
+      "chi2_per_n": null
+     }
+    },
+    "frac_resid_rms_snr_gt50": 0.0720095461131927,
+    "frac_resid_median_snr_gt50": -0.008424877796182954,
+    "chi2_per_n_snr_gt5_no_offset": 4.262511575783192
+   },
+   "stars": [
+    [
+     1909,
+     1757,
+     120.07035382091999,
+     -0.0006976073410506323,
+     -0.0027687149761804826,
+     39.8161446750164,
+     -0.0027137547731399536
+    ],
+    [
+     372,
+     1563,
+     102.62758439779282,
+     0.9870523427188888,
+     1.0006656364762212,
+     6.958602666854858,
+     5.647067070007324
+    ],
+    [
+     1713,
+     1330,
+     71.05182617902756,
+     0.9803053975417101,
+     0.9953791128836079,
+     3.7321667075157166,
+     3.2379508018493652
+    ],
+    [
+     700,
+     941,
+     32.05776569247246,
+     0.987564073404614,
+     1.0021859499957517,
+     1.2982511818408966,
+     1.206497311592102
+    ],
+    [
+     1570,
+     27,
+     6.768744423985481,
+     0.9974120687614982,
+     1.0141469510231034,
+     0.46200327575206757,
+     0.40320849418640137
+    ],
+    [
+     1280,
+     1902,
+     4.201209932565689,
+     1.0464359193095587,
+     1.1495254202936245,
+     0.5720881074666977,
+     0.4694247543811798
+    ],
+    [
+     1125,
+     888,
+     4.977303221821785,
+     1.0427211820544366,
+     1.0692576910195808,
+     0.1689801961183548,
+     0.17614638805389404
+    ],
+    [
+     611,
+     1582,
+     5.041650637984276,
+     0.9923577134651993,
+     1.003506659616228,
+     0.19426147639751434,
+     0.19702063500881195
+    ],
+    [
+     1870,
+     984,
+     2.3192550241947174,
+     0.9526306845228782,
+     0.9557020033750957,
+     0.0913805216550827,
+     0.0831255316734314
+    ]
+   ],
+   "star_flux_ratio_r4_median": 0.987564073404614,
+   "star_flux_ratio_r4_mad_sigma": 0.014600637916116495,
+   "star_flux_ratio_r8_median": 1.0021859499957517,
+   "star_flux_ratio_r8_mad_sigma": 0.01773338012315155,
+   "n_stars": 9,
+   "star_peak_ratio_median": 0.8727394703642357
+  },
+  {
+   "rootname": "jw02736001001_02105_00003_nrcblong",
+   "n_model_valid": 4158955,
+   "seconds": 3.8,
+   "prelim_score": {
+    "n_valid": 93424,
+    "offset": 0.0005075111985206604,
+    "model_sky": 0.2609323710203171,
+    "chi2_per_n_snr_gt5": 4.878419431736656,
+    "n_snr_gt5": 17009,
+    "bins": {
+     "<1": {
+      "n": 59614,
+      "chi2_per_n": 1.183742912703123
+     },
+     "1-5": {
+      "n": 16801,
+      "chi2_per_n": 0.9973009963778882
+     },
+     "5-20": {
+      "n": 12608,
+      "chi2_per_n": 1.1035006197543695
+     },
+     "20-50": {
+      "n": 3674,
+      "chi2_per_n": 3.3813296615183646
+     },
+     "50-200": {
+      "n": 727,
+      "chi2_per_n": 77.91072231654364
+     },
+     ">200": {
+      "n": 0,
+      "chi2_per_n": null
+     }
+    },
+    "frac_resid_rms_snr_gt50": 0.07851937848659253,
+    "frac_resid_median_snr_gt50": -0.007593653138276177,
+    "chi2_per_n_snr_gt5_no_offset": 4.864024270333565
+   },
+   "stars": [
+    [
+     682,
+     1061,
+     119.78692232072353,
+     0.9787729694418621,
+     0.9952946484625953,
+     7.257892593741417,
+     6.163110733032227
+    ],
+    [
+     1808,
+     1332,
+     71.06392320990562,
+     0.9862992460639639,
+     0.9970694351856878,
+     3.8122386634349823,
+     3.3552660942077637
+    ],
+    [
+     262,
+     576,
+     35.13748427480459,
+     0.9897207851014433,
+     0.9948632704951954,
+     4.422174446284771,
+     3.476285219192505
+    ],
+    [
+     1956,
+     816,
+     22.165621280670166,
+     0.9909305812752017,
+     1.010229828926539,
+     1.1697091460227966,
+     1.0613211393356323
+    ],
+    [
+     1739,
+     1490,
+     12.092534847557545,
+     0.9932276644854209,
+     0.992828639167747,
+     1.6521437540650368,
+     1.2194650173187256
+    ],
+    [
+     453,
+     164,
+     10.433584049344063,
+     0.9805904980618628,
+     0.9944453084044534,
+     1.3829549252986908,
+     0.9813489317893982
+    ],
+    [
+     1980,
+     1231,
+     8.676894254982471,
+     0.9711109030823131,
+     0.9857597547701737,
+     0.4083249941468239,
+     0.3499448299407959
+    ],
+    [
+     1791,
+     1580,
+     4.404616244137287,
+     0.9845460158980824,
+     0.9823647689943165,
+     0.20848239213228226,
+     0.1876142919063568
+    ],
+    [
+     1543,
+     1099,
+     1.7122992873191833,
+     1.0039672976681149,
+     1.0450975638353175,
+     0.20932671427726746,
+     0.1555115282535553
+    ]
+   ],
+   "star_flux_ratio_r4_median": 0.9862992460639639,
+   "star_flux_ratio_r4_mad_sigma": 0.008463789787915064,
+   "star_flux_ratio_r8_median": 0.9948632704951954,
+   "star_flux_ratio_r8_mad_sigma": 0.003270859770124026,
+   "n_stars": 9,
+   "star_peak_ratio_median": 0.8491598151158594
+  }
+ ],
+ "pixar_ratio_heldout_cal_over_i2d": {
+  "jw02736001001_02105_00002_nrcblong": 1.0000225339729383,
+  "jw02736001001_02105_00003_nrcblong": 1.0000225339729383
+ },
+ "ok": true,
+ "seconds": 103.2
+}

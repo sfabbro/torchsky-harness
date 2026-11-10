@@ -1,0 +1,105 @@
+(a) header parsing and registry
+  header parsing and registry OK
+(b) make_holdout.py
+/tmp/tmp645iy1xv/t1.json: T1 18 names held out of 108 exposure records
+   ACS/WFC:F435W                test   2  train   2
+   ACS/WFC:F606W                test   2  train   3
+   ACS/WFC:F814W                test   2  train   3
+   WFC3/IR:F105W                test   2  train  24
+   WFC3/IR:F110W                test   2  train  10
+   WFC3/IR:F125W                test   2  train   6
+   WFC3/IR:F140W                test   2  train  18
+   WFC3/IR:F153M                test   0  train   2
+   WFC3/IR:F160W                test   2  train  18
+   WFC3/UVIS:F606W              test   2  train   4
+   WARNING: WFC3/IR:F153M: 2 dithers, holding out 0 instead of 2
+/tmp/tmp645iy1xv/t3.json: T3 6 names held out of 108 exposure records
+   ACS/WFC:F435W                test   0  train   4
+   ACS/WFC:F606W                test   0  train   5
+   ACS/WFC:F814W                test   0  train   5
+   WFC3/IR:F105W                test   6  train  20
+   WFC3/IR:F110W                test   0  train  12
+   WFC3/IR:F125W                test   0  train   8
+   WFC3/IR:F140W                test   0  train  20
+   WFC3/IR:F153M                test   0  train   2
+   WFC3/IR:F160W                test   0  train  20
+   WFC3/UVIS:F606W              test   0  train   6
+   WARNING: WFC3/UVIS:F606W: no training exposure of this band in programmes [14096]: its exposures stay in training, not held out
+/tmp/tmp645iy1xv/t3_reverse.json: T3 20 names held out of 108 exposure records
+   ACS/WFC:F435W                test   0  train   4
+   ACS/WFC:F606W                test   0  train   5
+   ACS/WFC:F814W                test   0  train   5
+   WFC3/IR:F105W                test  20  train   6
+   WFC3/IR:F110W                test   0  train  12
+   WFC3/IR:F125W                test   0  train   8
+   WFC3/IR:F140W                test   0  train  20
+   WFC3/IR:F153M                test   0  train   2
+   WFC3/IR:F160W                test   0  train  20
+   WFC3/UVIS:F606W              test   0  train   6
+   WARNING: ACS/WFC:F435W: no training exposure of this band in programmes [16729]: its exposures stay in training, not held out
+   WARNING: ACS/WFC:F606W: no training exposure of this band in programmes [16729]: its exposures stay in training, not held out
+   WARNING: ACS/WFC:F814W: no training exposure of this band in programmes [16729]: its exposures stay in training, not held out
+   WARNING: WFC3/IR:F125W: no training exposure of this band in programmes [16729]: its exposures stay in training, not held out
+   WARNING: WFC3/IR:F140W: no training exposure of this band in programmes [16729]: its exposures stay in training, not held out
+   WARNING: WFC3/IR:F160W: no training exposure of this band in programmes [16729]: its exposures stay in training, not held out
+/tmp/tmp645iy1xv/t4.json: T4 43 names held out of 108 exposure records
+   ACS/WFC:F435W                test   0  train   4
+   ACS/WFC:F606W                test   0  train   5
+   ACS/WFC:F814W                test   0  train   5
+   WFC3/IR:F105W                test  13  train  13
+   WFC3/IR:F110W                test   6  train   6
+   WFC3/IR:F125W                test   4  train   4
+   WFC3/IR:F140W                test  10  train  10
+   WFC3/IR:F153M                test   1  train   1
+   WFC3/IR:F160W                test   9  train  11
+   WFC3/UVIS:F606W              test   0  train   6
+/tmp/tmp645iy1xv/t2.json: T2 18 names held out of 102 exposure records
+   ACS/WFC:F435W                test   0  train   4
+   ACS/WFC:F606W                test   0  train   5
+   ACS/WFC:F814W                test   3  train   2
+   WFC3/IR:F105W                test   4  train  22
+   WFC3/IR:F110W                test   3  train   9
+   WFC3/IR:F125W                test   0  train   8
+   WFC3/IR:F140W                test   4  train  16
+   WFC3/IR:F153M                test   1  train   1
+   WFC3/IR:F160W                test   3  train  17
+/tmp/tmp645iy1xv/t1j.json: T1 0 names held out of 12 exposure records
+   NIRCam:F090W                 test   0  train   4
+   NIRCam:F150W                 test   0  train   4
+   NIRCam:F200W                 test   0  train   1
+   NIRCam:F277W                 test   0  train   1
+   NIRCam:F356W                 test   0  train   1
+   NIRCam:F444W                 test   0  train   1
+   WARNING: NIRCam:F090W: 1 dithers, holding out 0 instead of 2
+   WARNING: NIRCam:F150W: 1 dithers, holding out 0 instead of 2
+   WARNING: NIRCam:F200W: 1 dithers, holding out 0 instead of 2
+   WARNING: NIRCam:F277W: 1 dithers, holding out 0 instead of 2
+   WARNING: NIRCam:F356W: 1 dithers, holding out 0 instead of 2
+   WARNING: NIRCam:F444W: 1 dithers, holding out 0 instead of 2
+  make_holdout OK
+(c) synthetic NIRISS plumbing + run A
+  run A: exit 0 in 29 s
+  run A and dumps OK
+(d) frozen-sky run B
+  run B: exit 0 in 24 s
+  run B_bad: exit 1 in 4 s
+  run B_bad2: exit 1 in 2 s
+  run B_miri: exit 1 in 2 s
+  frozen-sky transfer OK
+(e) null_stacks on the dumped pixels of run A
+null stacks: 6 exposures, 62704 pixels -> /home/claude/work/runs/test_v38/A/null_stacks/explicit_lib_3d
+  (a) NRCB3: chi2/dof 7.593254218817442  (dof 2; shuffle p95 21.563910257696207)
+  (a) NRCBLONG: chi2/dof 46.87126593117154  (dof 7; shuffle p95 49.63226367515322)
+  f_peaks: {'n_peaks': 6, 'note': None}
+  null_stacks on real quick-run pixels OK
+(f) null_stacks statistics on synthetic residuals
+null stacks: 4 exposures, 800000 pixels -> /tmp/tmpdqlhcss6/null/null_stacks/m
+  (a) NRCB1: chi2/dof 0.9326412404091662  (dof 256; shuffle p95 293.65856253298)
+null stacks: 4 exposures, 800000 pixels -> /tmp/tmpdqlhcss6/bias/null_stacks/m
+  (a) NRCB1: chi2/dof 138.11586454814588  (dof 256; shuffle p95 302.4115016036977)
+null stacks: 4 exposures, 1600000 pixels -> /tmp/tmpdqlhcss6/floor/null_stacks/m
+  (a) NRCB1: chi2/dof 1.0339193160937044  (dof 256; shuffle p95 323.81937469115053)
+  noise only chi2/dof 0.93; row bias chi2/dof 278; floor recovered 0.0316 (true 0.03), a 1.00
+  null_stacks statistics OK
+
+ALL TESTS PASSED

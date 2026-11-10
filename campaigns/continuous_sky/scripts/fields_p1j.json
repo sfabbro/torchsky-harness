@@ -1,0 +1,36 @@
+{
+  "description": "P1j joint global-local fit: LMC NIRCam calibration tiles (plan_lmc.json, A13 registration shifts, tiles 5 and 9 held out for T5) + SMACS J0723 (JWST NIRCam _cal + HST WFC3/IR _flt, programmes 14096 and 16729, opfield_v5_wfc3ir_all3 data arguments). Global opfield flags (halo, loss, psi-param, two-scale, importance sampling ...) are on the command line; per-field overrides are in 'args'.",
+  "fields": [
+    {
+      "name": "SMACS",
+      "type": "frames",
+      "opfield_metrics": true,
+      "args": {
+        "data_dir": "/arc/projects/ots/torchsky-data/jwst_smacs0723/cal",
+        "hst_dir": "/arc/projects/ots/torchsky-data/hst_smacs0723/raw",
+        "hst_manifest": "/arc/projects/ots/torchsky-data/hst_smacs0723/hst_imaging_unique.csv",
+        "hst_programs": "14096,16729",
+        "hst_instruments": "WFC3/IR",
+        "hst_wcs": "apriori",
+        "holdout_from": "/arc/projects/ots/adass2026/scripts/holdout_q5_cal.json",
+        "n_test": 2,
+        "n_val": 1,
+        "ra": 110.8268,
+        "dec": -73.4544,
+        "size": 640,
+        "coarse_shift": 1.0
+      }
+    },
+    {
+      "name": "LMC",
+      "type": "plan",
+      "plan": "/arc/projects/ots/adass2026/p1/plan_lmc.json",
+      "shifts_from": "/arc/projects/ots/adass2026/p1/register_xcorr_v2_r3/register_xcorr.json",
+      "tile_use": "all",
+      "n_test_tile": 2,
+      "n_val": 0,
+      "nuis_steps": 150,
+      "heldout_tile_ids": [5, 9]
+    }
+  ]
+}

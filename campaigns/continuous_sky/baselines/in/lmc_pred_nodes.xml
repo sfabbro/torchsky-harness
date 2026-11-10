@@ -1,0 +1,695 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vos:node xmlns:vos="http://www.ivoa.net/xml/VOSpace/v2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither" xsi:type="vos:ContainerNode">
+  <vos:properties>
+    <vos:property uri="ivo://cadc.nrc.ca/vospace/core#inheritPermissions">true</vos:property>
+    <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+    <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:24.824</vos:property>
+    <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+    <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+    <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">258513844</vos:property>
+  </vos:properties>
+  <vos:nodes>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001012_02101_00001_nrca1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:37.384</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">6632395</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476104001_02105_00001_nrca2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:22.432</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2240554</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00001_nrcb3.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:24.206</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4154195</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001008_02101_00001_nrcb3.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:54.866</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">1308195</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00001_nrcb1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:06:49.792</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4801002</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00001_nrca2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:38.482</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4186308</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476104001_02105_00001_nrca4.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:42.864</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">6261914</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00006_nrcblong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:50.361</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4480247</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001002_02101_00005_nrcalong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:20.214</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2140605</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00002_nrcb2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:26.130</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">1650599</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001001_02101_00003_nrcalong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:21.730</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2137518</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001012_02101_00001_nrcb3.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:24.971</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">1290394</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00003_nrcb4.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:23.212</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2903012</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00003_nrca1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:17.143</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">1835322</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476004001_04101_00001_nrca2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:31.723</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">3882090</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00002_nrcb1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:08.904</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">8715686</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00003_nrcb1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:45.520</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">7273373</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001012_02101_00001_nrcb4.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:12.918</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">12471627</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00001_nrcb4.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:15.139</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">6443312</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001008_02101_00003_nrcb2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:31.869</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">699373</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001012_02101_00001_nrca2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:39.121</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">1809553</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00001_nrca1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:17.256</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4076156</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00002_nrcalong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:21.991</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2179877</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00002_nrcb3.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:58.685</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">11914740</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476004001_04101_00001_nrca1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:32.782</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">1383254</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00003_nrcb2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:02.600</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">497487</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00002_nrca1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:17.853</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">1915438</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001006_02101_00002_nrcblong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:01.792</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4450413</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476004001_04101_00001_nrca4.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:07.875</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">6829439</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476104001_02105_00001_nrca3.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:04.682</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">7505567</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001012_02101_00001_nrcb2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:06:50.498</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2778888</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001008_02101_00001_nrcb4.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:12.036</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">12231991</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00002_nrcb1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:46.323</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">3245008</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00002_nrcb3.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:16.170</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2492019</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001008_02101_00003_nrcb3.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:14.547</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">6632324</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001008_02101_00001_nrcb2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:33.209</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2700271</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00002_nrca4.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:40.795</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4787505</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001006_02101_00002_nrcalong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:28.896</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2120907</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00002_nrca3.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:27.418</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">1367625</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001008_02101_00003_nrca2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:06:45.306</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">6377085</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476003001_05101_00002_nrcblong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:26.625</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">3675898</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00002_nrcblong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:54.136</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4492951</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00002_nrcb4.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:05.959</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">3349170</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476004001_04101_00001_nrca3.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:16.432</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4858179</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00002_nrca2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:19.427</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">6717143</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001008_02101_00003_nrcb4.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:31.175</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2941661</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001008_02101_00001_nrca1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:06:46.973</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">6626911</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00001_nrcb2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:18.848</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2361159</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00002_nrca2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:17.539</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">814219</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001002_02101_00005_nrcblong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:06:54.715</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4290889</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw04447002002_04101_00002_nrcalong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:06:58.536</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4174129</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001008_02101_00001_nrca2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:32.446</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">1798274</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001006_02101_00003_nrcblong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:05.643</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">4664469</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001008_02101_00003_nrca1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:06:47.578</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">1838917</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001011_02101_00002_nrcb4.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:26.897</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2064138</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00003_nrca2.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:20.713</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">6396148</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001008_02101_00003_nrcb1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:35.483</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">6957488</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00003_nrcb3.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:01.326</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">7252263</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476104001_02105_00001_nrca1.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:02.044</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2484292</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001006_02101_00003_nrcalong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:08:30.404</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2118838</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001004_02101_00006_nrcalong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:23.175</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">2227407</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+    <vos:node uri="vos://cadc.nrc.ca~arc/projects/ots/adass2026/protocol/v1/pred/LMC/stage3_blot/dither/jw01476001001_02101_00003_nrcblong.npz" xsi:type="vos:DataNode" busy="false">
+      <vos:properties>
+        <vos:property uri="ivo://ivoa.net/vospace/core#creator" readOnly="true">sfabbro</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#date" readOnly="true">2026-11-10T00:07:30.083</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#groupwrite">ivo://cadc.nrc.ca/gms?ots</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#ispublic">true</vos:property>
+        <vos:property uri="ivo://ivoa.net/vospace/core#length" readOnly="true">3606033</vos:property>
+      </vos:properties>
+      <vos:accepts />
+      <vos:provides />
+    </vos:node>
+  </vos:nodes>
+</vos:node>

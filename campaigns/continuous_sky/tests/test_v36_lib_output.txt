@@ -1,0 +1,37 @@
+(a) PASS: synthetic library read back; NRCBLONG -> NRCB5; WFC3 centre index 4; unexpected grid shape handled and logged
+    info: torch bicubic grid_sample (Keys a = -0.75) instead of the cubic B-spline: rel L1 vs analytic cell mean 2.67e-03
+(b) theta 0, parity +1, M = diag(2.0, 2.0), core sigma 1.5 detector px: rel L1 vs analytic cell mean 7.27e-04; vs trapezoid-integrated library 4.09e-03; sum 1.000000; centroid (-2.9e-08, -1.1e-08) px
+    info: core sigma 1.2 px, s = 2.0: rel L1 vs analytic cell mean 1.13e-03
+    info: core sigma 0.43 px, s = 1.29: rel L1 vs analytic cell mean 1.83e-02
+    info: core sigma 0.43 px, s = 2.0: rel L1 vs analytic cell mean 7.42e-03
+    info: core sigma 0.7 px, s = 1.29: rel L1 vs analytic cell mean 7.20e-03
+    theta 90 vs rot90(K0, -1) 4.9e-08, vs rot90(K0, +1) 3.9e-01; theta 180 vs rot180 8.6e-08; parity -1 vs flipud(K0) 6.6e-08 (vs fliplr 3.9e-01); asymmetry of K0 (vs its own flip) 0.29
+(b) PASS
+(c) PASS: zero-residual kernels == library kernels bitwise ((2, 1, 31, 31)), node path (4, 1, 31, 31), last-layer grads finite and nonzero, penalty 0 at warm start and 0.295 after a residual offset, detector-frame dump (161, 161)
+    smoke run: exit 0 in 16 s
+    | [     0.7s] library PSF: PSF groups keyed by (band, theta, parity, detector); nk = 1, no spatial variation of the PSF over the detector (E2)
+    | [     3.9s] WARNING: F090W: run nodes [0.83, 0.8997, 0.9703] differ from the library nodes [0.8222, 0.8575, 0.8922, 0.9275, 0.9625, 0.9984] by up to 0.0078 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     3.9s] WARNING: F150W: run nodes [1.3845, 1.4969, 1.6111] differ from the library nodes [1.3665, 1.4228, 1.4782, 1.5348, 1.5924, 1.6503] by up to 0.0187 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     3.9s] WARNING: F200W: run nodes [1.8274, 1.9809, 2.1424] differ from the library nodes [1.7997, 1.8751, 1.9518, 2.0305, 2.1108, 2.1949] by up to 0.0316 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     3.9s] WARNING: F277W: run nodes [2.5242, 2.7453, 2.9883] differ from the library nodes [2.4804, 2.5893, 2.6989, 2.8131, 2.9327, 3.0696] by up to 0.0556 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     3.9s] WARNING: F356W: run nodes [3.2798, 3.5624, 3.8378] differ from the library nodes [3.2165, 3.3599, 3.5029, 3.6408, 3.7779, 3.9194] by up to 0.0633 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     3.9s] WARNING: F444W: run nodes [4.0375, 4.3694, 4.761] differ from the library nodes [3.9678, 4.1277, 4.2932, 4.4693, 4.6624, 4.8887] by up to 0.0986 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     4.0s] sky init: Richardson-Lucy x 5 with the library kernels in 0.1 s; fraction of flux changed (L1 of the change over L1 of image - background) F090W 0.537, F150W 0.523, F200W 0.531, F277W 0.254, F356W 0.266, F444W 0.279
+    | [     4.0s] WARNING: F090W: run nodes [0.83, 0.8997, 0.9703] differ from the library nodes [0.8222, 0.8575, 0.8922, 0.9275, 0.9625, 0.9984] by up to 0.0078 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     4.0s] WARNING: F150W: run nodes [1.3845, 1.4969, 1.6111] differ from the library nodes [1.3665, 1.4228, 1.4782, 1.5348, 1.5924, 1.6503] by up to 0.0187 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     4.0s] WARNING: F200W: run nodes [1.8274, 1.9809, 2.1424] differ from the library nodes [1.7997, 1.8751, 1.9518, 2.0305, 2.1108, 2.1949] by up to 0.0316 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     4.0s] WARNING: F277W: run nodes [2.5242, 2.7453, 2.9883] differ from the library nodes [2.4804, 2.5893, 2.6989, 2.8131, 2.9327, 3.0696] by up to 0.0556 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     4.0s] WARNING: F356W: run nodes [3.2798, 3.5624, 3.8378] differ from the library nodes [3.2165, 3.3599, 3.5029, 3.6408, 3.7779, 3.9194] by up to 0.0633 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     4.0s] WARNING: F444W: run nodes [4.0375, 4.3694, 4.761] differ from the library nodes [3.9678, 4.1277, 4.2932, 4.4693, 4.6624, 4.8887] by up to 0.0986 um (> 2e-3): nearest library node used for each run node (indices [0, 2, 4])
+    | [     4.0s] explicit_lib_3d: library PSF warm start = the library itself (residual networks zero-initialised): 20.1 k residual parameters
+    | [    14.3s] TEST explicit_lib_3d: chi2 all 2.5027 src 6.7574 | robust all 1.5300 src 2.6479
+(d) PASS: exit 0, finite held-out scores ['2.5027', '6.7574', '1.5300', '2.6479'], window 25 px, detector-frame dump keys ['NRCB3/F090W', 'NRCB3/F150W', 'NRCB3/F200W', 'NRCBLONG/F277W', 'NRCBLONG/F356W', 'NRCBLONG/F444W']
+(f) PASS: gauss table vs analytic rel L1 2.1e-08; differentiable prefilter vs scipy max rel diff 5.7e-08; learnable-table cell-mean error sigma 1.2: 1.14e-03, sigma 1.5: 7.31e-04; start kernel == fixed-table kernel (rel L1 3.4e-07); theta grad finite and nonzero; table positive, unit sum; sky kernel min/max -2.1e-10 (spline undershoot), sum 1.000000 after a random theta step; gauge penalty at start 1.7e-17, tv+gauge 1.10e-02 -> 1.60e-02 after noise
+    smoke run: exit 0 in 13 s
+    | [     4.0s] data-driven arm: generic Gaussian tables sigma 1.0 detector px, oversampling 4, no physics library; learnable tables: True (APPROXIMATION when learnable: one achromatic table per (detector, band)), residual networks: False
+    | [     4.1s] sky init: Richardson-Lucy x 5 with the library kernels in 0.1 s; fraction of flux changed (L1 of the change over L1 of image - background) F090W 0.573, F150W 0.551, F200W 0.543, F277W 0.262, F356W 0.271, F444W 0.279
+    | [     4.1s] data-driven arm: generic Gaussian tables sigma 1.0 detector px, oversampling 4, no physics library; learnable tables: True (APPROXIMATION when learnable: one achromatic table per (detector, band)), residual networks: False
+    | [    11.4s] TEST explicit_lib_3d: chi2 all 2.5306 src 6.5872 | robust all 1.5927 src 2.7377
+(g) PASS: exit 0, finite held-out scores ['2.5306', '6.5872', '1.5927', '2.7377'], learned tables in the dump ['NRCB3/F090W', 'NRCB3/F150W', 'NRCB3/F200W', 'NRCBLONG/F277W', 'NRCBLONG/F356W', 'NRCBLONG/F444W'], state has psf.tab.*, no psf.nets.*; max L1 table change 0.103
+
+ALL REQUESTED TESTS DONE

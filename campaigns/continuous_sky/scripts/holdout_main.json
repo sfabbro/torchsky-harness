@@ -1,0 +1,96 @@
+{
+ "timings": {
+  "swarp_lanczos3": 24.1,
+  "drizzle_square": 16.2,
+  "explicit_fixedgeom": 0.0,
+  "explicit": 0.0,
+  "implicit": 0.9
+ },
+ "metrics": {
+  "heldout_chi2": {
+   "swarp": 5.913588077017974,
+   "drizzle": 5.8476717292034275,
+   "explicit_fixedgeom": 5.5697333149374195,
+   "explicit": 5.551577114704519,
+   "implicit": 5.305096559855101
+  },
+  "heldout_chi2_sources": {
+   "swarp": 3.1943629872970853,
+   "drizzle": 2.699385498150006,
+   "explicit_fixedgeom": 2.412693921704333,
+   "explicit": 2.4937549296634556,
+   "implicit": 2.3484291139735833
+  },
+  "explicit_fixedgeom_psf_core_fwhm_arcsec": {
+   "F090W": 0.02284851111471653,
+   "F150W": 0.03291536867618561,
+   "F200W": 0.03587927296757698,
+   "F277W": 0.04976701736450195,
+   "F356W": 0.05818663537502289,
+   "F444W": 0.07926344126462936
+  },
+  "explicit_fixedgeom_gain_rms": 0.002160001778975129,
+  "explicit_shift_rms_mas": 5.90261173248291,
+  "explicit_psf_core_fwhm_arcsec": {
+   "F090W": 0.023546453565359116,
+   "F150W": 0.03387843817472458,
+   "F200W": 0.03925304859876633,
+   "F277W": 0.05860365182161331,
+   "F356W": 0.07275417447090149,
+   "F444W": 0.09330234676599503
+  },
+  "explicit_gain_rms": 0.0019509977428242564,
+  "implicit_shift_rms_mas": 10.320523262023926,
+  "implicit_gain_rms": 0.0030023606959730387
+ },
+ "device": "NVIDIA H100 NVL MIG 1g.12gb",
+ "target": {
+  "NAXIS": 2,
+  "NAXIS1": 512,
+  "NAXIS2": 512,
+  "CTYPE1": "RA---TAN",
+  "CTYPE2": "DEC--TAN",
+  "CUNIT1": "deg",
+  "CUNIT2": "deg",
+  "CRVAL1": 110.8268,
+  "CRVAL2": -73.4544,
+  "CRPIX1": 256.5,
+  "CRPIX2": 256.5,
+  "CD1_1": -1.1111111111111112e-05,
+  "CD1_2": 0.0,
+  "CD2_1": 0.0,
+  "CD2_2": 1.1111111111111112e-05
+ },
+ "detectors": [
+  "NRCB1",
+  "NRCB2",
+  "NRCB3",
+  "NRCB4",
+  "NRCBLONG"
+ ],
+ "exposures_per_band": {
+  "F090W": 32,
+  "F150W": 32,
+  "F200W": 32,
+  "F277W": 9,
+  "F356W": 9,
+  "F444W": 9
+ },
+ "holdout": [
+  "034_jw02736001001_02101_00009_nrcb3_o001_crf_rshift_tweakreg.fits",
+  "070_jw02736001001_02103_00009_nrcb3_o001_crf_rshift_tweakreg.fits",
+  "106_jw02736001001_02105_00009_nrcb3_o001_crf_rshift_tweakreg.fits",
+  "114_jw02736001001_02101_00007_nrcblong_o001_crf_rshift_tweakreg.fits",
+  "119_jw02736001001_02103_00003_nrcblong_o001_crf_rshift_tweakreg.fits",
+  "128_jw02736001001_02105_00003_nrcblong_o001_crf_rshift_tweakreg.fits"
+ ],
+ "display_norm": [
+  0.732785165309906,
+  1.7522302865982056,
+  2.240281581878662,
+  2.2042858600616455,
+  1.4437694549560547,
+  1.1614030599594116
+ ],
+ "display_stretch": 1.0005642175674438
+}

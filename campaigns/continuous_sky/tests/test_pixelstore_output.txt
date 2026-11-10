@@ -1,0 +1,238 @@
+[13:07:42] job jwst-0of1: done-marker exists, skipping
+[13:07:42] job hst-0of1: done-marker exists, skipping
+[13:07:42] job spitzer-0of1: done-marker exists, skipping
+[13:07:42] job spherex-0of1: done-marker exists, skipping
+[13:07:42] job galex-0of1: done-marker exists, skipping
+[13:07:42] exposures.parquet/json: 17 exposures
+
+(a) galex    AIS_427_0001_sg47-fd-int                         core rows   102,114 identical to independent read (data, ivar, dq exact)
+(a) galex    AIS_427_0001_sg47-nd-int                         core rows   102,350 identical to independent read (data, ivar, dq exact)
+(a) spitzer  SPITZER_I1_48186112_0000_0000_2                  core rows    22,968 identical to independent read (data, ivar, dq exact)
+(a) spitzer  SPITZER_I2_48186112_0005_0000_2                  core rows     7,275 identical to independent read (data, ivar, dq exact)
+(a) hst      iczgzbmaq_sci1                                   core rows 1,011,895 identical to independent read (data, ivar, dq exact)
+(a) hst      iepl84jtq_sci1                                   core rows 8,129,602 identical to independent read (data, ivar, dq exact)
+(a) hst      iepl84jtq_sci2                                   core rows 8,133,467 identical to independent read (data, ivar, dq exact)
+(a) hst      jczgz3k6q_sci1                                   core rows 8,078,933 identical to independent read (data, ivar, dq exact)
+(a) hst      jczgz3k6q_sci2                                   core rows 8,066,189 identical to independent read (data, ivar, dq exact)
+(a) jwst     jw02736001001_02101_00002_nrcb3_cal.fits         core rows 3,718,943 identical to independent read (data, ivar, dq exact)
+(a) jwst     jw02736001001_02101_00002_nrcblong_cal.fits      core rows 3,515,529 identical to independent read (data, ivar, dq exact)
+(a) jwst     jw02736002001_02103_00008_mirimage_cal.fits      core rows   568,494 identical to independent read (data, ivar, dq exact)
+(a) jwst     jw02736003001_02103_00002_nis_cal.fits           core rows 4,033,852 identical to independent read (data, ivar, dq exact)
+(a) jwst     jw04043001001_14101_00002_nrca1_cal.fits         core rows 2,925,663 identical to independent read (data, ivar, dq exact)
+(a) spherex  level2_2025W28_1B_0606_2D6_spx_l2b-v20-2025-260_ core rows     5,949 identical to independent read (data, ivar, dq exact)
+(a) spherex  level2_2025W30_1B_0429_3D2_spx_l2b-v20-2025-262_ core rows     5,911 identical to independent read (data, ivar, dq exact)
+(a) spherex  level2_2026W38_2A_0141_1D4_spx_l2b-v27-2026-264_ core rows     5,865 identical to independent read (data, ivar, dq exact)
+(a) reader tile (7,7): 14 exposures, fragment values/positions reproduced
+.
+(b) GALEX    halo 15.0" AIS_427_0001_sg47-fd-int                 px   115,073 rows    408,522 dup x3.55 copies hist {1: 1542, 2: 23572, 4: 89959} in_core==1 for 102,114 box px
+(b) GALEX    halo 15.0" AIS_427_0001_sg47-nd-int                 px   115,134 rows    408,992 dup x3.55 copies hist {1: 1278, 2: 23855, 4: 90001} in_core==1 for 102,350 box px
+(b) IRAC     halo 10.0" SPITZER_I1_48186112_0000_0000_2          px    25,512 rows     63,903 dup x2.50 copies hist {1: 4097, 2: 12927, 4: 8488} in_core==1 for 22,968 box px
+(b) IRAC     halo 10.0" SPITZER_I2_48186112_0005_0000_2          px     8,758 rows     20,501 dup x2.34 copies hist {1: 1729, 2: 4672, 4: 2357} in_core==1 for 7,275 box px
+(b) WFC3/IR  halo  2.5" iczgzbmaq_sci1                           px 1,011,895 rows  1,374,792 dup x1.36 copies hist {1: 703342, 2: 281381, 4: 27172} in_core==1 for 1,011,895 box px
+(b) WFC3/UVIS halo  2.5" iepl84jtq_sci1                           px 8,129,602 rows 11,045,521 dup x1.36 copies hist {1: 5628281, 2: 2294022, 4: 207299} in_core==1 for 8,129,602 box px
+(b) WFC3/UVIS halo  2.5" iepl84jtq_sci2                           px 8,133,467 rows 11,057,069 dup x1.36 copies hist {1: 5625791, 2: 2299713, 4: 207963} in_core==1 for 8,133,467 box px
+(b) ACS/WFC  halo  2.5" jczgz3k6q_sci1                           px 8,078,933 rows 11,012,113 dup x1.36 copies hist {1: 5607239, 2: 2240951, 4: 230743} in_core==1 for 8,078,933 box px
+(b) ACS/WFC  halo  2.5" jczgz3k6q_sci2                           px 8,066,189 rows 10,950,414 dup x1.36 copies hist {1: 5622520, 2: 2223391, 4: 220278} in_core==1 for 8,066,189 box px
+(b) NIRCam   halo  2.5" jw02736001001_02101_00002_nrcb3_cal.fits px 3,718,943 rows  5,040,554 dup x1.36 copies hist {1: 2609862, 2: 1002816, 4: 106265} in_core==1 for 3,718,943 box px
+(b) NIRCam   halo  2.5" jw02736001001_02101_00002_nrcblong_cal.f px 3,515,529 rows  4,795,976 dup x1.36 copies hist {1: 2434116, 2: 981896, 4: 99517} in_core==1 for 3,515,529 box px
+(b) MIRI     halo  5.0" jw02736002001_02103_00008_mirimage_cal.f px   568,494 rows  1,001,482 dup x1.76 copies hist {1: 252546, 2: 257428, 4: 58520} in_core==1 for 568,494 box px
+(b) NIRISS   halo  2.5" jw02736003001_02103_00002_nis_cal.fits   px 4,033,852 rows  5,491,548 dup x1.36 copies hist {1: 2800444, 2: 1121264, 4: 112144} in_core==1 for 4,033,852 box px
+(b) NIRCam   halo  2.5" jw04043001001_14101_00002_nrca1_cal.fits px 2,925,663 rows  3,985,443 dup x1.36 copies hist {1: 2022613, 2: 824685, 4: 78365} in_core==1 for 2,925,663 box px
+(b) SPHEREx  halo 30.0" level2_2025W28_1B_0606_2D6_spx_l2b-v20-2 px     7,186 rows     52,948 dup x7.37 copies hist {2: 42, 3: 1195, 4: 67, 6: 1309, 9: 4573} in_core==1 for 5,949 box px
+(b) SPHEREx  halo 30.0" level2_2025W30_1B_0429_3D2_spx_l2b-v20-2 px     7,016 rows     52,580 dup x7.49 copies hist {3: 1105, 4: 14, 6: 1288, 9: 4609} in_core==1 for 5,911 box px
+(b) SPHEREx  halo 30.0" level2_2026W38_2A_0141_1D4_spx_l2b-v27-2 px     6,937 rows     52,099 dup x7.51 copies hist {3: 1072, 4: 13, 6: 1279, 9: 4573} in_core==1 for 5,865 box px
+.
+(c) GALEX    AIS_427_0001_sg47-fd-int                  40000 px  max 0.00067 mas  median 0.00038 mas   [WCS rebuilt from header_json]
+(c) GALEX    AIS_427_0001_sg47-nd-int                  40000 px  max 0.00067 mas  median 0.00038 mas   [WCS rebuilt from header_json]
+(c) IRAC     SPITZER_I1_48186112_0000_0000_2           22968 px  max 0.00067 mas  median 0.00038 mas   [WCS rebuilt from header_json]
+(c) IRAC     SPITZER_I2_48186112_0005_0000_2            7275 px  max 0.00067 mas  median 0.00038 mas   [WCS rebuilt from header_json]
+(c) WFC3/IR  iczgzbmaq_sci1                            40000 px  max 0.00067 mas  median 0.00038 mas   [hst_io.hst_wcs (a priori, SIP+D2IM+CPDIS)]
+(c) WFC3/UVIS iepl84jtq_sci1                            40000 px  max 0.00067 mas  median 0.00038 mas   [hst_io.hst_wcs (a priori, SIP+D2IM+CPDIS)]
+(c) WFC3/UVIS iepl84jtq_sci2                            40000 px  max 0.00067 mas  median 0.00038 mas   [hst_io.hst_wcs (a priori, SIP+D2IM+CPDIS)]
+(c) ACS/WFC  jczgz3k6q_sci1                            40000 px  max 0.00067 mas  median 0.00038 mas   [hst_io.hst_wcs (a priori, SIP+D2IM+CPDIS)]
+(c) ACS/WFC  jczgz3k6q_sci2                            40000 px  max 0.00067 mas  median 0.00038 mas   [hst_io.hst_wcs (a priori, SIP+D2IM+CPDIS)]
+(c) NIRCam   jw02736001001_02101_00002_nrcb3_cal.fits  40000 px  max 0.00067 mas  median 0.00038 mas   [WCS rebuilt from header_json]
+(c) NIRCam   jw02736001001_02101_00002_nrcblong_cal.f  40000 px  max 0.00067 mas  median 0.00038 mas   [WCS rebuilt from header_json]
+(c) MIRI     jw02736002001_02103_00008_mirimage_cal.f  40000 px  max 0.00067 mas  median 0.00038 mas   [WCS rebuilt from header_json]
+(c) NIRISS   jw02736003001_02103_00002_nis_cal.fits    40000 px  max 0.00067 mas  median 0.00038 mas   [WCS rebuilt from header_json]
+(c) NIRCam   jw04043001001_14101_00002_nrca1_cal.fits  40000 px  max 0.00067 mas  median 0.00038 mas   [WCS rebuilt from header_json]
+(c) SPHEREx  level2_2025W28_1B_0606_2D6_spx_l2b-v20-2   5949 px  max 0.00067 mas  median 0.00038 mas   [IMAGE WCS, cutout pixel = detector - (1 - CRPIXA)]
+(c) SPHEREx  level2_2025W30_1B_0429_3D2_spx_l2b-v20-2   5911 px  max 0.00067 mas  median 0.00038 mas   [IMAGE WCS, cutout pixel = detector - (1 - CRPIXA)]
+(c) SPHEREx  level2_2026W38_2A_0141_1D4_spx_l2b-v27-2   5865 px  max 0.00067 mas  median 0.00038 mas   [IMAGE WCS, cutout pixel = detector - (1 - CRPIXA)]
+.
+(d) units sanity: median of `data` over kept rows, MJy/sr per nominal pixel (surface brightness)
+    mission  band           name                                          median        p16        p84       mean  median err (1/sqrt ivar)   kept/region
+    galex    GALEX_FUV      AIS_427_0001_sg47-fd-int                           0          0          0   0.002609    0.007626               0.995
+    galex    GALEX_NUV      AIS_427_0001_sg47-nd-int                           0          0   0.009445   0.004296    0.005995               0.996
+    hst      ACS_F814W      jczgz3k6q_sci2                               0.17725     0.1312     0.2278     0.2187     0.03939               0.962
+    hst      ACS_F814W      jczgz3k6q_sci1                               0.17691     0.1315     0.2264     0.2143     0.03951               0.963
+    hst      UVIS_F606W     iepl84jtq_sci2                               0.24558     0.1761     0.3205     0.2639     0.06686               0.968
+    hst      UVIS_F606W     iepl84jtq_sci1                               0.24506      0.174     0.3203      0.283     0.06723               0.968
+    hst      WFC3IR_F160W   iczgzbmaq_sci1                               0.18995     0.1708      0.214     0.2545     0.01951               0.984
+    jwst     MIRI_F1000W    jw02736002001_02103_00008_mirimage_cal.f       11.65      11.59      11.72      11.66     0.04181               0.538
+    jwst     NIRCAM_F090W   jw02736001001_02101_00002_nrcb3_cal.fits     0.19151     0.1665     0.2196     0.2086     0.02359               0.887
+    jwst     NIRCAM_F115W   jw04043001001_14101_00002_nrca1_cal.fits     0.18171     0.1705     0.1936     0.1852     0.01055               0.698
+    jwst     NIRCAM_F277W   jw02736001001_02101_00002_nrcblong_cal.f    0.098293    0.09001     0.1157     0.1191    0.005641               0.838
+    jwst     NIRISS_F115W   jw02736003001_02103_00002_nis_cal.fits       0.18604     0.1584      0.218     0.2007     0.02429               0.962
+    spherex  SPHEREX_D2     level2_2025W30_1B_0429_3D2_spx_l2b-v20-2     0.19282     0.1725     0.2271     0.3073     0.01629               0.985
+    spherex  SPHEREX_D4     level2_2026W38_2A_0141_1D4_spx_l2b-v27-2     0.10854    0.09262     0.1398     0.1679     0.01124               0.986
+    spherex  SPHEREX_D6     level2_2025W28_1B_0606_2D6_spx_l2b-v20-2     0.38166       0.33     0.4392     0.3999      0.0478               0.981
+    spitzer  IRAC_I1        SPITZER_I1_48186112_0000_0000_2              -1.7116     -2.709    -0.7649     -1.629       1.278               0.998
+    spitzer  IRAC_I2        SPITZER_I2_48186112_0005_0000_2            -0.041005    -0.0699  -0.008222   -0.03255     0.03019               0.997
+    HST jczgz3k6q_sci2: hst_io.units_conversion: BUNIT=ELECTRONS; d = raw/EXPTIME * PHOTFNU(1.53226e-07 Jy s/e-, from PHOTFLAM*PHOTPLAM^2/c) * 1e-6 / Omega_nom, Omega_nom = (0.05 arcsec [IDCSCALE])^2; true/nominal area ratio NOT applied
+    HST iepl84jtq_sci2: hst_io.units_conversion: BUNIT=ELECTRONS; d = raw/EXPTIME * PHOTFNU(1.37218e-07 Jy s/e-, from PHOTFNU) * 1e-6 / Omega_nom, Omega_nom = (0.03962 arcsec [IDCSCALE])^2; true/nominal area ratio NOT applied
+    HST jczgz3k6q_sci1: hst_io.units_conversion: BUNIT=ELECTRONS; d = raw/EXPTIME * PHOTFNU(1.53226e-07 Jy s/e-, from PHOTFLAM*PHOTPLAM^2/c) * 1e-6 / Omega_nom, Omega_nom = (0.05 arcsec [IDCSCALE])^2; true/nominal area ratio NOT applied
+    GALEX GALEX_NUV: int [count/s/pixel] * 3631 Jy * 10^(-0.4*20.08) * 1e-6 / Omega_pix, Omega_pix = (1.5 arcsec)^2 (AB ZP NUV = 20.08, Morrissey et al. 2007 ApJS 173, 682); K = 0.637814 MJy/sr per cps/pix
+    GALEX GALEX_FUV: int [count/s/pixel] * 3631 Jy * 10^(-0.4*18.82) * 1e-6 / Omega_pix, Omega_pix = (1.5 arcsec)^2 (AB ZP FUV = 18.82, Morrissey et al. 2007 ApJS 173, 682); K = 2.03561 MJy/sr per cps/pix
+    HST iepl84jtq_sci1: hst_io.units_conversion: BUNIT=ELECTRONS; d = raw/EXPTIME * PHOTFNU(1.37561e-07 Jy s/e-, from PHOTFNU) * 1e-6 / Omega_nom, Omega_nom = (0.03962 arcsec [IDCSCALE])^2; true/nominal area ratio NOT applied
+    HST iczgzbmaq_sci1: hst_io.units_conversion: BUNIT=ELECTRONS/S; d = raw * PHOTFNU(1.53358e-07 Jy s/e-, from PHOTFNU) * 1e-6 / Omega_nom, Omega_nom = (0.1282500028610229 arcsec [IDCSCALE])^2; true/nominal area ratio NOT applied
+.
+(e) SPHEREX_D2 level2_2025W30_1B_0429_3D2_spx_l2b-v20-2025-262_cu: lambda 1.2944-1.3206 um within detector range 1.1033-1.6499 um
+(e) SPHEREX_D4 level2_2026W38_2A_0141_1D4_spx_l2b-v27-2026-264_cu: lambda 2.5435-2.6012 um within detector range 2.4027-3.8473 um
+(e) SPHEREX_D6 level2_2025W28_1B_0606_2D6_spx_l2b-v20-2025-260_cu: lambda 4.7115-4.7397 um within detector range 4.4115-5.0096 um
+.
+(f) tile (7,7): 9 exposures (2 NIRCam, 5 HST chips)
+    registry bands ['F090W', 'F277W', 'UVIS_F606W', 'ACS_F814W', 'WFC3IR_F160W']; splat_coadd of the HST chips -> (750, 750), 562500 filled px; select_exposures holdout []
+    SKIPPED comparison with smacs_four_v31.load_exposures: Encountered an error while initializing the extension.
+    vs hst_io.load_hst_exposures (iczgzbmaq_flt.fits): 62,928 common px, d, ivar, dq identical, max |dtx| = 0.0001 px
+.
+(g) measured on the samples:
+    ACS/WFC    n=2 rows/exposure(sample)   10,981,264  bytes/row   9.81  kept(mask) 0.962  pixel 0.0500"  t/exposure 8.49s
+    GALEX      n=2 rows/exposure(sample)      408,757  bytes/row   7.97  kept(mask) 0.996  pixel 1.5000"  t/exposure 1.01s
+    IRAC       n=2 rows/exposure(sample)       42,202  bytes/row  13.53  kept(mask) 0.998  pixel 1.2195"  t/exposure 0.10s
+    MIRI       n=1 rows/exposure(sample)    1,001,482  bytes/row   9.91  kept(mask) 0.538  pixel 0.1103"  t/exposure 0.76s
+    NIRCam-LW  n=1 rows/exposure(sample)    4,795,976  bytes/row  10.08  kept(mask) 0.838  pixel 0.0630"  t/exposure 3.40s
+    NIRCam-SW  n=2 rows/exposure(sample)    4,512,998  bytes/row   9.81  kept(mask) 0.792  pixel 0.0310"  t/exposure 3.41s
+    NIRISS     n=1 rows/exposure(sample)    5,491,548  bytes/row   8.80  kept(mask) 0.962  pixel 0.0655"  t/exposure 3.67s
+    SPHEREx    n=3 rows/exposure(sample)       52,542  bytes/row  21.35  kept(mask) 0.984  pixel 6.1530"  t/exposure 0.35s
+    WFC3/IR    n=1 rows/exposure(sample)    1,374,792  bytes/row   9.57  kept(mask) 0.984  pixel 0.1283"  t/exposure 0.87s
+    WFC3/UVIS  n=2 rows/exposure(sample)   11,051,295  bytes/row   9.19  kept(mask) 0.968  pixel 0.0396"  t/exposure 8.07s
+
+    estimator check (manifest footprint -> predicted rows, vs actual rows of the sample file):
+      jw04043001001_14101_00002_nrca1_cal.fits         predicted    3,987,637  actual    3,985,443  ratio 1.001
+      jw02736001001_02101_00002_nrcblong_cal.fits      predicted    4,822,769  actual    4,795,976  ratio 1.006
+      jw02736001001_02101_00002_nrcb3_cal.fits         predicted    5,052,340  actual    5,040,554  ratio 1.002
+      jw02736003001_02103_00002_nis_cal.fits           predicted    5,490,655  actual    5,491,548  ratio 1.000
+      jw02736002001_02103_00008_mirimage_cal.fits      predicted    1,006,684  actual    1,001,482  ratio 1.005
+      SPITZER_I1_48186112_0000_0000_2                  predicted       63,445  actual       63,903  ratio 0.993
+      SPITZER_I2_48186112_0005_0000_2                  predicted       19,818  actual       20,501  ratio 0.967
+      level2_2025W28_1B_0606_2D6_spx_l2b-v20-2025-260_ predicted       53,631  actual       52,948  ratio 1.013
+      level2_2025W30_1B_0429_3D2_spx_l2b-v20-2025-262_ predicted       54,186  actual       52,580  ratio 1.031
+      level2_2026W38_2A_0141_1D4_spx_l2b-v27-2026-264_ predicted       53,898  actual       52,099  ratio 1.035
+
+    expected union (footprints from the manifests):
+    class      #exposures             rows   B/row       GB  fragments
+    NIRCam-SW         552    2,492,529,665    9.81     24.4      6,900
+    NIRCam-LW         106      508,378,653   10.08      5.1      3,498
+    NIRISS             24      131,818,737    8.80      1.2        864
+    MIRI               40       40,240,591    9.91      0.4      1,040
+    IRAC             3486      411,944,117   13.53      5.6    151,641
+    SPHEREx           718       33,025,807   21.35      0.7    183,808
+    GALEX               6        2,452,542    7.97      0.0      1,536
+    WFC3/IR            88      120,981,696    9.57      1.2      2,816
+    ACS/WFC            14      307,475,378    9.81      3.0        525
+    WFC3/UVIS           6      132,615,540    9.19      1.2        186
+    TOTAL rows 4,181,462,725  ~ 43 GB parquet (zstd), ~155 GB uncompressed in-memory at 37 B/row; ~352,814 fragment files
+    extraction CPU time ~ 0.9 core-hours for 5040 exposures (sample mean time per class)
+.[13:09:04] spitzer: 2 input files (shard -)
+[13:09:04] SPITZER_I1_48186112_0000_0000_2_cbcd.fits: 1 unit(s), 63903 rows, 0.1s
+[13:09:04] SPITZER_I2_48186112_0005_0000_2_cbcd.fits: 1 unit(s), 20501 rows, 0.1s
+[13:09:04] done {'files': 2, 'skipped_done': 0, 'units': 2, 'rows': 84404, 'fragments': 87}
+[13:09:04] spitzer: 2 input files (shard -)
+[13:09:04] done {'files': 0, 'skipped_done': 2, 'units': 0, 'rows': 0, 'fragments': 0}
+[13:09:04] spitzer: 2 input files (shard -)
+[13:09:04] SPITZER_I1_48186112_0000_0000_2_cbcd.fits: 1 unit(s), 63903 rows, 0.0s
+[13:09:04] SPITZER_I2_48186112_0005_0000_2_cbcd.fits: 1 unit(s), 20501 rows, 0.0s
+[13:09:04] done {'files': 2, 'skipped_done': 0, 'units': 2, 'rows': 84404, 'fragments': 1}
+[13:09:04] spitzer: 1 input files (shard 0/2)
+[13:09:04] SPITZER_I1_48186112_0000_0000_2_cbcd.fits: 1 unit(s), 63903 rows, 0.2s
+[13:09:04] done {'files': 1, 'skipped_done': 0, 'units': 1, 'rows': 63903, 'fragments': 63}
+[13:09:04] exposures.parquet/json: 1 exposures
+[13:09:04] spitzer: 1 input files (shard 1/2)
+[13:09:04] SPITZER_I2_48186112_0005_0000_2_cbcd.fits: 1 unit(s), 20501 rows, 0.1s
+[13:09:04] done {'files': 1, 'skipped_done': 0, 'units': 1, 'rows': 20501, 'fragments': 24}
+[13:09:04] exposures.parquet/json: 2 exposures
+[13:09:04] 717 manifest files not found under --data-dir (first: ['jw06882057001_03105_00004_nrcblong_cal.fits', 'jw06882057001_03105_00004_nrcb2_cal.fits', 'jw06882057001_03105_00004_nrcb3_cal.fits'])
+[13:09:04] 113 manifest files not found under --data-dir (first: ['idc82jjcq_flt.fits', 'iczgz2nsq_flt.fits', 'iczgz4kcq_flt.fits'])
+[13:09:04] spitzer: 1 input files (shard -)
+[13:09:04] SPITZER_I1_48186112_0000_0000_2_cbcd.fits: 1 unit(s), 63992 rows, 0.2s
+[13:09:04] done {'files': 1, 'skipped_done': 0, 'units': 1, 'rows': 63992, 'fragments': 63}
+[13:09:04] exposures.parquet/json: 1 exposures
+[13:09:05] exposures.parquet/json: 2 exposures
+store /tmp/pytest-of-root/pytest-15/test_h_cli_idempotence_shards_0/s2: 2 exposures, 63 tiles, 84404 rows, 1.4 MB in 87 files
+per instrument:
+  IRAC     rows        84,404  pieces     87        1.35 MB   16.01 B/row
+per tile  (rows by instrument | #exposures | MB):
+  tile             IRAC   n_exp       MB
+  ( 0,15)           58       1     0.00
+  ( 1,14)           49       1     0.00
+  ( 1,15)          602       1     0.01
+  ( 2,13)           41       1     0.00
+  ( 2,14)          568       1     0.01
+  ( 2,15)        1,404       1     0.02
+  ( 3,12)           25       1     0.00
+  ( 3,13)          530       1     0.01
+  ( 3,14)        1,377       1     0.02
+  ( 3,15)        1,666       1     0.02
+  ( 4,11)           17       1     0.00
+  ( 4,12)          490       1     0.01
+  ( 4,13)        1,351       1     0.02
+  ( 4,14)        1,663       1     0.02
+  ( 4,15)        1,658       1     0.02
+  ( 5,10)           12       1     0.00
+  ( 5,11)          448       1     0.01
+  ( 5,12)        1,318       1     0.02
+  ( 5,13)        1,666       1     0.02
+  ( 5,14)        1,670       1     0.02
+  ( 5,15)        1,668       1     0.02
+  ( 6, 9)            6       1     0.00
+  ( 6,10)          412       1     0.01
+  ( 6,11)        1,286       1     0.02
+  ( 6,12)        1,675       1     0.02
+  ( 6,13)        1,677       1     0.02
+  ( 6,14)        1,672       1     0.02
+  ( 6,15)        1,735       2     0.03
+  ( 7, 9)          135       1     0.01
+  ( 7,10)        1,057       1     0.02
+  ( 7,11)        1,681       1     0.03
+  ( 7,12)        1,686       1     0.02
+  ( 7,13)        1,682       1     0.02
+  ( 7,14)        1,727       2     0.03
+  ( 7,15)        2,323       2     0.04
+  ( 8, 9)           73       1     0.00
+  ( 8,10)          665       1     0.01
+  ( 8,11)        1,462       1     0.02
+  ( 8,12)        1,689       1     0.02
+  ( 8,13)        1,726       2     0.03
+  ( 8,14)        2,283       2     0.04
+  ( 8,15)        3,139       2     0.05
+  ( 9,10)           64       1     0.00
+  ( 9,11)          630       1     0.01
+  ( 9,12)        1,461       2     0.02
+  ( 9,13)        2,237       2     0.03
+  ( 9,14)        3,125       2     0.05
+  ( 9,15)        3,407       2     0.05
+  (10,11)           51       1     0.00
+  (10,12)          918       2     0.02
+  (10,13)        2,740       2     0.04
+  (10,14)        3,429       2     0.05
+  (10,15)        3,419       2     0.05
+  (11,12)          257       2     0.01
+  (11,13)        1,592       2     0.03
+  (11,14)        3,036       2     0.04
+  (11,15)        3,421       2     0.05
+  (12,13)          239       2     0.01
+  (12,14)        1,510       2     0.03
+  (12,15)        2,986       2     0.04
+  (13,14)          203       2     0.01
+  (13,15)        1,429       2     0.02
+  (14,15)          178       2     0.01
+.
+(i) part layout == fragment layout for 20 exposure-tiles; 691 part files hold the whole sample store
+.[13:09:07] exposures.parquet/json: 2 exposures
+
+(j) compaction: 87 part files for 2 shard-jobs, 24 tiles with 2 row groups, job markers/meta/scratch cleanup/idempotence OK
+.
+(k) HST dark / COUNTS / PHOTFNU=0 files skipped with a logged reason
+.
+11 passed in 85.33s (0:01:25)

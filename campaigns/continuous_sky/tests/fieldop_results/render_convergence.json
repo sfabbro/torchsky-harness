@@ -1,0 +1,88 @@
+{
+ "exposure": "A1_5",
+ "pixels": 144,
+ "reference_self_consistency_max_rel_k_space_off": 0.0002885222202166915,
+ "reference_seconds_k_space_off": 31.33137083053589,
+ "reference_self_consistency_max_rel_k_space_on": 0.00027963551110588014,
+ "reference_seconds_k_space_on": 31.147048234939575,
+ "kernel_core_m2_variation_across_detector": 0.2823712229728699,
+ "fft_vs_reference": [
+  {
+   "k_space": "off",
+   "render_pitch": 0.02,
+   "max_rel": 0.019953830167651176,
+   "rms_rel": 0.01577133685350418,
+   "seconds": 0.07226204872131348
+  },
+  {
+   "k_space": "off",
+   "render_pitch": 0.01,
+   "max_rel": 0.002028926508501172,
+   "rms_rel": 0.0018676567124202847,
+   "seconds": 0.06681084632873535
+  },
+  {
+   "k_space": "off",
+   "render_pitch": 0.005,
+   "max_rel": 0.000578943348955363,
+   "rms_rel": 0.00038136105285957456,
+   "seconds": 0.09801506996154785
+  },
+  {
+   "k_space": "off",
+   "render_pitch": 0.01,
+   "interp": "keys",
+   "max_rel": 0.005873431917279959,
+   "rms_rel": 0.003982100635766983,
+   "seconds": 0.06559276580810547
+  },
+  {
+   "k_space": "off",
+   "render_pitch": 0.005,
+   "interp": "keys",
+   "max_rel": 0.0025376940611749887,
+   "rms_rel": 0.002463678829371929,
+   "seconds": 0.08450913429260254
+  },
+  {
+   "k_space": "on",
+   "render_pitch": 0.005,
+   "region_px": 40,
+   "max_rel": 0.006060926243662834,
+   "rms_rel": 0.004741286858916283,
+   "seconds": 0.03914785385131836
+  },
+  {
+   "k_space": "on",
+   "render_pitch": 0.005,
+   "region_px": 20,
+   "max_rel": 0.0024922944139689207,
+   "rms_rel": 0.0025021699257194996,
+   "seconds": 0.04012799263000488
+  },
+  {
+   "k_space": "on",
+   "render_pitch": 0.005,
+   "region_px": 10,
+   "max_rel": 0.0020338718313723803,
+   "rms_rel": 0.001551884226500988,
+   "seconds": 0.0635075569152832
+  },
+  {
+   "k_space": "on",
+   "render_pitch": 0.005,
+   "region_px": 5,
+   "max_rel": 0.0015338272787630558,
+   "rms_rel": 0.0012732681352645159,
+   "seconds": 0.12157750129699707
+  },
+  {
+   "k_space": "on",
+   "render_pitch": 0.005,
+   "region_px": 2,
+   "max_rel": 0.000647178094368428,
+   "rms_rel": 0.0003747616137843579,
+   "seconds": 0.5958828926086426
+  }
+ ]
+}

@@ -1,0 +1,115 @@
+(a) v32 vs v33 without the flags (tests/check_v32_equiv.py; log tests/check_v32_equiv_output.txt):
+    == variant default: (defaults)
+      v32 default: exit 0 in 20 s
+      v33 default: exit 0 in 21 s
+      stdout: 30 v32 lines, 30 v33 lines; v32 lines missing in v33: 0; extra v33 lines: 0; same order: True
+      33 output files compared bitwise (cubes, states, npy), differences: 0
+      metrics.json: 24 top-level keys in v32; 0 differences in them (timings/args excluded); keys only in v33: []
+      args only in v33: ['pixel_box', 'psf_frame', 'psf_group_deg']; changed defaults: {'out': ('/home/claude/work/runs/equiv_default_v32', '/home/claude/work/runs/equiv_default_v33')}
+    == variant hybrid_spectral: --spectral rbf --svo-cache /home/claude/work/testdata/svo_cache --spec-q 3 --sky-coeffs hybrid --skip-implicit --explicit-configs fixed
+      v32 hybrid_spectral: exit 0 in 13 s
+      v33 hybrid_spectral: exit 0 in 13 s
+      stdout: 20 v32 lines, 20 v33 lines; v32 lines missing in v33: 0; extra v33 lines: 0; same order: True
+      14 output files compared bitwise (cubes, states, npy), differences: 0
+      metrics.json: 24 top-level keys in v32; 0 differences in them (timings/args excluded); keys only in v33: []
+      args only in v33: ['pixel_box', 'psf_frame', 'psf_group_deg']; changed defaults: {'out': ('/home/claude/work/runs/equiv_hybrid_spectral_v32', '/home/claude/work/runs/equiv_hybrid_spectral_v33')}
+    == variant chrom_spectral: --explicit-psf chrom --psf-model chrom --spectral rbf --svo-cache /home/claude/work/testdata/svo_cache --spec-q 3
+      v32 chrom_spectral: exit 0 in 35 s
+      v33 chrom_spectral: exit 0 in 36 s
+      stdout: 33 v32 lines, 33 v33 lines; v32 lines missing in v33: 0; extra v33 lines: 0; same order: True
+      36 output files compared bitwise (cubes, states, npy), differences: 0
+      metrics.json: 27 top-level keys in v32; 0 differences in them (timings/args excluded); keys only in v33: []
+      args only in v33: ['pixel_box', 'psf_frame', 'psf_group_deg']; changed defaults: {'out': ('/home/claude/work/runs/equiv_chrom_spectral_v32', '/home/claude/work/runs/equiv_chrom_spectral_v33')}
+    
+    EQUIVALENT
+(b) J_e on synthetic exposures (float32 coordinates, 78 000 pixels):
+    theta    0.000 ->    0.000 (err +0.00e+00 deg) parity +1->+1 scale rel err 2.4e-08 sx 1.8e-08 sy 3.0e-08 shear 0.0000->0.0000 fit rms 2.4e-06 px
+    theta   37.250 ->   37.250 (err -6.53e-10 deg) parity +1->+1 scale rel err 8.3e-12 sx 2.3e-11 sy 6.6e-12 shear 0.0000->0.0000 fit rms 3.9e-06 px
+    theta -120.700 -> -120.707 (err -6.51e-03 deg) parity +1->+1 scale rel err 4.1e-11 sx 2.1e-07 sy 2.5e-07 shear 0.0020->0.0020 fit rms 9.8e-06 px
+    theta   73.789 ->   73.788 (err -1.26e-03 deg) parity +1->+1 scale rel err 6.9e-12 sx 8.6e-07 sy 8.6e-07 shear 0.0390->0.0390 fit rms 4.7e-06 px
+    theta  145.100 ->  145.100 (err +1.06e-09 deg) parity -1->-1 scale rel err 7.2e-12 sx 7.5e-12 sy 6.9e-12 shear 0.0000->-0.0000 fit rms 3.9e-06 px
+    theta  -33.300 ->  -33.300 (err +4.37e-10 deg) parity -1->-1 scale rel err 1.0e-11 sx 1.7e-11 sy 3.4e-12 shear 0.0010->0.0010 fit rms 9.9e-06 px
+    theta  179.900 ->  179.900 (err +5.38e-10 deg) parity +1->+1 scale rel err 1.7e-11 sx 1.9e-12 sy 3.2e-11 shear 0.0000->0.0000 fit rms 5.6e-06 px
+    with 0.05 px coordinate noise + quadratic distortion: theta err +0.0005 deg, scale rel err -4.1e-06
+    worst over the clean cases: theta 6.5e-03 deg (limit 0.01), scale 8.6e-07 (limit 1e-4)
+(b2) J_e of the real HST samples (7 chips of 5 files, 512 px / 0.04 arcsec target grid, north up east left):
+    chip                theta    phi_y  ORIENTAT    PA_V3  th-ORI phiy-ORI  th-PA_V3     sx     sy   shear  rms px
+    iczgzbmaq_sci1     43.728   43.597    43.647  359.001   0.081   -0.049    44.727  3.384  3.020  0.0022   0.317
+    iczgzbmbq_sci1     43.727   43.594    43.646  359.001   0.081   -0.052    44.727  3.383  3.019  0.0022   0.317
+    iczgzbmgq_sci1     43.730   43.604    43.648  359.001   0.081   -0.044    44.729  3.383  3.019  0.0021   0.317
+    jczgz3k6q_sci1     73.789   71.544    71.815  253.710   1.975   -0.271   180.079  1.241  1.240  0.0392   0.186
+    jczgz3k6q_sci2     73.879   71.629    71.286  253.710   2.593    0.343   180.169  1.239  1.236  0.0392   0.174
+    jczgz3k8q_sci1     73.785   71.528    71.818  253.713   1.968   -0.290   180.072  1.241  1.239  0.0394   0.161
+    jczgz3k8q_sci2     73.877   71.616    71.289  253.713   2.588    0.327   180.164  1.239  1.236  0.0394   0.203
+    WFC3/IR: theta - ORIENTAT = +0.081 (range +0.081..+0.081) deg; y-axis angle - ORIENTAT within 0.052 deg; theta - PA_V3 = 44.727 (range 44.727..44.729) mod 360
+    ACS/WFC: theta - ORIENTAT = +2.281 (range +1.968..+2.593) deg; y-axis angle - ORIENTAT within 0.343 deg; theta - PA_V3 = 180.121 (range 180.072..180.169) mod 360
+    relation: theta_e = angle of the detector +y axis east of north (= ORIENTAT) for orthogonal detectors (WFC3/IR: +0.08 deg); for the skewed ACS/WFC axes theta_e is the polar-decomposition rotation, i.e. the mean of the x- and y-axis angles = ORIENTAT + half the axis skew (+2.0 / +2.6 deg for chips 1 / 2, whose y axes are at ORIENTAT within 0.3 deg); theta_e - PA_V3 = 44.73 deg (WFC3/IR) and 180.1 deg (ACS/WFC), constants of the instrument, parity +1 (target and detector have the same handedness) for all
+    NIRCam module B:
+      1_00002_nrcb1_cal.fits   F090W theta  145.167 PA_V3  144.791 theta-PA_V3 +0.377 scale 0.7730 parity +1
+      1_00002_nrcb2_cal.fits   F090W theta  145.400 PA_V3  144.791 theta-PA_V3 +0.609 scale 0.7748 parity +1
+      1_00002_nrcb3_cal.fits   F090W theta  144.892 PA_V3  144.791 theta-PA_V3 +0.102 scale 0.7735 parity +1
+      1_00002_nrcb4_cal.fits   F090W theta  144.971 PA_V3  144.791 theta-PA_V3 +0.180 scale 0.7757 parity +1
+      0002_nrcblong_cal.fits   F277W theta  145.007 PA_V3  144.791 theta-PA_V3 +0.216 scale 1.5732 parity +1
+      3_00002_nrcb1_cal.fits   F150W theta  145.166 PA_V3  144.790 theta-PA_V3 +0.376 scale 0.7730 parity +1
+      3_00002_nrcb2_cal.fits   F150W theta  145.400 PA_V3  144.790 theta-PA_V3 +0.610 scale 0.7749 parity +1
+      3_00002_nrcb3_cal.fits   F150W theta  144.889 PA_V3  144.790 theta-PA_V3 +0.099 scale 0.7735 parity +1
+      3_00002_nrcb4_cal.fits   F150W theta  144.980 PA_V3  144.790 theta-PA_V3 +0.189 scale 0.7754 parity +1
+      0004_nrcblong_cal.fits   F356W theta  145.086 PA_V3  144.792 theta-PA_V3 +0.294 scale 1.5744 parity +1
+      5_00002_nrcb3_cal.fits   F200W theta  144.891 PA_V3  144.790 theta-PA_V3 +0.100 scale 0.7735 parity +1
+      0003_nrcblong_cal.fits   F444W theta  145.066 PA_V3  144.795 theta-PA_V3 +0.271 scale 1.5727 parity +1
+(c) kernel rendered at theta = 90 deg vs the 90-degree-rotated theta = 0 image (max |diff| / max |kernel|):
+    ChromaticPSF    box off: |K90 - rot90(K0)| = 1.2e-07   (asymmetry of K0 itself 1.36; S = 1)
+    ChromaticPSF    box on : |K90 - rot90(K0)| = 1.2e-07   (asymmetry of K0 itself 1.57; S = 7)
+    ExplicitVarPSF  box off: |K90 - rot90(K0)| = 1.0e-08   (asymmetry of K0 itself 1.36; S = 1)
+    ExplicitVarPSF  box on : |K90 - rot90(K0)| = 9.1e-08   (asymmetry of K0 itself 1.37; S = 7)
+    ImplicitVarPSF  box off: |K90 - rot90(K0)| = 7.9e-08   (asymmetry of K0 itself 1.31; S = 1)
+    ImplicitVarPSF  box on : |K90 - rot90(K0)| = 5.3e-08   (asymmetry of K0 itself 1.27; S = 7)
+    theta = 0, no box vs psf.basis(): ChromaticPSF 6.0e-08, ExplicitVarPSF 1.6e-07
+    spectral rows (basis_lam, 2 bands x 3 nodes): |K90 - rot90(K0)| = 1.9e-07, shape (6, 4, 31, 31)
+    generic angles: core sums ChromaticPSF [0.9999999403953552, 1.0], ExplicitVarPSF [1.0, 0.9999998807907104], zero-sum residual kernels max |sum| 5.1e-06 / 1.0e-07
+(d) two-roll scene: one star (flux 7000.0, core peak S/N 116) at rolls [0.0, 70.0] deg, 1681 pixels per roll, sky known, PSF kernel (31x31 ExplicitVarPSF grid) fitted by L-BFGS
+    chi2/N of the generating model itself: 1.008
+    sky-frame kernel     (one kernel for both rolls): chi2/N = 1.295; on the pixels with model > 5 sigma in each roll 3.14, 3.30
+    detector-frame kernel (rotated per roll)         : chi2/N = 0.833; on the pixels with model > 5 sigma in each roll 0.37, 0.68
+    fitted detector-frame kernel vs truth: max |diff| / peak = 0.038
+(e) delta source, Gaussian PSF sigma = 1.60 target px = 0.5 detector px, detector pixel 3.2 target px (box S = 7):
+    roll   0.0 deg: |model - brute force| / peak = 4.81e-03 with the box (S=7);  without the box (kernel point-sampled) 3.66e-01
+                     closed form (erf products), theta = 0: 4.85e-03
+    roll  20.0 deg: |model - brute force| / peak = 4.81e-03 with the box (S=7);  without the box (kernel point-sampled) 3.66e-01
+    roll  57.3 deg: |model - brute force| / peak = 4.81e-03 with the box (S=7);  without the box (kernel point-sampled) 3.66e-01
+    worst: 4.81e-03 (limit 1e-2)
+(f) end-to-end --quick, NIRCam + WFC3/IR + ACS samples, --psf-frame detector --pixel-box --spectral rbf (chromatic PSF): exit 0 in 110 s; log /home/claude/work/runs/v33_quick_detector/stdout.log
+    [     0.9s] band registry: F090W [NIRCam NIRCAM_SW 0.902um D=6.5m fwhm=0.03"], F150W [NIRCam NIRCAM_SW 1.501um D=6.5m fwhm=0.049"], F200W [NIRCam NIRCAM_SW 1.990um D=6.5m fwhm=0.064"], F277W [NIRCam NIRCAM_LW 2.786um D=6.5m fwhm=0.091"], F356W [NIRCam NIRCAM_LW 3.563um D=6.5m fwhm=0.115"], F444W [NI
+    [     0.9s] PSF frame: detector + pixel box; 8 PSF groups in training for 8 bands (+0 held-out-only), group rounding 0.5 deg; convolved basis images ~2 MB per copy (8 x 4 x 128^2 float32, vs 8 x 4 x 128^2 in the sky frame)
+    [     0.9s]   group   0 F090W          theta   145.00 deg parity +1 pixel 0.772x0.775 target px S=2 n_exp 1 n_pix 9975
+    [     0.9s]   group   2 F150W          theta   145.00 deg parity +1 pixel 0.772x0.775 target px S=2 n_exp 1 n_pix 10042
+    [     0.9s]   group   4 F200W          theta   145.00 deg parity +1 pixel 0.772x0.775 target px S=2 n_exp 1 n_pix 10394
+    [     0.9s]   group   1 F277W          theta   145.00 deg parity +1 pixel 1.570x1.577 target px S=4 n_exp 1 n_pix 10572
+    [     0.9s]   group   3 F356W          theta   145.00 deg parity +1 pixel 1.571x1.578 target px S=4 n_exp 1 n_pix 10824
+    [     0.9s]   group   5 F444W          theta   145.00 deg parity +1 pixel 1.569x1.576 target px S=4 n_exp 1 n_pix 10897
+    [     0.9s]   group   6 ACS_F814W      theta    74.00 deg parity +1 pixel 1.240x1.237 target px S=3 n_exp 1 n_pix 11918
+    [     0.9s]   group   7 WFC3IR_F160W   theta    43.50 deg parity +1 pixel 3.383x3.019 target px S=7 n_exp 1 n_pix 3004
+    [   100.9s] TEST swarp: chi2 all 7.0226 src 5.8092 | robust all 3.8725 src 2.9055 | NIRCam (n_exp 6): chi2 all 7.5294 src 5.0529 robust all 4.2504 src 2.6846 | ACS/WFC (n_exp 1): chi2 all 2.0403 src 24.6451 robust all 1.4008 src 7.9560 | WFC3/IR (n_exp 1): chi2 all 16.2102 src 50.9180 robust all 5.7
+    [   101.9s] TEST drizzle: chi2 all 7.0426 src 6.0402 | robust all 3.8753 src 2.9185 | NIRCam (n_exp 6): chi2 all 7.5542 src 5.2915 robust all 4.2537 src 2.6981 | ACS/WFC (n_exp 1): chi2 all 2.0403 src 24.6451 robust all 1.4008 src 7.9560 | WFC3/IR (n_exp 1): chi2 all 16.2102 src 50.9180 robust all 5
+    [   103.2s] TEST explicit_fixedgeom_chrom_3d: chi2 all 9.3248 src 14.0510 | robust all 4.5645 src 4.9718 | NIRCam (n_exp 6): chi2 all 9.7270 src 12.3266 robust all 4.8803 src 4.5347 | ACS/WFC (n_exp 1): chi2 all 2.4654 src 31.4076 robust all 1.6712 src 9.8597 | WFC3/IR (n_exp 1): chi2 all 28.1429 sr
+    [   104.5s] TEST explicit_chrom_3d: chi2 all 9.2900 src 14.1067 | robust all 4.5655 src 5.0247 | NIRCam (n_exp 6): chi2 all 9.6953 src 12.4095 robust all 4.8844 src 4.5961 | ACS/WFC (n_exp 1): chi2 all 2.4486 src 30.5834 robust all 1.6674 src 9.6647 | WFC3/IR (n_exp 1): chi2 all 27.9737 src 246.2477
+    [   105.9s] TEST implicit_chrom_3d: chi2 all 72.5809 src 369.8610 | robust all 13.9502 src 31.0034 | NIRCam (n_exp 6): chi2 all 83.9458 src 360.8142 robust all 15.5648 src 28.9685 | ACS/WFC (n_exp 1): chi2 all 7.3534 src 187.5056 robust all 3.7632 src 56.4187 | WFC3/IR (n_exp 1): chi2 all 94.1377 sr
+    groups: [('F090W', 145.0, 2, 1), ('F277W', 145.0, 4, 1), ('F150W', 145.0, 2, 1), ('F356W', 145.0, 4, 1), ('F200W', 145.0, 2, 1), ('F444W', 145.0, 4, 1), ('ACS_F814W', 74.0, 3, 1), ('WFC3IR_F160W', 43.5, 7, 1)]
+    metrics: heldout_chi2 {'swarp': 7.023, 'drizzle': 7.043, 'explicit_fixedgeom_chrom_3d': 9.325, 'explicit_chrom_3d': 9.29, 'implicit_chrom_3d': 72.581}
+    per instrument swarp {'NIRCam': 7.529, 'ACS/WFC': 2.04, 'WFC3/IR': 16.21}
+    per instrument drizzle {'NIRCam': 7.554, 'ACS/WFC': 2.04, 'WFC3/IR': 16.21}
+    per instrument explicit_fixedgeom_chrom_3d {'NIRCam': 9.727, 'ACS/WFC': 2.465, 'WFC3/IR': 28.143}
+    per instrument explicit_chrom_3d {'NIRCam': 9.695, 'ACS/WFC': 2.449, 'WFC3/IR': 27.974}
+    per instrument implicit_chrom_3d {'NIRCam': 83.946, 'ACS/WFC': 7.353, 'WFC3/IR': 94.138}
+    all cubes and state dicts finite
+(g) groups: theta 10.1 and 10.2 -> one 0.5-degree group; 70.0 -> a second; F444W -> a third (3 groups, S = [2, 2, 4])
+    prepare(): CB (3, 4, 64, 64) for the 3 training groups; prepare(groups=[1]) equals its slice; the unseen-theta group (id 3) is convolved on demand and cached ((4, 64, 64)); 'own' (theta = 0) (2, 4, 64, 64)
+    theta = 0 group per band vs sky-frame prepare(): ExplicitVarPSF  plain    max rel diff 8.6e-07
+    theta = 0 group per band vs sky-frame prepare(): ExplicitVarPSF  spectral max rel diff 8.7e-07
+    theta = 0 group per band vs sky-frame prepare(): ChromaticPSF    plain    max rel diff 3.3e-07
+    theta = 0 group per band vs sky-frame prepare(): ChromaticPSF    spectral max rel diff 1.3e-07
+    refusal: --pixel-box needs --psf-frame detector
+    refusal: --psf-frame detector does not support --zip or --uq
+    CLI: --pixel-box without --psf-frame detector exits with: --pixel-box needs --psf-frame detector
+
+ALL TESTS PASSED
