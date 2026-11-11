@@ -39,11 +39,11 @@ Start here in a new session. This supersedes the "Latest" sections of `claude/co
 
 | Phase | Item | State |
 |---|---|---|
-| 0 Protocol | Splits, official alignment, reference mosaics, held-out masks, noise factors, scorer | **SMACS done.** LMC: alignment rerun running (session `protoalignlmc3`, tiles 0, 1, 2, 3, 5, 7; tiles 4, 6, 8, 9 done). Then masks. |
-| 1 Baselines | Official JWST stage-3 pipeline + blot (`stage3_blot`) | **SMACS scored: 1.80 [1.61, 2.02].** LMC predictions written for all 10 tiles, waiting for masks. HST WFC3/IR AstroDrizzle + blot ran with a provisional split. |
+| 0 Protocol | Splits, official alignment, reference mosaics, held-out masks, noise factors, scorer | **Done for SMACS and LMC.** |
+| 1 Baselines | Official JWST stage-3 pipeline + blot (`stage3_blot`) | **SMACS scored: 1.80 [1.61, 2.02].** **LMC scored: 6.14 [5.25, 7.22]** (F090W 28.1, the badly aligned 1476 observation 001; other filters 3.6–16). HST WFC3/IR AstroDrizzle + blot ran with a provisional split. |
 | 1 Baselines | DOLPHOT (NIRCam module) | **Blocked.** Web access to americano.dolphinsim.com and arxiv.org needs Seb's approval in the app. |
 | 1 Baselines | Empirical PSFs (Anderson-style), galaxy fitter (ForcePho or The Tractor), PIFF | Not started. |
-| 2 Field operator | `fieldop` package v0.1 | **SMACS 1.77 [1.68, 1.86]**, a tie with the pipeline. Synthetic recovery partly works (write-up, "Evidence"). Run `fieldop_v5` (session `fieldopsmacs4`, latest code) in progress. Score lands at `protocol/v1/scores/SMACS/fieldop_v5/dither.json`. |
+| 2 Field operator | `fieldop` package v0.1 | **SMACS 1.77 [1.68, 1.86]**, a tie with the pipeline. Synthetic recovery partly works (write-up, "Evidence"). Latest code (`fieldop_v5`, 150-min fit) scored 1.94 [1.86, 2.05], worse than the 3.3 h run; rerun at matched length to tell whether the cause is fit length or the new scale rule. |
 | 3, 4 | Ablations, scaling | Not started. |
 | Data | LMC all filters (1476, 4447), NIRISS LMC (1501, 4471), M92 (1334) | **Downloaded** (2164 files) to `/arc/projects/ots/torchsky-data/aggregate/<prog>_<instrument>/`. |
 
@@ -51,10 +51,9 @@ Score definition: mean (data − model)²/σ² on held-out dither exposures, on 
 
 ## To finish this round (minimum viable)
 
-1. **LMC alignment.** When `protoalignlmc3` ends, check that `ref_LMC_tile*_F*_i2d.fits` exist for 10 tiles × 6 filters. Then launch the masks:
-   `canfar create headless images.canfar.net/astroai/base:latest -n protomaskslmc -c 8 -m 64 -e FIELD=LMC -- bash /arc/projects/ots/adass2026/scripts/run_protocol_masks.sh`
-2. **Score the pipeline baseline on LMC:** run `run_score.sh` with `FIELD=LMC METHOD=stage3_blot`; see `/home/claude/work/baselines/run_score.sh` (also on /arc in scripts).
-3. **Collect** `fieldop_v5` on SMACS.
+1. Done: LMC protocol and LMC pipeline score (6.14).
+2. Check why F090W scores 28 on LMC and what drives the fractional residual of 1.47 at S/N > 50 (saturated cores?).
+3. **Field operator:** rerun the latest code at matched length (≥ 3.3 h) on SMACS.
 
 ## Next steps (in order)
 

@@ -1,5 +1,31 @@
 # Continuous sky: overnight run log (4–5 Nov 2026)
 
+## 11 Nov 04:50 UTC: evaluation protocol complete for LMC; official pipeline scored there
+
+- **LMC protocol complete.**
+  - Official alignment: all 10 sky patches × 6 filters.
+  - Held-out masks: 518 files.
+  - The trivial "zero" model scores 30.3 on source pixels.
+- **Official JWST stage-3 pipeline on LMC held-out dithers** (62 exposures, none missing).
+  - Mean (data − model)²/σ² on source pixels (S/N ≥ 5): **6.14 [5.25, 7.22]**.
+  - By S/N of the official mosaic: <1: 1.85; 1–5: 2.11; 5–20: 2.23; 20–50: 4.56; 50–200: 29; >200: 259.
+  - Fractional residual rms at S/N > 50: 1.47. Likely dominated by saturated or near-saturated star cores; to check.
+  - Per filter: F090W 28.1, F150W 3.96, F200W 3.56, F277W 16.2, F356W 7.74, F444W 8.26.
+  - F090W is all in programme 1476 observation 001, the one with the 1.8″ header error. Its poor score suggests residual misalignment or crowding in that observation; to check.
+- **Next for the field operator:** run on LMC patches (needs the multi-patch loop ported from opjoint) and compare with 6.14.
+
+## 10 Nov 19:10 UTC: field operator with the latest code is slightly worse; LMC alignment still running
+
+- **Field operator, latest code** (`fieldop_v5`, 150-min fit, likelihood-ratio rule for the variability scales, faster rendering): SMACS held-out S/N≥5 score **1.94 [1.86, 2.05]**. The earlier 3.3 h fit scored 1.77, and the official pipeline 1.80.
+  - Per filter: F090W 1.71, F150W 1.89, F200W 1.74, F277W 2.21, F356W 2.33, F444W 2.10.
+  - Fractional residual at S/N > 50: 0.061.
+  - Shorter fit and changed scale rule, so the cause of the drop is unclear. Next session: a matched-length run of the latest code.
+- **LMC official alignment rerun** (protoalignlmc3, 6 h so far):
+  - tiles 0 and 1 now complete;
+  - tile 5 has 1 of 6 filters;
+  - tiles 2, 3 and 7 are not started.
+  - LMC masks, and the scoring of the pipeline baseline on LMC, follow once it ends.
+
 ## 10 Nov 13:30 UTC: new plan under way. Protocol, first published baseline, first general field operator
 
 Plan: [Baselines, general field operator and ablation plan](https://claude.ai/artifact/5u2o5CeELJcPMQ1VpcLGPj). All scores below are the protocol scorer's: held-out dithers, mean (data − model)²/σ² on pixels where the official mosaic has S/N ≥ 5, 68% bootstrap intervals.
