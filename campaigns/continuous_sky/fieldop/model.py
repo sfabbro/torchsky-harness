@@ -57,6 +57,12 @@ class FieldOperator(nn.Module):
         self.register_buffer("e_sigbar", t(meta["sigbar"], torch.float32))
         self.register_buffer("e_shape", t(meta["det_shape"]))
         self.register_buffer("shift0", t(meta["shift0"], torch.float32))
+        # several tiles: the affine of exposure e acts about its own reference point r_e (field frame; centroid of its pixels over all its
+        # cuts), so the lever arm of M_e is the extent of the exposure, not the distance to the field reference (F32)
+        self.has_aff_ref = meta.get("aff_ref") is not None
+        # a plain device tensor, not a registered buffer: with one tile nothing is allocated, which keeps the single-box path bit-identical
+        # (an extra allocation alone shifts float32 rounding by ~1e-6, which Adam then amplifies)
+        self.aff_ref = t(meta["aff_ref"], torch.float32) if self.has_aff_ref else None
         self.train_mask = np.asarray(meta["train"], bool)
         self.l_filt, self.l_chan = [int(x) for x in meta["filt"]], [int(x) for x in meta["chan"]]   # host copies: no device syncs in hot paths
         self.l_shape = [tuple(int(v) for v in x) for x in meta["det_shape"]]
@@ -126,15 +132,29 @@ class FieldOperator(nn.Module):
         self.ref_eids = torch.as_tensor(tr, device=dev, dtype=torch.long)
         dets = sorted({int(meta["det"][i]) for i in tr})
         L = LATTICE.to(dev)
+        # reference lattice per detector (F37): with --ref-footprint and the training footprint of each detector in meta ("det_xi_box":
+        # {det: [x0, x1, y0, y1]} in normalised detector coordinates), a 3x3 lattice at the cell centres of the footprint; else the fixed
+        # lattice at +-0.8. The detector fields (kernel, throughput, distortion) are normalised, and the throughput gauge is anchored, on it.
+        boxes = meta.get("det_xi_box") if getattr(cfg, "ref_footprint", 0) else None
+        self.det_lat = {}
+        for d in sorted({int(x) for x in meta["det"]}):
+            bx = None if boxes is None else boxes.get(d, boxes.get(str(d)))
+            if bx is None:
+                self.det_lat[d] = L
+            else:
+                x0, x1, y0, y1 = [float(v) for v in bx]
+                g = torch.tensor([1 / 6, 0.5, 5 / 6], device=dev)
+                self.det_lat[d] = torch.stack([(x0 + g[None, :] * (x1 - x0)).expand(3, 3).reshape(-1),
+                                               (y0 + g[:, None] * (y1 - y0)).expand(3, 3).reshape(-1)], -1).float()
         self.register_buffer("ref_det", torch.as_tensor(dets, device=dev, dtype=torch.long).repeat_interleave(L.shape[0]))
-        self.register_buffer("ref_xi", L.repeat(len(dets), 1))
+        self.register_buffer("ref_xi", torch.cat([self.det_lat[d] for d in dets]) if dets else L[:0])
         ep = sorted({(float(meta["t"][i]), int(meta["inst"][i])) for i in tr})
         self.register_buffer("ref_t", torch.tensor([x[0] for x in ep], device=dev))
         self.register_buffer("ref_tinst", torch.tensor([x[1] for x in ep], device=dev, dtype=torch.long))
         dt_pairs = sorted({(int(meta["det"][i]), float(meta["t"][i])) for i in tr})
         self.register_buffer("ref_dt_det", torch.tensor([x[0] for x in dt_pairs], device=dev, dtype=torch.long).repeat_interleave(L.shape[0]))
         self.register_buffer("ref_dt_t", torch.tensor([x[1] for x in dt_pairs], device=dev).repeat_interleave(L.shape[0]))
-        self.register_buffer("ref_dt_xi", L.repeat(len(dt_pairs), 1))
+        self.register_buffer("ref_dt_xi", torch.cat([self.det_lat[d] for d, _ in dt_pairs]) if dt_pairs else L[:0])
         # (detector, Lambda node) pairs observed in training: the throughput / distortion fields are normalised over these only
         Qn = fset.Q
         obs = torch.zeros(len(dets), len(fset) * Qn, dtype=torch.bool)
@@ -153,9 +173,11 @@ class FieldOperator(nn.Module):
         self.register_buffer("bkg0", t(meta["bkg0"], torch.float32))
         rm = torch.zeros(E, 2048, dtype=torch.bool, device=dev)
         cm = torch.zeros(E, 2048, dtype=torch.bool, device=dev)
-        for i, (r0, c0, nr, nc) in enumerate(meta.get("cut", [(0, 0, 2048, 2048)] * E)):
-            rm[i, r0:r0 + nr] = True
-            cm[i, c0:c0 + nc] = True
+        cuts = meta.get("cuts") or [[c] for c in meta.get("cut", [(0, 0, 2048, 2048)] * E)]
+        for i, cs in enumerate(cuts):          # every cut of the exposure (several tiles): the union of the rows / columns used
+            for (r0, c0, nr, nc) in cs:
+                rm[i, r0:r0 + nr] = True
+                cm[i, c0:c0 + nc] = True
         self.register_buffer("row_mask", rm)
         self.register_buffer("col_mask", cm)
         # ---- blur gauge (F18): the sharpest kernel class (smallest generic width) may not be sharper than one sky tent
@@ -366,15 +388,23 @@ class FieldOperator(nn.Module):
             D = D + self.tau("D_exp") * torch.einsum("j,mjc->mc", self.zD[e], quad_fields(xi))[None]
         return D
 
-    def positions(self, e, X, Y, xi, P):
-        """Omega_e(xi, lambda_q): (Q, M, 2) [arcsec]."""
+    def positions(self, e, X, Y, xi, P, c0=None):
+        """Omega_e(xi, lambda_q): (Q, M, 2) [arcsec], in the frame of the tile whose header positions X, Y are given. With several tiles the
+        per-exposure affine acts about the exposure's reference point r_e in the FIELD frame: Omega = x + M_e (x + c0 - r_e) + t_e, c0 = offset
+        of the tile centre from the field reference (F32), so one (M_e, t_e) per exposure is consistent across tiles and the lever arm of M_e
+        is the exposure's own extent. One tile (no r_e, c0 = None or (0, 0)): about the box centre."""
         Q = self.fset.Q
         x = torch.stack([X, Y], -1)[None].expand(Q, -1, -1) + self.shift0[e]
         D = self.distortion(e, xi, P)
         if D is not None:
             x = x + D
         a = self.affine[e] * self.aff_scale
-        Mx = torch.stack([a[0] * x[..., 0] + a[1] * x[..., 1], a[2] * x[..., 0] + a[3] * x[..., 1]], -1)
+        xm = x
+        if c0 is not None and (c0[0] != 0.0 or c0[1] != 0.0):
+            xm = x + torch.tensor([float(c0[0]), float(c0[1])], device=x.device, dtype=x.dtype)
+        if self.has_aff_ref:
+            xm = xm - self.aff_ref[e]
+        Mx = torch.stack([a[0] * xm[..., 0] + a[1] * xm[..., 1], a[2] * xm[..., 0] + a[3] * xm[..., 1]], -1)
         return x + Mx + a[4:6]
 
     def pixel_area(self, e, Jpix, xi, P):
@@ -439,7 +469,7 @@ class FieldOperator(nn.Module):
             A = A.detach()
         f = int(self.e_filt[e_t])
         Phi_q = self.Phi[f]
-        pos = self.positions(e_t, pix["X"], pix["Y"], pix["xi"], P)
+        pos = self.positions(e_t, pix["X"], pix["Y"], pix["xi"], P, c0=pix.get("c0"))
         if method == "fft" and self.cfg.batch_render:
             return self.render_batch([(int(e), pix)], P, view=view, detach_sky=detach_sky, jitter=jitter, region_px=region_px)[0] | {"pos": pos}
         if method == "fft":
@@ -490,7 +520,7 @@ class FieldOperator(nn.Module):
             for k in ks:
                 e, pix = items[k]
                 e_t = torch.as_tensor(e, device=self.dev)
-                pos = self.positions(e_t, pix["X"], pix["Y"], pix["xi"], P)
+                pos = self.positions(e_t, pix["X"], pix["Y"], pix["xi"], P, c0=pix.get("c0"))
                 ny, nx = self.l_shape[e]
                 nodes, w = region_nodes(pix["xi_px"], (ny, nx), region, bounds=pix.get("bounds"))
                 xin = torch.stack([nodes[:, 0] / (nx - 1) * 2 - 1, nodes[:, 1] / (ny - 1) * 2 - 1], -1).float()
@@ -595,7 +625,6 @@ class FieldOperator(nn.Module):
         P = self.prepare() if P is None else P
         out = {}
         eids = self.ref_eids[:: max(1, self.ref_eids.numel() // n_exp)]
-        xi = LATTICE.to(self.dev)
         saved = dict(self.tau.mode)
         for ax in ("k_space", "k_time", "k_lambda", "k_exp"):
             if self.tau(ax) is None:
@@ -603,6 +632,7 @@ class FieldOperator(nn.Module):
                 continue
             num, den = 0.0, 0.0
             for e in eids:
+                xi = self.det_lat[int(self.e_det[e])]
                 K1 = self.node_kernels(e, xi, P)[0][0]
                 self.tau.mode[ax] = "off"
                 K0 = self.node_kernels(e, xi, P)[0][0]

@@ -137,3 +137,84 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
         make_patches(e, patch_px)
     meta = build_meta(exps, dets, chans, [i.name for i in insts])
     return exps, fset, meta, truth, insts
+
+
+def make_field_tiles(seed=0, n_wide=6, n_side=3, n_val=1, n_held=1, noise=1.0, Q=3, insts=None, tile_x=1.5, box=2.0, data_margin=0.3,
+                     shift_rms=0.03, n_pts=22, side_offset=3.0, host=True, patch_px=20):
+    """Two sky patches (tiles) at global X = -tile_x, +tile_x (Y = 0) under one truth, for the multi-tile tests.
+
+    Detectors are 2n x n pixels (rotation 0 or 180 deg). Per filter: n_wide exposures centred near the origin (they cover BOTH tiles: one global
+    exposure, two cuts) and n_side exposures centred at +-side_offset (they cover ONE tile). The first n_held wide exposures of each filter are
+    held out, the next n_val validation. Each cut keeps the pixels whose header position lies within box/2 + data_margin of its tile centre;
+    its X, Y are header positions relative to the TILE centre and c0 the tile centre (global frame). Returns
+    (cuts, fset, meta, truth, insts, tiles={k: (cx, cy)}, half_data)."""
+    rng = np.random.default_rng(seed)
+    if insts is None:
+        insts = [SynthInstrument("A", 0.10, 30, 6.5, 0.07, 1.5, space_grad=0.12, filters=[("A1", 1.0, 1.3), ("A2", 1.6, 2.1)]),
+                 SynthInstrument("B", 0.12, 25, 6.5, 0.10, 2.4, space_grad=0.12, filters=[("B1", 2.0, 2.8)])]
+    filters = [box_filter(name, ins.name, lo, hi, Q) for ins in insts for name, lo, hi in ins.filters]
+    fset = FilterSet(filters)
+    xr, yr = tile_x + box / 2 + 0.3, box / 2 + 0.3
+    pts = np.stack([rng.uniform(-xr, xr, n_pts), rng.uniform(-yr, yr, n_pts), np.exp(rng.uniform(math.log(0.5), math.log(8.0), n_pts)),
+                    rng.uniform(-1.5, 1.0, n_pts)], 1)
+    gals = np.stack([rng.uniform(-xr * 0.7, xr * 0.7, 3), rng.uniform(-yr * 0.7, yr * 0.7, 3), rng.uniform(0.08, 0.2, 3),
+                     rng.uniform(3.0, 8.0, 3), rng.uniform(-0.5, 1.5, 3), np.zeros(3)], 1)
+    truth = Truth(pts, gals)
+    tiles = {0: (-tile_x, 0.0), 1: (tile_x, 0.0)}
+    half_data = box / 2 + data_margin
+    cuts, reps, cuts_by_eid = [], [], []
+    k = 0
+    for ii, ins in enumerate(insts):
+        for name, lo, hi in ins.filters:
+            f = fset.index[name]
+            kinds = ["wide"] * n_wide + ["side"] * n_side
+            for j, kind in enumerate(kinds):
+                rot = int(rng.choice((0, 2)))
+                th = rot * math.pi / 2
+                Rm = np.array([[math.cos(th), -math.sin(th)], [math.sin(th), math.cos(th)]])
+                c = rng.uniform(-0.3, 0.3, 2)
+                if kind == "side":
+                    c[0] += side_offset * (1 if j % 2 else -1)
+                nx, ny = 2 * ins.npix, ins.npix
+                rr, cc = np.mgrid[0:ny, 0:nx].astype(np.float64)
+                off = np.stack([cc - (nx - 1) / 2, rr - (ny - 1) / 2], -1) * ins.pixel
+                pos = off @ Rm.T + c
+                Xg, Yg = torch.tensor(pos[..., 0], dtype=torch.float32), torch.tensor(pos[..., 1], dtype=torch.float32)
+                true_shift = rng.normal(0, shift_rms, 2)
+                xi = torch.stack([torch.tensor(cc.ravel() / (nx - 1) * 2 - 1), torch.tensor(rr.ravel() / (ny - 1) * 2 - 1)], -1).float()
+                clean = render_truth(truth, ins, fset.filters[f], Xg.reshape(-1) + float(true_shift[0]), Yg.reshape(-1) + float(true_shift[1]),
+                                     xi).view(ny, nx)
+                bk = float(rng.normal(5.0, 1.0))
+                d = clean + bk + noise * torch.randn(ny, nx, generator=torch.Generator().manual_seed(2000 + k))
+                split = "held" if (kind == "wide" and j < n_held) else ("val" if (kind == "wide" and j < n_held + n_val) else "train")
+                mine = []
+                for t, (cx, cy) in tiles.items():
+                    inside = ((Xg - cx).abs() < half_data) & ((Yg - cy).abs() < half_data)
+                    if int(inside.sum()) < 60:
+                        continue
+                    rows = torch.nonzero(inside.any(1))[:, 0]
+                    cols = torch.nonzero(inside.any(0))[:, 0]
+                    y0, y1, x0, x1 = int(rows.min()), int(rows.max()) + 1, int(cols.min()), int(cols.max()) + 1
+                    sl = (slice(y0, y1), slice(x0, x1))
+                    hs = {"d": d[sl].clone(), "sig": torch.full((y1 - y0, x1 - x0), noise), "valid": inside[sl].clone(),
+                          "X": (Xg[sl] - cx).clone(), "Y": (Yg[sl] - cy).clone(), "Jpix": None}
+                    e = Exposure(name=f"{name}_{j}", filt=f, inst=ii, chan=ii, det=ii, t=0.0, mjd=0.0, det_shape=(ny, nx), cut0=(y0, x0),
+                                 d=hs["d"], sig=hs["sig"], valid=hs["valid"], X=hs["X"], Y=hs["Y"], R=Rm, split=split, group=f"{name}_{j}",
+                                 stripes=False, bkg0=float(hs["d"][hs["valid"]].median()),
+                                 extra={"J": (Rm * ins.pixel).tolist(), "true_shift": true_shift.tolist(), "clean": clean[sl].clone(), "bkg_true": bk,
+                                        "diameter_m": ins.diameter_m, "kind": kind, "clean_full": clean, "d_full": d},
+                                 tile=t, c0=(float(cx), float(cy)), host=hs if host else None)
+                    e.eid = k
+                    e.cid = len(cuts)
+                    make_patches(e, patch_px)
+                    cuts.append(e)
+                    mine.append(e)
+                if not mine:
+                    continue
+                reps.append(max(mine, key=lambda x: int(x.valid.sum())))
+                cuts_by_eid.append(mine)
+                k += 1
+    meta = build_meta(reps, [i.name for i in insts], [i.name for i in insts], [i.name for i in insts], cuts_by_eid)
+    from .data import affine_refs
+    meta["aff_ref"] = affine_refs(cuts_by_eid)
+    return cuts, fset, meta, truth, insts, tiles, half_data

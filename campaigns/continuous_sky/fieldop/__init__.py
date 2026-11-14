@@ -87,4 +87,30 @@ APPROXIMATIONS = [
     "F31 batched rendering (--batch-render): the patches of a step are rendered together per channel with ONE window size per level (the largest of "
     "the batch) and one random level-0 phase per batch; identical to the per-patch render to 5e-7 (values) / 3e-5 (gradients)",
     "F30 instruments: the loader maps JWST NIRCam detectors; HST _flt/_flc loading through this package is not implemented yet",
+    "F32 several sky patches (--tiles): one operator, one sky per tile (each in the tangent plane of its own box centre), one row of per-exposure "
+    "nuisances per exposure shared by its cuts in every tile; the per-exposure affine acts about the exposure's own reference point r_e in "
+    "the FIELD frame (centroid of its valid pixels over all its cuts): Omega = x + M_e (x + c_k - r_e) + t_e with c_k the gnomonic offset of "
+    "tile k's centre from the centroid of the selected boxes (about the field centroid instead, M_e had a 60-130 arcsec lever arm on LMC and "
+    "each Adam step of M_e moved positions by ~10 mas); the north directions of two tile frames differ by dRA sin(dec) (0.13 deg across the "
+    "LMC tiles), ignored in M_e (x + c_k - r_e) and t_e (effect < 0.2 mas for |M_e| < 1e-3)",
+    "F33 per-exposure metadata with several tiles (kernel frame R_e, sigbar, the reference median bkg0 of the pedestal gauge, pixel scale) come "
+    "from the exposure's cut with most valid pixels; R_e of a cut in another tile differs by the frame rotation above (< 0.13 deg); the sky warm "
+    "start of each tile subtracts that cut's own median",
+    "F34 tile schedule: visits of --visit-steps steps on one tile drawn with p_k proportional to (training pixels)^--tile-weight-power, so the "
+    "objective is sum_k p_k L_k (per-pixel mean loss of tile k), the pooled pixel mean only for power 1; rows of exposures absent from a "
+    "visit are not stepped (as F24); validation (tau) steps use the visited tile's validation cuts (no step on tiles without any)",
+    "F35 gauges with several skies: the common-shift projection acts per connected component of the (exposure, tile) training graph, the "
+    "pedestal projection per (filter, component of that filter's graph); the throughput gauge stays global, so a sky scale of one component "
+    "against the gains of its exposures is held only by the N(0, 1) prior on u_e (exposures shared across tiles tie the components together)",
+    "F36 data residency: pixel tensors of the cuts on the host (pinned), copied to the device per tile (LRU cache of --gpu-resident-gb); skies "
+    "and their Adam states stay on the device (with --sky-swap they are moved to the host too when their tile is inactive); held-out nuisances are fitted cycling --held-rounds times over the tiles (shared rows), "
+    "--held-steps scaled by held-out cuts / --held-ref-cuts per tile; each held-out cut is predicted with its tile's sky and the cuts are "
+    "merged per exposure by the nearest tile centre (as stage3_blot); cuts are taken at REGISTERED positions (header + shift0)",
+    "F37 reference lattice and caps (12 Nov 2026, after the SMACS 200-min regression): the detector fields (kernel code, throughput, static / "
+    "drift distortion) are normalised, and the throughput gauge is evaluated, on a 3x3 lattice at the cell centres of each detector's "
+    "TRAINING footprint (bounding box of its valid training pixels; --ref-footprint 1), so each function-axis scale is the rms variation "
+    "where the data are (on the fixed +-0.8 lattice, far outside the 20-arcsec SMACS footprint, the throughput scale ran away to 17.5 while "
+    "the field varied by up to 1.9 in log g across the footprint); throughput scales are capped at --tau-g-max (rms log g) and static / drift "
+    "distortion at --tau-d-max, because an axis kept by the likelihood-ratio check follows the validation gradient with no Occam pressure; "
+    "the footprint is a bounding box (a box straddling a detector corner yields a lattice point without data)",
 ]

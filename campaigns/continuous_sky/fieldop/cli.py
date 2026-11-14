@@ -33,6 +33,14 @@ def build_parser():
     g.add_argument("--protocol-root", default="/arc/projects/ots/adass2026/protocol/v1")
     g.add_argument("--splits", default="", help="default: <protocol-root>/splits_<FIELD>.json")
     g.add_argument("--box-id", type=int, default=0)
+    g.add_argument("--tiles", default="", help="several scoring boxes (sky patches) under one operator: 'all' or a comma list of box ids ('' = --box-id only)")
+    g.add_argument("--tile-weight-power", type=float, default=0.5, help="tile k is visited with probability proportional to (training pixels)^power")
+    g.add_argument("--visit-steps", type=int, default=10, help="optimisation steps per tile visit")
+    g.add_argument("--gpu-resident-gb", type=float, default=4.0, help="pixel data of tiles kept on the device (LRU); tiles beyond it are swapped")
+    g.add_argument("--load-workers", type=int, default=8, help="threads reading files (several tiles)")
+    g.add_argument("--sky-swap", type=int, default=0, help="several tiles: inactive skies and their Adam state are kept on the host")
+    g.add_argument("--held-rounds", type=int, default=4, help="several tiles: rounds over the tiles in the held-out nuisance fit")
+    g.add_argument("--held-ref-cuts", type=float, default=24.0, help="several tiles: per-tile held-out steps = --held-steps x (held-out cuts of the tile) / this")
     g.add_argument("--all-box-files", type=int, default=0, help="also load split files not listed as overlapping the box")
     g.add_argument("--method-name", default="fieldop")
     g.add_argument("--out", default="out_fieldop")
@@ -97,6 +105,10 @@ def build_parser():
     g.add_argument("--tau-occam-z", type=float, default=2.0, help="evidence (in sd) an axis must show to grow")
     g.add_argument("--tau-warm-evals", type=int, default=3)
     g.add_argument("--tau-code-max", type=float, default=1.5, help="cap of the code-space kernel variability scales")
+    g.add_argument("--tau-g-max", type=float, default=0.3, help="cap of the throughput function-axis scales (rms log g on the footprint lattice)")
+    g.add_argument("--tau-d-max", type=float, default=0.03, help="cap of the static / drift distortion scales [arcsec]")
+    g.add_argument("--ref-footprint", type=int, default=1, help="detector fields normalised (and the throughput gauge anchored) on a 3x3 lattice "
+                   "spanning each detector's training footprint (0 = fixed lattice at +-0.8)")
     g.add_argument("--ab-every", type=int, default=2, help="likelihood-ratio (axis off vs on) evidence every N validation evaluations (0 = off)")
     g.add_argument("--ab-beta", type=float, default=0.95, help="forgetting factor of the likelihood-ratio evidence")
     g.add_argument("--em-damp", type=float, default=0.5, help="exponent of the damped EM step of the random-effect scales")
@@ -197,7 +209,7 @@ def main(argv=None):
     from . import APPROXIMATIONS, __version__
     from .data import load_field, make_patches
     from .model import FieldOperator
-    from .train import chi2_exposure, fit, fit_heldout, predict_exposure, register_prepass, warm_kernel, write_prediction
+    from .train import chi2_exposure, fit, fit_heldout, predict_exposure, predict_merged, register_prepass, warm_kernel, write_prediction
     cfg = build_parser().parse_args(argv)
     out = Path(cfg.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -220,11 +232,32 @@ def main(argv=None):
     if not cfg.splits:
         cfg.splits = os.path.join(cfg.protocol_root, f"splits_{cfg.field}.json")
     exps, fset, meta, info = load_field(cfg, dev, log=log)
-    log(f"loaded {len(exps)} exposures: {info['n_by_split']}; filters {info['filters']}; detectors {info['dets']}; epoch span {info['epoch_span_days']:.3f} d")
+    log(f"loaded {info['n_exposures']} exposures ({info['n_cuts']} cuts in {len(info['tiles'])} tile(s) {info['tiles']}, {info['host_gb']:.2f} GB of pixels): "
+        f"{info['n_by_split']}; filters {info['filters']}; detectors {info['dets']}; epoch span {info['epoch_span_days']:.3f} d; "
+        f"registration shifts applied to {info['shifts_applied']}")
+    if info["multi_tile"]:
+        log(f"cuts per tile {info['cuts_per_tile']}; tile offsets [arcsec, west / north] {info['tile_c0']}")
     half = info["half_data"] - cfg.data_margin + cfg.sky_margin
-    sky, N = make_sky(exps, fset, cfg, half, dev)
-    log(f"sky grid {N} x {N} at {cfg.sky_pitch}\" ({sky.A.numel() / 1e6:.2f} M coefficients, {sky.n_views} view(s))")
+    from .sky import RBFBasis
+    from .tiles import TileSet
+    basis = RBFBasis(cfg.spec_k).to(dev)
+    skies = {}
+    for k in info["tiles"]:
+        cs = [e for e in exps if e.tile == k]
+        for e in cs:
+            e.to_dev(dev)
+        skies[k], N = make_sky(cs, fset, cfg, half, dev, basis=basis)
+        for e in cs:
+            e.release()
+        if dev.type == "cuda" and info["multi_tile"]:
+            torch.cuda.empty_cache()
+    sky = skies[info["tiles"][0]]
+    log(f"sky grid {N} x {N} at {cfg.sky_pitch}\" ({sky.A.numel() / 1e6:.2f} M coefficients per tile, {sky.n_views} view(s)) x {len(skies)} tile(s)")
     model = FieldOperator(cfg, fset, meta, sky, dev).to(dev)
+    ts = TileSet(model, exps, skies, cfg, log=log)
+    if ts.multi:
+        log(f"tiles: p {dict(zip(ts.keys, np.round(ts.p, 3).tolist()))}; data GB {({k: round(v / 2 ** 30, 2) for k, v in ts.nbytes.items()})}; "
+            f"resident budget {cfg.gpu_resident_gb} GB; {len(ts.shift_groups)} common-shift component(s), {len(ts.pedestal_groups)} pedestal group(s)")
     for c, lv in enumerate(model.levels_ch):
         log(f"channel {info['chans'][c]}: render pitch {model.render_pitch_ch[c]}\", kernel levels {lv.L + 1}, pitches {lv.pitch}, radii {lv.R}, "
             f"extent {cfg.kernel_extent}\", {lv.n_points} kernel nodes per (region node, lambda node)")
@@ -232,32 +265,46 @@ def main(argv=None):
         pix = float(abs(np.linalg.det(np.asarray(e.extra["J"]))) ** 0.5)
         make_patches(e, max(16, int(round(cfg.patch_arcsec / pix))))
     log(f"patches: {sum(len(e.patches) for e in exps)}; parameters: operator {sum(p.numel() for p in model.param_groups()[0]) / 1e3:.1f} k, "
-        f"sky {sky.A.numel() / 1e6:.2f} M")
+        f"sky {sky.A.numel() / 1e6:.2f} M x {len(skies)}")
     winfo = warm_kernel(model, cfg, filt_info_of(exps, fset, info["insts"]), log=log)
-    reg = register_prepass(model, exps, cfg, log=log)
-    rec = fit(model, exps, cfg, log=log)
-    held = [e.eid for e in exps if e.split == "held"]
-    fit_heldout(model, exps, held, cfg, log=log)
+    reg = register_prepass(model, exps, cfg, log=log, ts=ts)
+    rec = fit(model, exps, cfg, log=log, ts=ts)
+    held = [e.cid for e in exps if e.split == "held"]
+    fit_heldout(model, exps, held, cfg, log=log, ts=ts)
     P = {k: v.detach() for k, v in model.prepare().items()}
     pred_dir = Path(cfg.protocol_root) / "pred" / cfg.field / cfg.method_name / cfg.split
     if cfg.write_pred:
         pred_dir.mkdir(parents=True, exist_ok=True)
+
+    def meta_of(e):
+        i = e.eid
+        return {"fitted_on_heldout": ["background quadratic", "affine (4 matrix + 2 shift)", "gain u_e", "code z_e (kernel) and zD_e (distortion)",
+                                      "NIRCam row/column stripes"], "method": cfg.method_name, "affine": (model.affine[i] * model.aff_scale).tolist(),
+                "u": float(model.u[i]), "bkg": model.bkg[i].tolist()}
     scores = {}
-    for i in held:
-        e = exps[i]
-        m, pv, S = predict_exposure(model, e, P, cfg)
-        scores[e.name] = chi2_exposure(e, m, pv, S=S, snr_min=5.0)
-        meta_e = {"fitted_on_heldout": ["background quadratic", "affine (4 matrix + 2 shift)", "gain u_e", "code z_e (kernel) and zD_e (distortion)",
-                                        "NIRCam row/column stripes"], "method": cfg.method_name, "affine": (model.affine[i] * model.aff_scale).tolist(),
-                  "u": float(model.u[i]), "bkg": model.bkg[i].tolist()}
-        if cfg.write_pred:
-            write_prediction(pred_dir / f"{e.name}.npz", e, m, pv, meta_e)
-        log(f"held-out {e.name}: chi2/N (pipeline ERR, own mask, no offset) {scores[e.name]['chi2']:.3f} on {scores[e.name]['n']} px; "
-            f"model S/N>5 {scores[e.name].get('chi2_bright', float('nan')):.3f} ({scores[e.name].get('n_bright', 0)} px)")
+    if ts.multi:
+        scores = predict_merged(model, exps, held, P, cfg, ts, pred_dir=pred_dir if cfg.write_pred else None, meta_fn=meta_of, log=log)
+    else:
+        for i in held:
+            e = exps[i]
+            m, pv, S = predict_exposure(model, e, P, cfg)
+            scores[e.name] = chi2_exposure(e, m, pv, S=S, snr_min=5.0)
+            if cfg.write_pred:
+                write_prediction(pred_dir / f"{e.name}.npz", e, m, pv, meta_of(e))
+            log(f"held-out {e.name}: chi2/N (pipeline ERR, own mask, no offset) {scores[e.name]['chi2']:.3f} on {scores[e.name]['n']} px; "
+                f"model S/N>5 {scores[e.name].get('chi2_bright', float('nan')):.3f} ({scores[e.name].get('n_bright', 0)} px)")
+    with torch.no_grad():
+        effv = model.effective_variability(P)
+        gauges = model.gauge_report(P=P)
+    log(f"effective variability (output space): {({k: round(v, 5) for k, v in effv.items()})}")
+    log(f"gauges: {gauges}")
     metrics = {"config": vars(cfg), "info": info, "fit": rec, "warm_kernel": winfo, "registration_prepass": reg, "tau": model.tau.table(), "heldout_own": scores,
+               "effective_variability": effv, "gauges": gauges, "tiles": ts.summary() if ts.multi else None,
                "approximations": APPROXIMATIONS, "sources_sha256_16": shas, "pred_dir": str(pred_dir), "seconds": time.perf_counter() - T0}
     json.dump(metrics, open(out / "metrics.json", "w"), indent=1, default=str)
-    torch.save({k: v.detach().cpu() for k, v in model.state_dict().items()}, out / "fieldop_state.pt")
+    st = {k: v.detach().cpu() for k, v in model.state_dict().items() if not k.startswith("sky.")}
+    st["skies"] = {k: {kk: vv.detach().cpu() for kk, vv in s_.state_dict().items()} for k, s_ in skies.items()}
+    torch.save(st, out / "fieldop_state.pt")
     log(f"done; predictions in {pred_dir}")
     return metrics
 

@@ -1,7 +1,7 @@
-# fieldop: design note (Phase 2, general field operator), 10 Nov 2026
+# fieldop: design note (Phase 2, general field operator), 10 Nov 2026; several sky patches added 11-12 Nov 2026
 
-Package `fieldop/` (sky.py, bandpass.py, kernel.py, render.py, model.py, data.py, train.py, cli.py, synth.py), runner `run_fieldop.sh`
-(on /arc as `scripts/run_fieldop.sh`), tests `tests/test_fieldop_{render,synth,gauge,area}.py`. Every approximation is listed as F1...F30
+Package `fieldop/` (sky.py, bandpass.py, kernel.py, render.py, model.py, data.py, train.py, cli.py, synth.py, tiles.py), runner `run_fieldop.sh`
+(on /arc as `scripts/run_fieldop.sh`), tests `tests/test_fieldop_{render,synth,gauge,area,tiles}.py`. Every approximation is listed as F1...F36
 in `fieldop/__init__.py` (printed at the start of every run, written to metrics.json). Nothing here is catalogue-based: no source detection,
 no source list, no PSF library. Physics enters only as inputs (filter curves, wavelengths, aperture diameter and pixel scale for the kernel
 warm start, header WCS, pipeline ERR) or as a warm start.
@@ -262,12 +262,154 @@ Fourier ratios |K_a(f)| / |K_b(f)| (f = 1.5-4.5 cycles/arcsec) against the true 
 * Gauge-dependent (reported only): the blur floor is active (dilation 1.56; sharpest-class core m2 1.18e-3 = floor). Common-blur core m2
   2.3e-3 arcsec^2.
 
+## Several sky patches (tiles.py; F32-F36), 11-12 Nov 2026
+
+One operator, one sky per patch (the protocol's scoring boxes, "tiles"), one row of per-exposure nuisances per exposure. Ported from
+opjoint's multi-tile loop (tile swapping, shared exposure rows, tile probabilities), rebuilt on fieldop's own data structures.
+
+* **Data.** `--tiles all` (or a list of box ids). Each `_cal` file is read once (threads, `--load-workers`) and cut once per box it overlaps
+  at its REGISTERED position (header + register_xcorr shift: with 1.8" header errors, a cut at header positions would fall partly outside
+  the sky domain). A cut is a `data.Exposure` with its own pixels, header positions X, Y in its box's tangent plane, the tile id, the tile
+  offset c_k and the GLOBAL exposure id `eid` shared by every cut of the file. Per-exposure metadata (kernel frame, noise level, pedestal
+  reference median) come from the cut with most valid pixels (F33). With one box, cuts = exposures and the code path is the single-box one
+  (bit-identical: all 120 state tensors equal after warm start, registration, fit with tau learning and the held-out fit, checked against
+  the previous package).
+* **Geometry across tiles.** The per-exposure affine acts about the exposure's own reference point r_e in the field frame (centroid of its
+  valid pixels over all its cuts): `Omega = x + M_e (x + c_k - r_e) + t_e`, c_k = gnomonic offset of tile k's centre from the centroid of the
+  selected boxes (F32). One (M_e, t_e) per exposure is then consistent in every tile (test: the same detector pixel lands on the same global
+  position from either tile to 1e-5"), and the lever arm of M_e is the exposure's own extent. The first version used the field centroid
+  as the reference (lever arm 110-136" for the far LMC boxes); it failed, see "What went wrong" below. The north directions of tile frames
+  differ by 0.13 deg across the LMC boxes; ignored (< 0.2 mas). r_e is a plain device tensor, not a registered buffer, so the single-box
+  path allocates nothing new (an extra allocation alone shifts float32 rounding by ~1e-6, which Adam amplifies to 0.06-0.2 differences in
+  the end state; checked).
+* **Shared rows.** Background quadratic, affine, gain u_e, kernel code z_e, distortion code zD_e and NIRCam stripes are per exposure. The
+  stripe gauge masks are the union of the rows / columns of all cuts. The gradient on a shared row is the sum over its tiles (test).
+* **Gauges.** Common shift per connected component of the (exposure, tile) training graph; pedestal per (filter, component of that
+  filter's graph); throughput gauge global (F35). LMC: two components, boxes {0, 1, 2, 3, 5, 6, 7} and {4, 8, 9}; 12 pedestal groups.
+* **Schedule.** A visit = `--visit-steps` (10) steps on one tile drawn with p_k proportional to (training pixels)^0.5 (LMC: dense boxes
+  0.11-0.13, boxes 4, 8, 9 about 0.06). Within a visit the step is the single-box step (inner sky steps on that tile's sky, then the joint
+  step of operator, nuisances and that sky; validation tau steps on the tile's validation cuts when it has any). One Adam per tile sky.
+* **Memory (11 GB slice).** Pixel tensors live on the host (pinned) and are copied per tile into an LRU cache of `--gpu-resident-gb`
+  (LMC: 11.0 GB of pixels, 0.43-1.67 GB per box). Skies stay on the device at 0.04" (~75 MB each with Adam); with `--sky-swap 1` the inactive
+  skies and their Adam state go to the host too (needed at 0.02": ~0.3 GB per sky). Activation checkpointing of the kernel field
+  (`--ckpt-kernel 1`) is needed at batch 8 on LMC: without it the first joint step ran out of memory (10.2 GB allocated); with it the peak
+  is 7.3-8.0 GB including 2.1-2.5 GB of resident pixels.
+* **Held-out exposures.** The nuisance fit cycles 4 times over the tiles (`--held-rounds`), with `--held-steps` x (held-out cuts of the tile
+  / 24) steps per tile; each held-out cut is rendered with its tile's sky; the cuts of an exposure are merged into one file by the nearest
+  tile centre, as stage3_blot merges its tiles.
+* **Tests** (`tests/test_fieldop_tiles.py`, CPU, 4.5 min): shared-exposure handling (one row, consistent geometry, gradient additivity,
+  gauge components); gradients identical (exactly, max difference 0) with the tile resident or evicted and copied back; Adam updates of a
+  tile sky identical with and without sky swapping; a two-patch synthetic fit (independent analytic renderer, 2 instruments, 3 filters, 9
+  exposures per filter of which 6 cover both patches): in 3 CPU-min (241 steps, both tiles visited ~30 times) held-out chi2/N 32.1 (warm
+  start) -> 2.07 (truth 0.98), offsets 41.8 -> 23.4 mas rms, merged predictions rms 0.82-1.19 against the noiseless truth (noise 1). On
+  the CPU the swap tests exercise the bookkeeping (copies, eviction, optimiser state) but not a second device; the first GPU run with
+  `--sky-swap` found a device mismatch (band noise taken from a host-side sky), fixed.
+
+### LMC runs (protocol v1, dither split, 62 held-out exposures; pipeline baseline `stage3_blot` 6.14 [5.25, 7.22])
+
+All: 1 GPU (H100 MIG slice, 10.75 GB), batch 8, `--ckpt-kernel 1`, register_xcorr shifts, 1 registration pre-pass of 40 steps per tile,
+`--n-val-groups 2` (10-tile runs). Setup ~13 min (9 of them reading 518 files from /arc), held-out fit + prediction + scoring ~35 min.
+
+| run (method name) | tiles, fit | s/step, steps | headline chi2/N S/N >= 5 | F090W | F150W | F200W | F277W | F356W | F444W |
+|---|---|---|---|---|---|---|---|---|---|
+| stage3_blot (pipeline) | - | - | **6.14** [5.25, 7.22] | 28.1 | 3.96 | 3.56 | 16.2 | 7.74 | 8.26 |
+| smoke (fieldop_lmc2t_smoke), sky 0.04" | 0, 4; 25 min | 1.97, 764 | 6.74 on its 35 exposures | 34.5 | 6.86 | 4.55 | 8.58 | 6.54 | 3.98 |
+| fieldop_tiles, sky 0.04", tau learned | all; 290 min | 2.02, 8609 | 11.86 [10.38, 13.52] | 55.0 | 8.38 | 8.60 | 18.0 | 15.0 | 27.6 |
+| fieldop_tiles_sky002, sky 0.02", tau learned, sky swap | all; 285 min | 2.25, 7592 | 13.54 [11.41, 16.12] | 113 | 9.57 | 8.06 | 16.8 | 18.2 | 24.9 |
+
+Smoke run, same tiles as the pipeline (box 0 / box 4): 5.45 / 20.9 against 4.67 / 20.6. Per filter it already split the two ways it splits
+below: better than the pipeline in the long-wavelength filters (F277W 8.6 / 8.2 vs 15.4 / 19.6; F444W box 4 8.5 vs 24.5), worse in the
+short-wavelength ones (F090W box 0 37.8 vs 24.1).
+
+Per box (with offset), pipeline / fieldop 0.04" / fieldop 0.02", sorted by the distance |c_k| of the box from the field centroid:
+
+| box | 3 | 1 | 5 | 2 | 7 | 0 | 6 | 8 | 9 | 4 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| \|c_k\| [arcsec] | 34 | 41 | 47 | 63 | 65 | 72 | 111 | 132 | 134 | 136 |
+| stage3_blot | 8.01 | 4.93 | 7.24 | 4.47 | 4.21 | 4.67 | 8.41 | 21.0 | 17.3 | 20.6 |
+| fieldop 0.04" | 9.84 | 6.21 | 9.77 | 5.96 | 5.17 | 5.80 | 23.5 | 139 | 78.4 | 53.4 |
+| fieldop 0.02" | 9.58 | 5.39 | 11.6 | 5.85 | 4.91 | 5.20 | 21.6 | 175 | 114 | 106 |
+
+**What went wrong, and the fix (F32 revised).** The ratio to the pipeline is 1.1-1.35 for the six boxes within 75" of the centroid and
+2.6-8.4 for the four beyond 110" (box 6 is not sparse: 116 training cuts). The first version applied the per-exposure affine about the field
+centroid, so M_e had a 110-136" lever arm in the far boxes: one Adam step of the matrix (~1e-4 at the start of the fit, 3e-5 in the
+held-out fit's last 30%) moves positions by 4-14 mas there. Symptoms: the held-out predictions of `fieldop_tiles` carry a residual
+translation of 9.5 mas median (F090W 18, F444W 26 mas) against 2.6 mas for the pipeline (lmc_anomalies.py), and the training chi2 per patch of
+boxes 4, 8, 9 rose from ~0.6-1.0 to 1.3-3.5 over the fit while the near boxes improved. The affine now acts about each exposure's own
+centroid r_e in the field frame (`Omega = x + M_e (x + c_k - r_e) + t_e`), still one (M_e, t_e) per exposure for all its tiles but with a
+lever arm of the exposure's own extent. The SMACS path is unchanged (bit-identical). Runs with the fix: see below.
+
+**Variability scales (learned runs, end of fit).** Output-space sizes (kernel axes: relative rms change of the level-0 kernel; throughput:
+log g; distortion: mas):
+
+| axis | 0.04" run | 0.02" run | smoke (2 tiles, 25 min) |
+|---|---|---|---|
+| kernel across the detector | 0 (pruned) | 0 (pruned) | tau 0.027, not kept (z 0.4) |
+| kernel between epochs | 0 | 0 | tau 0.29, kept (z 3) |
+| kernel within the band | 0 | 0 | tau 0.11, not kept |
+| kernel per exposure (random effect) | 0.23 | 0.12 | |
+| throughput across the detector / epochs | 0 / 0 | 0 / 0 | ~0.005 / 0.005 |
+| gain per exposure | 0.0058 | 0.0049 | |
+| static distortion | 0 | **2.35 mas, kept (z 4.6)** | 6.2 mas, kept (z 9) |
+| distortion drift / per exposure | 0 / 0.69 mas | 0 / 0.64 mas | |
+
+So no: in the 10-tile fits the evidence rule did NOT keep kernel variation across the detector, even though the ten boxes sample far more
+of each detector than the SMACS box. The function axes were shrunk between 35% (tau start) and ~55% of the fit while the likelihood-ratio
+z stayed below 2; once an axis is below 1e-5 it is skipped by the check and cannot return (absorbing). Two caveats make this a statement about
+the rule, not yet about the instrument: (1) the tile probabilities put 82% of the visits, hence of the validation evaluations, on boxes 0-3 and 5-7
+and 18% on boxes 4, 8, 9, and the far boxes were mis-registered by the lever-arm flaw above, so their evidence was corrupted; (2) the 2-tile smoke run kept the static
+distortion (6 mas) and the kernel epoch term. A matched run with every axis on (`--tau-mode fixed`) tests whether the pruning costs held-out
+accuracy (below).
+
+### Matched 150-min runs: the affine fix, and variability on vs learned
+
+| run (method name) | geometry | tau | s/step, steps | headline | F090W | F150W | F200W | F277W | F356W | F444W | frac. resid. |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| stage3_blot | - | - | - | **6.14** [5.25, 7.22] | 28.1 | 3.96 | 3.56 | 16.2 | 7.74 | 8.26 | 1.47 |
+| fieldop_tiles_taufixed | about the field centroid | fixed (all on) | 1.69, 5326 | 12.19 [10.48, 14.47] | 55.1 | 5.91 | 9.91 | 28.6 | 12.8 | 21.7 | 27.1 |
+| fieldop_tiles_affref_taufixed | about each exposure (fixed) | fixed (all on) | 1.67, 5402 | **8.86** [7.33, 10.74] | 37.5 | 4.90 | 4.64 | 26.2 | 12.1 | 17.0 | 2.41 |
+| **fieldop_tiles_affref** | about each exposure | learned | 1.99, 4533 | **8.54** [7.32, 9.90] | 38.3 | 5.21 | 4.97 | 19.1 | 12.6 | 21.0 | 1.79 |
+
+Per box, pipeline / old geometry / fixed geometry (both tau fixed): 0: 4.67 / 7.15 / 6.50; 1: 4.93 / 7.41 / 7.10; 2: 4.47 / 7.50 / 6.51;
+3: 8.01 / 10.6 / 10.3; 4: 20.6 / 63.6 / 29.9; 5: 7.24 / 12.1 / 10.7; 6: 8.41 / 17.7 / 12.4; 7: 4.21 / 5.95 / 5.64; 8: 21.0 / 94.5 / 30.4;
+9: 17.3 / 82.3 / 33.9. The fix removes most of the far-box failure (factor 2-3) and the fractional-residual outliers (27 -> 2.4); fieldop
+is still behind the pipeline everywhere, by 1.1-1.5x in the near boxes and 1.4-2x in boxes 4, 8, 9. Per (filter, box), the
+short-wavelength cells of the dense boxes are close (F150W / F200W in boxes 0, 1, 2, 7: 2.6-4.6 vs 2.3-3.4); the long-wavelength cells
+are not (F277W 23.6-31.0 vs 13.2-25.4), unlike the 25-min learned-tau smoke run (F277W boxes 0 / 4: 8.6 / 8.2 vs pipeline 15.4 / 19.6).
+The matched learned run (last row) scores the same as the fixed one (8.54 vs 8.86, intervals overlap): F277W is better with learned scales
+(19.1 vs 26.2), F444W worse (21.0 vs 17.0), the rest within 0.4. Per box, pipeline / fieldop_tiles_affref: 0: 4.67 / 5.67; 1: 4.93 / 6.42;
+2: 4.47 / 6.05; 3: 8.01 / 9.28; 4: 20.6 / 31.8; 5: 7.24 / 9.96; 6: 8.41 / 12.1; 7: 4.21 / 5.22; 8: 21.0 / 32.6; 9: 17.3 / 43.2.
+
+**Where fieldop loses (fieldop_tiles_affref vs stage3_blot, by S/N of the official mosaic, with offset):** <1: 1.73 vs 1.85; 1-5: 2.01 vs
+2.11; 5-20: 2.10 vs 2.23; 20-50: 4.72 vs 4.56; 50-200: 35.9 vs 29.0; >200: 536 vs 259. fieldop is better on the faint and intermediate
+pixels (79% of the headline pixels are at S/N 5-20) and loses on star cores: the >200 bin (0.7% of the headline pixels) contributes 4.0 of
+the 8.54 against 1.9 of the 6.14. Consistent with this, the blur gauge was strongly active in the corrected runs (common dilation 2.6-4.2
+logged mid-fit: the kernel field pushes the sharpest kernel class, F090W, well below one sky tent). On LMC (stars) the 0.04" sky cannot hold
+point sources sharp enough for the short-wavelength cores; the 0.02" run was made with the old geometry, so its effect is still unmeasured.
+
+**Variability scales, corrected learned run (end of fit, output space):** kernel across the detector 0, between epochs 0, within the band
+0; throughput across the detector 0, between epochs 0; static distortion 0, drift 0 (all pruned, likelihood-ratio z <= 0.1 at the end);
+random effects: kernel per exposure 0.053 (relative rms change of the kernel), gain per exposure 0.0031, distortion per exposure 0.60 mas.
+Answer to "does the operator keep variation across the detector when patches sample much more of each detector than SMACS does": no,
+neither in the kernel nor in the throughput, with the geometry fixed as well; and switching every axis on at its initial scale does not
+improve held-out prediction (8.86 vs 8.54). Only the 0.02" run (old geometry) and the 2-tile smoke run kept the static distortion (2.4 and
+6 mas). The evidence rule remains first order (F21); a refitted likelihood ratio per axis would be a stronger test.
+
+**Timings and memory (10 tiles):** setup 13 min (reading 518 files: 9 min); registration pre-pass 40 steps x 10 tiles, 3 min; fit 1.65-1.70
+s/step before validation, 2.0-2.3 s/step with validation; tile swaps cost 20 s per 290-min fit at 0.04" (0.1%) and 110 s with sky swapping
+at 0.02" (0.6%); held-out nuisance fit (198 held-out cuts of 62 exposures) ~15 min; prediction ~10 min; scoring ~5 min. Peak GPU memory
+7.9-8.8 GB of 10.75 GB.
+
+**Rendering speed (task 4 of the plan): not attempted** this round (no GPU slot free while the LMC runs ran).
+
 ## Not yet done
 
 * Speed. Python-level loops over patches and levels; one CUDA graph or batched patches would cut the GPU time per step several-fold. This is
   the main limit on budget-matched comparisons.
-* HST (_flt/_flc) and LMC tiles through this package. The loader handles the protocol splits and the xcorr shifts, but only NIRCam detector
-  naming has been run, and there is no multi-tile loop (opjoint's tile swapping is not ported).
+* HST (_flt/_flc) through this package: only NIRCam detector naming has been run. (LMC tiles: done, see "Several sky patches".)
+* Several tiles, not done: checkpoint / resume of long runs; skies of different sizes; cross-fitting (`--xfit`) with several tiles (refused);
+  a per-cut kernel frame (one R_e per exposure, F33); the tile probabilities are not tuned (power 0.5 is a choice); loading reads 518 files
+  in ~9 min with threads (I/O-bound on /arc), a process pool or a cached cut store would cut it.
 * `_rate` input: alpha is implemented and tested, but the per-filter photometric conversion is not an input yet, and rate-trained
   predictions are not scorable against _cal.
 * The non-linearity N_e exists (`--nonlin 1`) but is untested on data. There is no persistence, brighter-fatter or IPC term.
