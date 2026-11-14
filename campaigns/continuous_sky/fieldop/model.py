@@ -88,7 +88,8 @@ class FieldOperator(nn.Module):
             os_ = int(round(sky.pitch / pr))
             if abs(sky.pitch / pr - os_) > 1e-6:
                 raise ValueError("--render-pitch must divide the sky pitch")
-            self.levels_ch.append(Levels(pr, cfg.level_factor, cfg.level_nh, cfg.kernel_extent, a=cfg.level_overlap, device=dev))
+            self.levels_ch.append(Levels(pr, cfg.level_factor, cfg.level_nh, cfg.kernel_extent, a=cfg.level_overlap, device=dev,
+                                         norm_r=getattr(cfg, "kernel_norm_radius", 0.0)))
             self.os_ch.append(os_)
             self.render_pitch_ch.append(pr)
         self.levels = self.levels_ch[int(np.argmin(self.render_pitch_ch))]   # finest (warm start, diagnostics)
@@ -482,7 +483,10 @@ class FieldOperator(nn.Module):
         else:
             qpts, qw = quad
             h = self.codes_at(e_t, pix["xi"], P)                  # (Q, M, dh)
-            c = render_quad(self.sky, A, Phi_q, self.net, self.e_R[e_t], h, pos, qpts, qw, amp_free=(self.amp == "free"), dil=P.get("dil"))
+            lv_q = self.levels_of(e_t)
+            nlog = lv_q.norm_log(qpts.norm(dim=-1)) if lv_q.norm_r > 0 else None
+            c = render_quad(self.sky, A, Phi_q, self.net, self.e_R[e_t], h, pos, qpts, qw, amp_free=(self.amp == "free"), dil=P.get("dil"),
+                            norm_log=nlog)
         gam = self.gamma_at(e_t, pix["xi"], P)
         amp = torch.exp(gam)
         if self.input_level == "rate":

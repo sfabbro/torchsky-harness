@@ -1,7 +1,7 @@
 # fieldop: design note (Phase 2, general field operator), 10 Nov 2026; several sky patches added 11-12 Nov 2026
 
 Package `fieldop/` (sky.py, bandpass.py, kernel.py, render.py, model.py, data.py, train.py, cli.py, synth.py, tiles.py), runner `run_fieldop.sh`
-(on /arc as `scripts/run_fieldop.sh`), tests `tests/test_fieldop_{render,synth,gauge,area,tiles}.py`. Every approximation is listed as F1...F36
+(on /arc as `scripts/run_fieldop.sh`), tests `tests/test_fieldop_{render,synth,gauge,area,tiles}.py` (item sky: `tests/test_items_*.py`, `tests/synth_small.py`). Every approximation is listed as F1...F39
 in `fieldop/__init__.py` (printed at the start of every run, written to metrics.json). Nothing here is catalogue-based: no source detection,
 no source list, no PSF library. Physics enters only as inputs (filter curves, wavelengths, aperture diameter and pixel scale for the kernel
 warm start, header WCS, pipeline ERR) or as a warm start.
@@ -17,6 +17,9 @@ For exposure e, detector pixel xi (normalised to [-1, 1] over the detector), fil
 * **Sky** (sky.py): `s(X, Y, lambda) = sum_k phi_k(lambda) A_k(X, Y)`, 12 RBF bumps over log lambda (v40 basis); `A_k` is a grid at `--sky-pitch`
   (0.04" or 0.02"), and the continuous sky is its bilinear (tent) interpolant, zero outside. Coordinates: tangent plane at the box centre,
   arcsec (X to the west, Y north; the register_xcorr convention).
+* **Item sky, alternative** (`--sky-form items`, sky.py `ItemSky`, 13 Nov 2026; section "Item sky" below): the same `A_k` grid is produced
+  by rasterising Gaussian items with continuous positions, widths, angles and non-negative spectral coefficients (+ an optional coarse
+  smooth grid). The renderers are unchanged and still read the tent interpolant of that grid.
 * **lambda integral** (bandpass.py): nodes at the mid-quantiles of `T_f(lambda)/lambda` (published SVO curve), equal weights 1/Q. This is
   `int dlambda T/(lambda N_f) exp(gamma) [...]` with `N_f = int T dlambda/lambda`, so a flat f_nu sky gives the _cal surface brightness when gamma = 0.
 * **Geometry** (model.py): `Omega = (I + M_e)(X_wcs + shift0_e + D) + t_e` about the box centre, with `M_e`, `t_e` the per-exposure affine.
@@ -402,6 +405,44 @@ at 0.02" (0.6%); held-out nuisance fit (198 held-out cuts of 62 exposures) ~15 m
 
 **Rendering speed (task 4 of the plan): not attempted** this round (no GPU slot free while the LMC runs ran).
 
+## Item sky (`--sky-form items`, sky.py `ItemSky`; F38, F39), 13 Nov 2026
+
+    s(X, Y, lambda) = sum_n [sum_k c_nk phi_k(lambda)] G(X - x_n, Y - y_n; Sigma_n)  (+ tent interpolant of a coarse smooth grid, optional)
+
+* **Parameters per item**: position (x_n, y_n) [arcsec, continuous]; widths `w_i = sqrt(floor^2 + exp(2 l_i))` (floor `--item-floor`,
+  default 0.4 x sky pitch; cap `--item-max-width`, default 16 x pitch); angle; `c_nk = exp(r_nk)` on the package basis (K = 12). 5 + K = 17
+  fitted numbers per item. Optional smooth grid `--item-smooth-pitch` (signed; `--sky-neg` applies to its band images only).
+* **Minimal integration**: `coeffs(view)` returns the items rasterised on the K x N x N grid at `--sky-pitch`; everything downstream (tent
+  read, pooled levels, FFT and quadrature renders, band images, bright-patch strata, held-out prediction) is unchanged. So the sky is still
+  read through a tent grid at the sky pitch: the test is of the parametrisation, not of a grid-free renderer.
+* **Rasterisation**: the cell integral is approximated by adding p^2/12 to both principal variances (box -> isotropic Gaussian of equal
+  variance, which commutes with the rotation) and point-sampling at the nodes, on a patch of +-4 effective widths (patch half-sizes in
+  18 buckets), renormalised so that p^2 x (patch sum) = 1 (exact flux; nodes outside the grid are then dropped, as the sky is zero there),
+  scatter-added with `index_add` in chunks of 4 M elements. Measured (tests/test_items_unit.py): flux error before renormalisation 3.3e-2
+  at the floor, 5.6e-3 at 1.25 floor, 6e-4 at 1.5 floor; per-node error against the exact cell mean 2.2 / 1.2 / 0.45 / 0.03 per cent of
+  the peak at 1 / 1.5 / 2 / 4 x floor; centroid error of the grid 0.025 pitch at the floor, < 1e-3 pitch above 1.5 x floor; gradients
+  (positions, log widths, angles, log coefficients, smooth grid) agree with finite differences to 5e-9 (float64).
+* **Seeding (data-blind)**: square lattices at `--item-levels` sizes, level l holding a share 4^-l of `--item-count` (3 levels: 76 / 19 /
+  5 per cent), width half the spacing; coefficients read from the warm-start coefficients (the same coadd the grid starts from) smoothed
+  at the item width, times the level share and the item area, floored at 1e-3 x their median peak. Reseeded when the registration
+  pre-pass rebuilds the warm start (`reset_from_coeffs`).
+* **Optimiser**: one Adam per sky with groups positions (`--item-lr-pos` x pitch), log widths, angles, log coefficients (`--item-lr-*`),
+  smooth grid (as the grid sky); untuned (steps from the image-only experiment). Optional relocation (`--item-relocate 1`, off): see F39.
+* **Blur gauge**: unchanged (one tent, F18). A rasterised item read by the tent has a 2-d second moment of at least
+  2 floor^2 + p^2/6 (cell) + p^2/3 (tent) = 0.82 p^2 at the default floor, against p^2/3 for one grid node: with the kernel floor of p^2/3
+  the sharpest point source the item model can draw is m2 = 1.15 p^2 (grid: 0.67 p^2). At 0.04" this is 1.8e-3 arcsec^2 against an
+  estimated F090W core m2 of ~5e-4 (0.42 lambda/D and the pixel box); i.e. at 0.04" both forms are already too blunt for the SW cores,
+  the items more so (the long SMACS grid run fieldop_smacs_fix_200_s0 ends with the sharpest kernel class at the floor: M_ref 545e-6
+  against a floor of 533e-6 arcsec^2). This did not show in the synthetic test (true m2 >= 6e-3), not even at a 0.10" sky pitch where it
+  should bind (100 steps, far from convergence).
+* **Synthetic comparison and default-path checks**: tables in ITEMS_REPORT.md (beside the package folder); default `--sky-form grid` gives
+  bit-identical states to the untouched package (single box, 40 steps; two tiles with sky swapping, 12 steps).
+* **Cost**: per rasterisation pass (forward + backward), CPU one thread: 0.08 s for 1500 items on 95^2 (synthetic, ~+15-35 per cent per
+  step), 3.0 s for 60 000 items on 613^2 (SMACS at 0.04", 21.6 M patch nodes, ~0.4 GB saved for the backward pass).
+* **Not done**: a grid-free renderer (items read without the tent); deconvolved (prefiltered) rasterisation to remove the cell + tent blur;
+  cross-fitting with items (implemented, parameter-wise view average, untested); the smooth grid on a synthetic recovery; tuning of the item
+  step sizes and counts.
+
 ## Not yet done
 
 * Speed. Python-level loops over patches and levels; one CUDA graph or batched patches would cut the GPU time per step several-fold. This is
@@ -425,3 +466,35 @@ at 0.02" (0.6%); held-out nuisance fit (198 held-out cuts of 62 exposures) ~15 m
   2. Make the function-axis taus discriminate (larger and more validation sets, or a Laplace evidence on a linearised operator).
   3. Batched rendering for 5-10x more steps per GPU hour.
   4. Longer SMACS runs plus LMC tiles.
+
+## Item sky, 14 Nov 2026: memory-bounded backward pass and any-size rasteriser (F40)
+
+* **Why**: the first two real-data item fits (SMACS, 60,000 items, sky pitch 0.04" and 0.02") ran out of GPU memory (10.75 GB): autograd
+  kept every item patch (items x patch nodes x K) and the patches grew as the items widened during the fit (3.8 GB at step 0, 9.7 GB at
+  step 700 at 0.04"; out of memory at step 1 at 0.02").
+* **Backward pass recomputed in chunks** (`_ItemRaster`, `_raster_vjp`): the forward scatter keeps no graph; the backward pass recomputes
+  each chunk of patches (4 M elements), differentiates it against the gathered grid gradient and frees it. Values and gradients are
+  bit-identical to the plain autograd scatter (float32 and float64, 1500 items on 95^2); first order only (no double backward). The 0.04"
+  item fit then holds 3.3 GB.
+* **Any-size rasteriser** (`--item-raster pyramid`, default `direct` unchanged and bit-identical; `--item-patch {square,sheared}`): Gaussian
+  semigroup. Level l has pitch 2^l p; going down one level is a fixed separable transposed convolution with a discretely normalised
+  Gaussian of width s_l = p_l (taps +-5 s_l); an item is point-sampled at the coarsest level where the smaller principal width left after
+  removing the cascade blur is still >= p_l (switch widths 2.81, 5.99, 12.2, 24.4, ... pitches), with covariance T_n - S_l^2 I. Measured
+  (tests/test_items_pyramid.py and PYRAMID_REPORT.md beside the package folder): worst error 2.1e-4 of the item peak against the exact
+  point-sampled Gaussian (target 1e-3), jump across a level switch <= 2.3e-4 of the peak, flux exact to 2e-15, gradients against finite
+  differences <= 7e-7. The direct path truncates items wider than about 32 nodes (errors 0.05 to 3.4 of the peak); the pyramid path does
+  not up to +-512 nodes per level. Cost (CPU, one thread, 60,000 items, K = 12, forward + backward): round widened items 7.1 s -> 2.3 s at
+  613^2 and 23.9 s -> 4.5 s at 1226^2; elongated items need `--item-patch sheared` to gain (16.1 s -> 4.4 s; 53.5 s -> 8.7 s).
+* **Not yet done**: GPU timings; a fit longer than 30 steps with the pyramid path (whether the 2e-4 switch jumps disturb Adam is untested).
+
+## Flux convention and data-quality policy, 14 Nov 2026 (F41, F42)
+
+* **`--kernel-norm-radius R`** (default 0 = unchanged): the kernel's unit integral is taken inside R only (window 1 to 0.85 R, C1 fall to 0
+  at R). Why: with the unit integral over the whole +-10" support, a flat far pedestal of the kernel acting on the sky is absorbed by the
+  background terms, which nothing pins; the reference SMACS sky (`fieldop_smacs_fix_200_s0`) carries about twice the official mosaic's
+  flux (1.7 to 4 depending on aperture; onesky_v2/kernel_check/KERNEL_CHECK_REPORT.md). Fluxes then are "inside R" fluxes.
+* **`--dq-ignore-bits B`** (default 0 = strict DQ == 0): data-quality bits that do not exclude a pixel. Why: the SMACS `_cal` files
+  re-fetched from MAST on 13 Nov 2026 (CAL_VER 3.0.0, CRDS context 1584) flag the brightest cores SATURATED (bit 2) where the protocol's
+  held-out masks (built from the earlier files) call them valid; with strict DQ == 0 the fit never sees those cores. `B = 2` keeps them.
+* **Scoring** on re-fetched files: `protocol/score_paired.py --dq-zero` also requires the scored file's flag to be zero (0.35 per cent of
+  the SMACS held-out pixels dropped), so that fits made before and after the re-fetch are compared on pixels all of them could train on.

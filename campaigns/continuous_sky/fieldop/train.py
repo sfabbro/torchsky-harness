@@ -186,6 +186,8 @@ def ablation_evidence(model, exps, items, cfg, stats, view_of=None):
 
 
 def sky_regs(model, sig_b, cfg, view=None):
+    if hasattr(model.sky, "reg_terms"):          # item sky (--sky-form items): its own regularisers
+        return model.sky.reg_terms(model.Phi_band, sig_b, cfg, view=view)
     if cfg.sky_neg <= 0 and cfg.sky_tv <= 0:
         return 0.0
     S = torch.einsum("bk,khw->bhw", model.Phi_band, model.sky.coeffs(view)) / sig_b[:, None, None]
@@ -305,7 +307,7 @@ def register_prepass(model, exps, cfg, log=print, ts=None):
                     ts.activate(k)
                 img, wt = splat_coadd(tr, len(model.fset), ts.skies[k].N, ts.skies[k].pitch, model.dev, extra_shift=shifts)
                 A0 = spectral_init(img, model.Phi_band)
-                ts.skies[k].A.data[:] = (A0 / ts.skies[k].pre)[None]
+                ts.skies[k].reset_from_coeffs(A0)
         rms = float(t.pow(2).sum(1).mean().sqrt() * 1e3)
         out.append({"iter": it, "rms_translation_mas": rms, "seconds": time.perf_counter() - t0})
         log(f"registration pre-pass {it}: {cfg.reg_prepass_steps} steps x {sum(1 for k in ts.keys if pools[k].N)} tile(s), translation rms {rms:.1f} mas "
@@ -402,6 +404,15 @@ def step_rows(opt, tensors, eids):
         t.data.copy_(torch.where(keep.view(-1, *([1] * (t.dim() - 1))), s, t.data))
 
 
+def sky_optimizer(sky, cfg, sig_sky):
+    """Adam of one sky: one group (grid; lr = --lr-sky x band noise) or the item sky's own groups (positions, log widths, angles, log
+    coefficients, smooth grid)."""
+    if hasattr(sky, "opt_groups"):
+        return torch.optim.Adam(sky.opt_groups(cfg.lr_sky * sig_sky, cfg))
+    skyp = list(sky.parameters())
+    return torch.optim.Adam([{"params": skyp, "lr": cfg.lr_sky * sig_sky, "base": cfg.lr_sky * sig_sky}])
+
+
 def make_optimizers(model, cfg, sig_sky):
     op, nuis, taus, skyp = model.param_groups()
     sb = float(model.e_sigbar.mean())
@@ -415,7 +426,7 @@ def make_optimizers(model, cfg, sig_sky):
                                  {"params": [nuis["affine"]], "lr": cfg.lr_affine, "base": cfg.lr_affine},
                                  {"params": [nuis["u"], nuis["z"], nuis["zD"]], "lr": cfg.lr_codes, "base": cfg.lr_codes},
                                  {"params": [nuis["stripe_rows"], nuis["stripe_cols"]], "lr": 0.05 * sb, "base": 0.05 * sb}])
-    opt_sky = torch.optim.Adam([{"params": skyp, "lr": cfg.lr_sky * sig_sky, "base": cfg.lr_sky * sig_sky}])
+    opt_sky = sky_optimizer(model.sky, cfg, sig_sky)
     opt_tau = torch.optim.Adam([{"params": taus, "lr": cfg.lr_tau, "base": cfg.lr_tau}]) if taus else None
     return opt_op, opt_nuis, opt_sky, opt_tau
 
@@ -489,6 +500,8 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     budget = cfg.budget_min * 60.0
     step = 0
     visit_left = cfg.visit_steps
+    reloc_marks = [0.15, 0.3, 0.45, 0.6] if getattr(cfg, "item_relocate", 0) and hasattr(model.sky, "relocate") else []
+    reloc_gen = torch.Generator().manual_seed(cfg.seed + 202)
     while True:
         prog = max(step / max(cfg.steps, 1), (time.perf_counter() - t0) / max(budget, 1e-9))
         if prog >= 1.0:
@@ -504,8 +517,7 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
         pool, vpool, opt_sky, sig_b = pools[k], vpools[k], ts.opt_sky[k], ts.sig_b[k]
         set_lr([opt_op, opt_nuis, opt_sky], lr_factor(prog))
         if xfit_on and prog >= cfg.xfit_frac:
-            with torch.no_grad():
-                model.sky.A.data[:] = model.sky.A.data.mean(0, keepdim=True)
+            model.sky.average_views()
             xfit_on = False
             log(f"step {step}: cross-fitting ends, sky views averaged")
         view_of = (lambda i: folds.get(i, 0)) if xfit_on else None
@@ -544,6 +556,12 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
                 model.project_shift(g)
             if not xfit_on:
                 opt_sky.step()
+        # (b') item sky only (--item-relocate 1): faint items moved to where the back-projected residual is positive (active tile's sky)
+        if reloc_marks and prog >= reloc_marks[0]:
+            reloc_marks.pop(0)
+            nmv = model.sky.relocate(model.Phi_band, sig_b, opt_sky, reloc_gen)
+            rec.setdefault("relocated", []).append([step, nmv])
+            log(f"step {step}: relocated {nmv} faint items")
         # (c) variability scales by validation likelihood (half A: nuisances of the validation exposures; half B: tau)
         if learn_tau and prog >= cfg.tau_start and step % cfg.val_every == 0 and vpool is not None and vpool.N:
             with only_grad(model, [nuis[kk] for kk in ("bkg", "affine", "u", "z", "zD", "stripe_rows", "stripe_cols")]):
@@ -595,8 +613,7 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             history(step, model)
         step += 1
     if cfg.xfit > 1 and xfit_on:
-        with torch.no_grad():
-            model.sky.A.data[:] = model.sky.A.data.mean(0, keepdim=True)
+        model.sky.average_views()
     rec["n_steps"] = step
     rec["seconds"] = time.perf_counter() - t0
     rec["s_per_step"] = rec["seconds"] / max(step, 1)

@@ -66,8 +66,29 @@ def build_parser():
     g.add_argument("--sky-tv", type=float, default=0.0)
     g.add_argument("--xfit", type=int, default=1, help="cross-fitting sky views (1 = off, 2 = two folds)")
     g.add_argument("--xfit-frac", type=float, default=0.6)
+    g.add_argument("--sky-form", choices=["grid", "items"], default="grid", help="sky parametrisation: coefficient grid, or Gaussian items "
+                   "rasterised onto that grid (sky.ItemSky)")
+    g.add_argument("--item-count", type=int, default=20000, help="items per sky (tile); split over --item-levels lattices in proportion 4^-l")
+    g.add_argument("--item-levels", type=int, default=3, help="coarse-to-fine seeding lattices")
+    g.add_argument("--item-floor", type=float, default=0.0, help="minimum item width [arcsec] (0 = 0.4 x --sky-pitch)")
+    g.add_argument("--item-max-width", type=float, default=0.0, help="maximum item width [arcsec] (0 = 16 x --sky-pitch); with "
+                   "--item-raster direct, patches are capped at +-128 nodes (wider items are truncated); with pyramid, up to the field size")
+    g.add_argument("--item-raster", choices=["direct", "pyramid"], default="direct", help="item rasteriser: direct (patch of +-4 widths at "
+                   "the sky pitch, cost per item ~ (width / pitch)^2) or pyramid (Gaussian-semigroup pyramid, cost per item independent of "
+                   "its size; F40)")
+    g.add_argument("--item-patch", choices=["square", "sheared"], default="square", help="pyramid only: patch of each item, square "
+                   "(+-4 larger widths) or sheared (+-4 widths in the item's decorrelated coordinates, used where it has 1.5x fewer nodes; "
+                   "cost ~ item area instead of larger width squared, for elongated items; also applied on the fine level; F40)")
+    g.add_argument("--item-smooth-pitch", type=float, default=0.0, help="coarse smooth grid for diffuse light at this pitch [arcsec] (0 = none)")
+    g.add_argument("--item-relocate", type=int, default=0, help="move faint items to the positive back-projected residual at 15/30/45/60 per cent")
+    g.add_argument("--item-lr-pos", type=float, default=0.05, help="Adam step of item positions [sky pitches]")
+    g.add_argument("--item-lr-width", type=float, default=0.03, help="Adam step of item log widths")
+    g.add_argument("--item-lr-angle", type=float, default=0.05, help="Adam step of item angles [rad]")
+    g.add_argument("--item-lr-coef", type=float, default=0.05, help="Adam step of item log spectral coefficients")
     g = ap.add_argument_group("kernel")
     g.add_argument("--kernel-extent", type=float, default=10.0)
+    g.add_argument("--kernel-norm-radius", type=float, default=0.0,
+                   help="arcsec; > 0: the kernel's unit integral is taken inside this radius only (flux convention F41); 0 = whole support")
     g.add_argument("--render-pitch", type=float, default=0.0, help="0 = per channel: largest sky_pitch/k <= pixel / --render-os-pix")
     g.add_argument("--render-os-pix", type=float, default=6.0)
     g.add_argument("--interp", choices=["bspline", "keys"], default="bspline")
@@ -121,6 +142,8 @@ def build_parser():
     g.add_argument("--distortion", type=int, default=1)
     g.add_argument("--affine-prior", type=float, default=0.01)
     g.add_argument("--input-level", choices=["cal", "rate"], default="cal")
+    g.add_argument("--dq-ignore-bits", type=int, default=0,
+                   help="data-quality bits that do not exclude a pixel (F42); 0 = strict DQ == 0; 2 = keep pixels flagged SATURATED only")
     g.add_argument("--nonlin", type=int, default=0)
     g.add_argument("--pattern-grid", type=int, default=8)
     g.add_argument("--stripes", type=int, default=1)
@@ -188,7 +211,14 @@ def make_sky(exps, fset, cfg, half, dev, basis=None):
     if cfg.sky_precond > 0:
         snr = (img.abs() / sb[:, None, None]).amax(0).clamp(max=cfg.sky_precond_cap)
         pre = 1.0 + cfg.sky_precond * torch.nn.functional.max_pool2d(snr[None, None], 5, 1, 2)[0, 0]
-    sky = SkyGrid(A0, cfg.sky_pitch, basis, n_views=max(1, cfg.xfit), precond=pre)
+    if getattr(cfg, "sky_form", "grid") == "items":
+        from .sky import ItemSky
+        sky = ItemSky(A0, cfg.sky_pitch, basis, cfg.item_count, floor=cfg.item_floor, max_width=cfg.item_max_width, n_levels=cfg.item_levels,
+                      smooth_pitch=cfg.item_smooth_pitch, n_views=max(1, cfg.xfit), relocate=cfg.item_relocate, seed=cfg.seed,
+                      raster=getattr(cfg, "item_raster", "direct"),
+                      patch=getattr(cfg, "item_patch", "square") if getattr(cfg, "item_raster", "direct") == "pyramid" else "square")
+    else:
+        sky = SkyGrid(A0, cfg.sky_pitch, basis, n_views=max(1, cfg.xfit), precond=pre)
     sky.register_buffer("sig_b", sb)
     return sky, N
 
@@ -207,10 +237,12 @@ def filt_info_of(exps, fset, insts):
 
 def main(argv=None):
     from . import APPROXIMATIONS, __version__
+    from . import data as _data
     from .data import load_field, make_patches
     from .model import FieldOperator
     from .train import chi2_exposure, fit, fit_heldout, predict_exposure, predict_merged, register_prepass, warm_kernel, write_prediction
     cfg = build_parser().parse_args(argv)
+    _data.DQ_IGNORE_BITS = int(cfg.dq_ignore_bits)
     out = Path(cfg.out)
     out.mkdir(parents=True, exist_ok=True)
     logf = open(out / "fieldop.log", "a")
@@ -252,7 +284,13 @@ def main(argv=None):
         if dev.type == "cuda" and info["multi_tile"]:
             torch.cuda.empty_cache()
     sky = skies[info["tiles"][0]]
-    log(f"sky grid {N} x {N} at {cfg.sky_pitch}\" ({sky.A.numel() / 1e6:.2f} M coefficients per tile, {sky.n_views} view(s)) x {len(skies)} tile(s)")
+    if cfg.sky_form == "items":
+        log(f"item sky: {sky.n_items} items ({sky.n_levels} seeding lattices), floor {sky.floor:.4f}\", max width {sky.max_width:.3f}\", smooth "
+            f"grid {sky.Ns} x {sky.Ns} at {cfg.item_smooth_pitch}\"; rasterised on {N} x {N} at {cfg.sky_pitch}\" ({sky.raster_mode}"
+            f"{', %d coarse levels, %s patches' % (sky.plan().L, sky.patch_shape) if sky.raster_mode == 'pyramid' else ''}); "
+            f"{sky.n_fitted() / 1e6:.3f} M fitted numbers per tile and view, {sky.n_views} view(s)) x {len(skies)} tile(s)")
+    else:
+        log(f"sky grid {N} x {N} at {cfg.sky_pitch}\" ({sky.A.numel() / 1e6:.2f} M coefficients per tile, {sky.n_views} view(s)) x {len(skies)} tile(s)")
     model = FieldOperator(cfg, fset, meta, sky, dev).to(dev)
     ts = TileSet(model, exps, skies, cfg, log=log)
     if ts.multi:
@@ -265,7 +303,7 @@ def main(argv=None):
         pix = float(abs(np.linalg.det(np.asarray(e.extra["J"]))) ** 0.5)
         make_patches(e, max(16, int(round(cfg.patch_arcsec / pix))))
     log(f"patches: {sum(len(e.patches) for e in exps)}; parameters: operator {sum(p.numel() for p in model.param_groups()[0]) / 1e3:.1f} k, "
-        f"sky {sky.A.numel() / 1e6:.2f} M x {len(skies)}")
+        f"sky {sky.n_fitted() * sky.n_views / 1e6:.2f} M x {len(skies)}")
     winfo = warm_kernel(model, cfg, filt_info_of(exps, fset, info["insts"]), log=log)
     reg = register_prepass(model, exps, cfg, log=log, ts=ts)
     rec = fit(model, exps, cfg, log=log, ts=ts)

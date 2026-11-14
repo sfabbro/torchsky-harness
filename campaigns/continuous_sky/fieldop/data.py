@@ -169,6 +169,9 @@ def read_exposure_file(path, rate_path=None):
                 detector=str(h0.get("DETECTOR", "")).strip().upper(), instrument=str(h0.get("INSTRUME", "")).strip().upper())
 
 
+DQ_IGNORE_BITS = 0   # --dq-ignore-bits: data-quality bits that do NOT exclude a pixel (0 = strict DQ == 0, F27; set by cli.main, F42)
+
+
 def load_exposure_file(path, box, half_data, scale=0.01, want_jac=False, rate_path=None, shift0=(0.0, 0.0), raw=None):
     """Read one _cal (or _rate) file (or use `raw` from read_exposure_file); return a dict of numpy arrays for the cut that falls inside the
     data region of `box`, or None. The data region is tested at the REGISTERED positions (header + shift0), so a header error does not move
@@ -202,7 +205,7 @@ def load_exposure_file(path, box, half_data, scale=0.01, want_jac=False, rate_pa
     y0, x0 = y0 + a0, x0 + b0
     y1, x1 = y0 + (a1 - a0), x0 + (b1 - b0)
     d, e, q = sci[y0:y1, x0:x1], err[y0:y1, x0:x1], dq[y0:y1, x0:x1]
-    valid = inside & np.isfinite(d) & np.isfinite(e) & (e > 0) & (q == 0)
+    valid = inside & np.isfinite(d) & np.isfinite(e) & (e > 0) & ((q.astype(np.int64) & ~int(DQ_IGNORE_BITS)) == 0)
     if valid.sum() < 2000:
         return None
     out = dict(d=np.nan_to_num(d), sig=np.where(np.isfinite(e) & (e > 0), e, 1.0).astype(np.float32), valid=valid, X=X.astype(np.float32),

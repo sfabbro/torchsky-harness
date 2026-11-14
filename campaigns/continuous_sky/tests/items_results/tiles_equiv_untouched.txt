@@ -1,0 +1,4 @@
+/home/claude/work/fieldop_items/untouched/fieldop/train.py:580: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /__w/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:820.)
+  rec["steps"].append([step, el, float(loss), chi / max(npx, 1)] + ([k] if ts.multi else []))
+untouched losses [28.348103, 2.243469, 8.2353] state sha256 83b5287df02818fc762a0d8b06a9c85a775a6e1b1e1ab5549a2bea7afa315c73

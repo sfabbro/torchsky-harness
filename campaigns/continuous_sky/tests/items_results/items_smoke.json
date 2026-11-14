@@ -1,0 +1,97 @@
+{
+ "pkg": ".",
+ "sky_form": "items",
+ "seed": 0,
+ "steps": 20,
+ "fit_seconds": 26.480023810000148,
+ "s_per_step": 1.3240011905000073,
+ "setup_seconds": 19.452870426000118,
+ "heldout_seconds": 25.618174067999917,
+ "train_loss_log": [
+  [
+   0,
+   1.375466103000008,
+   6.955389976501465,
+   115.813994140625
+  ],
+  [
+   10,
+   15.55271583900003,
+   2.6378631591796875,
+   23.26663514058023
+  ]
+ ],
+ "heldout_chi2": 26.913864063494135,
+ "heldout_chi2_snr5": 247.05641848983598,
+ "heldout_n_px": 4356,
+ "heldout_n_px_snr5": 457,
+ "heldout_per_exposure": {
+  "A1_0": {
+   "chi2": 69.4315414428711,
+   "n": 1600,
+   "chi2_bright": 705.90869140625,
+   "n_bright": 155
+  },
+  "A2_0": {
+   "chi2": 2.3424766063690186,
+   "n": 1600,
+   "chi2_bright": 12.546269416809082,
+   "n_bright": 175
+  },
+  "B1_0": {
+   "chi2": 2.0747084617614746,
+   "n": 1156,
+   "chi2_bright": 10.183771133422852,
+   "n_bright": 127
+  }
+ },
+ "heldout_truth_noise_chi2": 0.9892498652140299,
+ "sky_fitted_numbers": 25500,
+ "sky_grid_N": 95,
+ "state_sha256": "e6fc4a2b98098a3384acaf8bfd5fbee1729fd323a6b99915fad8d6486c243c00",
+ "registration": {
+  "iters": [
+   {
+    "iter": 0,
+    "rms_translation_mas": 12.785304069519043,
+    "seconds": 9.961821798000074
+   }
+  ]
+ },
+ "relocated": [],
+ "total_seconds": 74.44256223799994,
+ "sky_error": {
+  "summary": {
+   "raw": {
+    "all": 0.5706853173079562,
+    "near_point_sources": 0.5666138289495536,
+    "elsewhere": 0.6660114793715504
+   },
+   "gauge_adjusted": {
+    "all": 0.32090214446401516,
+    "near_point_sources": 0.3286729088667452,
+    "elsewhere": 0.25092574955640384
+   },
+   "gauge_adjusted_blur": [
+    "truth",
+    0.06
+   ],
+   "gauge_adjusted_and_flux_scaled": {
+    "all": 0.21809146116356798,
+    "near_point_sources": 0.15139218486941317,
+    "elsewhere": 0.24143336080659597
+   },
+   "n_nodes": {
+    "all": 19321,
+    "near_point_sources": 1830,
+    "elsewhere": 17491
+   },
+   "sig_c": 0.06,
+   "r_near": 0.15,
+   "mean_true_shift_mas": [
+    -3.931712984357196,
+    6.970127767138842
+   ]
+  }
+ }
+}

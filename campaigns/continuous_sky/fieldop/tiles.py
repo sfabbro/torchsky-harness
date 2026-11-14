@@ -162,8 +162,8 @@ class TileSet:
             sky = self.skies[k]
             sb = sig_fn(sky)
             self.sig_b[k] = sb.to(self.dev)          # used on the device with the active sky (the sky itself may be on the host)
-            lr = cfg.lr_sky * float(sb.mean())
-            self.opt_sky[k] = torch.optim.Adam([{"params": list(sky.parameters()), "lr": lr, "base": lr}])
+            from .train import sky_optimizer
+            self.opt_sky[k] = sky_optimizer(sky, cfg, float(sb.mean()))
 
     def summary(self):
         return {"tiles": self.keys, "p": dict(zip(self.keys, [float(x) for x in self.p])), "train_px": self.train_px,

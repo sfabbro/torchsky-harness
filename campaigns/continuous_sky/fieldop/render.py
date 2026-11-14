@@ -37,8 +37,9 @@ def smooth_down(r, a, b):
 class Levels:
     """Nested level grids of the FFT kernel quadrature (and the windows reused by the per-pixel quadrature)."""
 
-    def __init__(self, p_r, factor, n_h, r_ext, a=0.5, taper=0.85, device="cpu"):
+    def __init__(self, p_r, factor, n_h, r_ext, a=0.5, taper=0.85, device="cpu", norm_r=0.0):
         self.p_r, self.f, self.n_h, self.r_ext, self.a, self.taper = float(p_r), int(factor), int(n_h), float(r_ext), a, taper
+        self.norm_r = float(norm_r)       # > 0: the kernel's unit integral is taken inside this radius only (flux convention, F41)
         L = 0
         while n_h * p_r * factor ** L < r_ext * (1 - 1e-9):
             L += 1
@@ -67,6 +68,12 @@ class Levels:
 
     def window(self, r, l):
         return self.c(r, l) - self.c(r, l - 1)
+
+    def norm_log(self, r):
+        """log of the normalisation window n(r): 1 inside 0.85 norm_r, C1 fall to 0 at norm_r (-inf beyond). Zeros when norm_r <= 0."""
+        if self.norm_r <= 0:
+            return torch.zeros_like(r)
+        return torch.log(smooth_down(r, 0.85 * self.norm_r, self.norm_r))
 
 
 def next_fast(n):
@@ -99,7 +106,7 @@ def kernel_level_values(net, levels, R, codes, amp_free=False, shift0=None, ckpt
     shift0 (2,) in units of the level-0 pitch: random sub-pitch phase of the level-0 grid (training, F11); None = 0.
     Returns list over levels of (C, kh, kw) DISCRETE weights K_l = k w_l p_l^2 / Z (Z omitted when amp_free), and log Z (C,)."""
     C = codes.shape[0]
-    logs, masks = [], []
+    logs, masks, lnorm = [], [], []
     for l in range(levels.L + 1):
         if l == 0 and shift0 is not None:
             u_full = levels.u[0] + shift0.to(levels.u[0].device) * levels.pitch[0]
@@ -118,7 +125,11 @@ def kernel_level_values(net, levels, R, codes, amp_free=False, shift0=None, ckpt
             lg = net(net.enc(v), codes)          # (C, P)
         logs.append(lg + torch.log(w * levels.pitch[l] ** 2)[None])
         masks.append(m)
-    logZ = torch.logsumexp(torch.cat(logs, 1), 1)                    # (C,)
+        lnorm.append(levels.norm_log(u.norm(dim=-1))[None])
+    if levels.norm_r > 0:                        # unit integral inside the normalisation radius only (F41)
+        logZ = torch.logsumexp(torch.cat([a + b for a, b in zip(logs, lnorm)], 1), 1)
+    else:
+        logZ = torch.logsumexp(torch.cat(logs, 1), 1)                # (C,)
     out = []
     for l in range(levels.L + 1):
         m = masks[l]
@@ -141,7 +152,7 @@ def kernel_level_values_grouped(net, levels, Rs, codes, amp_free=False, shift0=N
     """Batched kernel_level_values: Rs (G, 2, 2) one rotation per group (patch), codes (G, C, dh).
     Returns list over levels of (G, C, kh, kw) discrete weights and log Z (G, C)."""
     G, C = codes.shape[:2]
-    logs, masks = [], []
+    logs, masks, lnorm = [], [], []
     for l in range(levels.L + 1):
         if l == 0 and shift0 is not None:
             u_full = levels.u[0] + shift0.to(levels.u[0].device) * levels.pitch[0]
@@ -163,7 +174,11 @@ def kernel_level_values_grouped(net, levels, Rs, codes, amp_free=False, shift0=N
             lg = net(net.enc(v), codes)          # (G, C, P)
         logs.append(lg + torch.log(w * levels.pitch[l] ** 2)[None, None])
         masks.append(m)
-    logZ = torch.logsumexp(torch.cat(logs, -1), -1)                  # (G, C)
+        lnorm.append(levels.norm_log(u.norm(dim=-1))[None, None])
+    if levels.norm_r > 0:
+        logZ = torch.logsumexp(torch.cat([a + b for a, b in zip(logs, lnorm)], -1), -1)
+    else:
+        logZ = torch.logsumexp(torch.cat(logs, -1), -1)              # (G, C)
     out = []
     for l in range(levels.L + 1):
         m = masks[l]
@@ -383,7 +398,7 @@ def quad_points(levels, p_c, n_rad=12, n_az=48, gen=None, device="cpu"):
     return torch.cat(us), torch.cat(ws)
 
 
-def render_quad(sky, A, Phi_q, net, R, codes_pix, pos, qpts, qw, chunk=256, amp_free=False, dil=None):
+def render_quad(sky, A, Phi_q, net, R, codes_pix, pos, qpts, qw, chunk=256, amp_free=False, dil=None, norm_log=None):
     """Per-pixel quadrature: codes_pix (Q, Npix, dh), pos (Q, Npix, 2), points qpts (P, 2) with weights qw (P,). Returns c (Q, Npix)."""
     Q, Np, _ = pos.shape
     feats = net.enc(qpts @ R / (1.0 if dil is None else dil))   # (P, F) shared pattern (detector frame)
@@ -396,6 +411,8 @@ def render_quad(sky, A, Phi_q, net, R, codes_pix, pos, qpts, qw, chunk=256, amp_
             lwt = lg + lw[None]
             if amp_free:
                 wt = torch.exp(lwt)
+            elif norm_log is not None:               # unit integral inside the normalisation radius only (F41)
+                wt = torch.exp(lwt - torch.logsumexp(lwt + norm_log[None], 1, keepdim=True))
             else:
                 wt = torch.softmax(lwt, 1)
             X = pos[q, sl, 0][:, None] + qpts[None, :, 0]
