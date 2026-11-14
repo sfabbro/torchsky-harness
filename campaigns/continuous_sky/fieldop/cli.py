@@ -73,6 +73,11 @@ def build_parser():
     g.add_argument("--item-floor", type=float, default=0.0, help="minimum item width [arcsec] (0 = 0.4 x --sky-pitch)")
     g.add_argument("--item-max-width", type=float, default=0.0, help="maximum item width [arcsec] (0 = 16 x --sky-pitch); with "
                    "--item-raster direct, patches are capped at +-128 nodes (wider items are truncated); with pyramid, up to the field size")
+    g.add_argument("--item-chunk", type=int, default=0, help="elements (items x patch nodes x K) per rasterisation chunk; 0 = 4 M. On a "
+                   "GPU the item scatter is bound by the number of small kernel launches, so larger chunks (32 M) are faster")
+    g.add_argument("--item-buckets", choices=["fine", "coarse"], default="fine", help="patch-size ladder: fine (18 to 25 sizes) or coarse "
+                   "(powers of two: fewer distinct patch shapes, so fewer launches on a GPU, at up to 4x more patch nodes; a larger patch "
+                   "only lowers the truncation error)")
     g.add_argument("--item-raster", choices=["direct", "pyramid"], default="direct", help="item rasteriser: direct (patch of +-4 widths at "
                    "the sky pitch, cost per item ~ (width / pitch)^2) or pyramid (Gaussian-semigroup pyramid, cost per item independent of "
                    "its size; F40)")
@@ -243,6 +248,12 @@ def main(argv=None):
     from .train import chi2_exposure, fit, fit_heldout, predict_exposure, predict_merged, register_prepass, warm_kernel, write_prediction
     cfg = build_parser().parse_args(argv)
     _data.DQ_IGNORE_BITS = int(cfg.dq_ignore_bits)
+    from . import sky as _sky
+    if cfg.item_chunk > 0:
+        _sky.ITEM_CHUNK = int(cfg.item_chunk)
+    if cfg.item_buckets == "coarse":
+        _sky.ITEM_HALF = (2, 4, 8, 16, 32, 64, 128)
+        _sky.PYR_HALF = _sky.ITEM_HALF + (256, 512)
     out = Path(cfg.out)
     out.mkdir(parents=True, exist_ok=True)
     logf = open(out / "fieldop.log", "a")
