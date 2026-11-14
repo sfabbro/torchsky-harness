@@ -1,0 +1,35 @@
+# E2: rendering an arbitrary profile through an undersampled kernel (13 Nov 2026)
+
+**Kernels are STAND-INS** (analytic hexagon pupil, obscuration 0.11 D, three 0.02 D struts, |FFT|^2, 1x1 px box, 0.2 px Gaussian), to be replaced by kernels learned from real data. "Sharp": full width at half maximum (FWHM) 1.15 px (1.0 is unreachable: the box plus diffusion alone give 1.07); "wide": 2.11 px. Support +-32 px, unit sum. All errors are max |error| / peak pixel of the reference, worst of 3 sub-pixel positions (median in the JSON). One thread, machine loaded (load ~3 on 2 cores), so times are good to about +-50%.
+
+| Case (sharp / wide kernel) | max error / peak | ms per item, small (re 2, 65x65) | ms per item, large (re 32, 257x257) |
+|---|---|---|---|
+| Kernel fit, positive Gaussians (50 / 91 of them) | 3.2e-3 / 1.2e-2 (rms 1.4e-4 / 7e-4; flux captured 0.998 / 1.022) | n/a | n/a |
+| Route 1 closed form, K=16, Sérsic 1, re 2 | 1.7e-3 / 3.5e-3 | 88 / 127 | |
+| Route 1, K=16, Sérsic 1, re 32 | 7.3e-4 / 5.2e-3 | | 1330 / 2410 |
+| Route 1, K=8, Sérsic 1, re 2 / re 32 | 1.7e-3 / 3.5e-3 ; 1.2e-2 / 8.0e-3 | 43 / 57 | 710 / 1220 |
+| Route 1, K=16, Sérsic 4, re 2 | 2.8e-3 / 5.9e-3 | | |
+| Route 1, K=16, irregular | 0.19 / 0.06 | | |
+| Route 1, point source | 5.3e-3 / 1.3e-2 | 3.5 | |
+| Route 2 binned, n=4, Sérsic 1 re 2 / re 32 | 5.4e-3 / 3.1e-3 ; 3.9e-4 / 1.7e-4 | 42 / 40 | 154 / 148 |
+| Route 2 binned, n=6, Sérsic 1 re 2 / re 0.5 | 3.9e-3 / 2.1e-3 ; 3.3e-2 / 2.4e-2 | 88 / 84 | 378 / 396 |
+| Route 2 pixel-in-kernel, n=4, Sérsic 1 re 2 / re 32 | 5.2e-3 / 2.8e-3 ; 1.3e-4 / 6.6e-5 | 23 / 15 | 206 / 197 |
+| Route 2 pixel-in-kernel, n=6, Sérsic 1 re 2 / re 0.5 | 4.6e-4 / 2.6e-4 ; 8.0e-3 / 6.4e-3 | 110 / 96 | 429 / 406 |
+| Route 2, Sérsic 4 re 2 (pixel-in-kernel n=6; median of positions) | 5.5e-2 (2.5e-2) / 3.8e-2 (1.9e-2) | | |
+| Route 2, irregular (pixel-in-kernel n=6) | 6.2e-3 / 2.7e-3 | | |
+| Route 2, point source (n=4 to 6, snapped to grid) | 0.07 to 0.27 / 0.03 to 0.13 | | |
+| **2048x2048, 10,000 small + 100 large, one thread** | Route 1 K=8: 500 / 690 s; K=16: 1015 / 1510 s. Route 2 binned n=4: 440 / 415 s; pixel-in-kernel n=4: 250 / 170 s; n=6: 1150 / 1000 s | | |
+
+Estimate assumptions: Sérsic n=1 items, axis ratio 0.5; per-item times added up (no overlap, culling, batching or GPU); small items on 65x65 stamps, large on 257x257; Route 1 excludes the profile fit and Route 2 the kernel tabulation; Route 2 includes a 32 px margin of fine grid.
+
+**Verdict Route 1 (closed form): does not reach 1e-3.** Positive Gaussians on the specified pyramid cannot follow the kernel: max error 3.2e-3 (sharp) and 1.2e-2 (wide) of peak, even with 343 candidates; half-width stencil spacing does not help. Same stencil with signed weights: 9.7e-4 (sharp), 2.6e-3 (wide), so positivity is the limit. Spikes are poorly captured: on about 13,000 spike pixels the fit holds only 0.44 (sharp, 50 Gaussians) and 0.57 (wide, 91) of the true spike signal, rms error on them 1.7e-4 / 5.6e-4 (max 2.7e-3 / 5.1e-3). This kernel error sets an image floor of 7.4e-4 to 3.7e-3 (sharp) and 2.1e-3 to 9e-3 (wide) for Sérsic profiles. Only the Sérsic 1 re 32 / sharp case gets under 1e-3 (7.3e-4), at 1.3 s per item. Profile side: K=8 is enough for Sérsic 1 with re up to 8 (<=6.5e-4), K=16 for re 32; Sérsic 4 needs more than 16 (1e-3 to 1e-2 profile part); irregular profile with 16 free Gaussians fails (0.19 sharp, 0.06 wide; centre cusp not captured).
+
+**Verdict Route 2 (local sampling): reaches 1e-3 for smooth, extended items, not for cusps or point sources.** Sérsic 1: re 32 passes at n=3 to 4 (n=4: 1.3e-4 pixel-in-kernel), re 8 at n=4 pixel-in-kernel (6.8e-4) or n=6 binned (9.1e-4), re 2 needs n=6 (4.6e-4), re 0.5 needs size-adapted n=16 (binned 4e-4, pixel-in-kernel 1e-3). Sérsic 4, irregular and point sources fail at n<=6 (cusp sampled at a point: errors up to 40 x peak when a sample lands on the centre; median over positions 1e-2 to 1e-1). Point sources need kernels shifted to the exact position: snapping by 1/16 px costs 8% (sharp) / 4% (wide) of peak. Kernel truncation: +-16 px costs 2.7e-3 / 5.3e-3 and +-8 px 1.1e-2 / 1.8e-2 on the re 32 Sérsic 1 (flux lost 1.1% / 3.1% for the sharp kernel, 2.3% / 5.5% wide; not renormalised), little change for small items. Size-adapting n helps re 0.5 and 2 but costs 3 to 4 x more time at equal n_base.
+
+**Reference.** Block-average at 16 sub-samples, Richardson-extrapolated with 8 (error is proportional to h^2). Plain 16 vs 8 differ by <=1.5e-3 (Sérsic 4, re 2), <=3e-4 for most, 6.5e-3 for Sérsic 4 re 0.5 (cusp); plain 16 vs the extrapolated reference <=5e-4 (2.2e-3 for that cusp). Extrapolated reference vs an independent scheme (cell-integrated kernel) <=3e-5 everywhere. Point source: tabulated exact kernel at the exact 1/8 px offset.
+
+**Approximations and shortcuts.** (1) Sub-pixel offsets are multiples of 1/8 px (needed for exact point-source reference); some land on grid centres of Route 2 (cusp hits; point-source results for n=8, 16 "exact" are not representative). (2) Sharp FWHM 1.15 not 1.0. (3) Stamps 129 (257 for re 32); profiles truncated to stamp + 32 px margin (Route 2: stamp + kernel half-width); closed-form Gaussians keep their tails. (4) Reference refines cells within min(4 re, 6) px of the centre with 6x6 sub-samples; Route 2 does not. (5) Route 1 parts (kernel only, profile only) are differences of the same 8-sample scheme (exact vs approximate), not errors against the reference. (6) Sérsic Gaussians: widths geometric, 2 parameters by Nelder-Mead, weights by non-negative least squares, flux-weighted objective (area-weighted gave 27% to 70% of flux for n=4); irregular fit: greedy plus L-BFGS, K=16 loss still falling, widths >= 0.25 px, fitted on a 0.5 px grid; not converged. (7) Kernel fit: plain least squares at 4 samples/px via QR, circular Gaussians, stencil centred on the kernel centre. (8) Route 2 has two variants: binning (spec) and the 1x1 box inside the kernel read at pixel centres; point-sampled kernels. (9) Kernel truncation is a cut of the +-32 px table, not renormalised. (10) Timing: median of 3 to 5 repeats after warm-up, noisy under load (non-monotone n=3 vs n=4).
+
+**Not done.** Learned kernels; non-circular kernel Gaussians or free kernel centres; Route 1 with truncated far wings or culling; a faster Route 1 evaluation; Route 2 with interpolated or shifted kernels for point sources; cusp-aware sampling for Route 2; 257 px stamp at 32 px for the irregular case; more than 3 positions or orientations; cost of the 100 large items with overlap. Full rerun from scratch takes about 25 min under load in stages (each under 6 min, resumable; with the cache `--stage final` takes 2 s).
+
+**Looked wrong.** Irregular profile fits stall at about 1e-2 rms (centre cusp from the logarithmic spiral). Route 1 kernel flux captured exceeds 1 for the wide kernel (1.02 to 1.04): tails of the widest Gaussians beyond +-32 px. Route 2 n=3 timing is oddly close to n=2 (FFT size effects plus load).

@@ -1,0 +1,70 @@
+{
+ "F090W": [
+  {
+   "filter": "F090W",
+   "exposure": 0,
+   "source": [
+    8.36,
+    -3.28
+   ],
+   "n_points": 1521,
+   "peak_pkg": 19.677077432835613,
+   "peak_mine": 19.643086360450884,
+   "mean_pkg": 0.9618721721718528,
+   "mean_mine": 0.9619220651737824,
+   "max_abs_diff_over_peak": 0.001986805195956809,
+   "rms_diff_over_peak": 9.89817655719288e-05,
+   "logZ_levels": 2.548210620880127
+  },
+  {
+   "filter": "F090W",
+   "exposure": 0,
+   "source": [
+    0.24,
+    -2.4
+   ],
+   "n_points": 1521,
+   "peak_pkg": 3.7390072043259144,
+   "peak_mine": 3.7297209519898296,
+   "mean_pkg": 0.5895095005986422,
+   "mean_mine": 0.5890812080836505,
+   "max_abs_diff_over_peak": 0.0024836144539494114,
+   "rms_diff_over_peak": 0.00024346153701944247,
+   "logZ_levels": 2.548210620880127
+  }
+ ],
+ "F444W": [
+  {
+   "filter": "F444W",
+   "exposure": 100,
+   "source": [
+    8.36,
+    -3.28
+   ],
+   "n_points": 361,
+   "peak_pkg": 12.709611311867533,
+   "peak_mine": 12.133850504301467,
+   "mean_pkg": 1.4617760024201223,
+   "mean_mine": 1.421745091052159,
+   "max_abs_diff_over_peak": 0.04678330185464192,
+   "rms_diff_over_peak": 0.007047500260862961,
+   "logZ_levels": 2.443838119506836
+  },
+  {
+   "filter": "F444W",
+   "exposure": 100,
+   "source": [
+    0.24,
+    -2.4
+   ],
+   "n_points": 361,
+   "peak_pkg": 3.0138810537815965,
+   "peak_mine": 2.899984826234404,
+   "mean_pkg": 0.7786062242878796,
+   "mean_mine": 0.7643559348716147,
+   "max_abs_diff_over_peak": 0.03779055162256122,
+   "rms_diff_over_peak": 0.006681889448326998,
+   "logZ_levels": 2.443838119506836
+  }
+ ]
+}

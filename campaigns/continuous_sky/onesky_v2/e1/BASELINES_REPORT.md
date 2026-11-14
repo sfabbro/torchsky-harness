@@ -1,0 +1,27 @@
+# E1 baselines: pixel grid, Gaussians, hash-grid neural field (13 Nov 2026)
+
+Standard setting: `make_data(make_spec(0), n=256, zoom=1.0)`, fitted to the noisy image with weights 1/sigma^2, one seed, one CPU thread, at most 200 s per fit (shared machine, so iteration counts depend on load). Code: `baselines.py`; table of all methods: `python summarise.py` (also writes `figs/e1_by_band.png`). chi2_truth = mean squared error against the truth in noise units (the noisy image itself scores 0.992); "image" = fitted numbers.
+
+| method | target | budget | fitted numbers | chi2_truth | psnr dB | fit s | iterations |
+|---|---|---|---|---|---|---|---|
+| grid | noisy | 5000 / 15000 / 45000 | 4900 / 14884 / 44944 | 2.785 / 2.391 / 1.360 | 23.5 / 24.4 / 29.5 | 2 / 2 / 4 | CG 94 / 140 / 231 |
+| gauss_lattice | noisy | 5000 / 15000 / 45000 | 4999 / 14995 / 44995 | 0.861 / 0.266 / 0.495 | 30.2 / 42.4 / 49.0 | 90 / 200 / 201 | 1500 / 791 / 643 |
+| gauss_adaptive | noisy | 5000 / 15000 / 45000 | 4999 / 14995 / 44995 | 0.839 / 0.225 / 0.496 | 30.2 / 50.3 / 48.9 | 94 / 201 / 201 | 1500 / 745 / 656 |
+| hash | noisy | 5000 / 15000 / 45000 | 4999 / 14989 / 44997 | 1.134 / 0.397 / 0.850 | 29.2 / 47.9 / 47.5 | 158 / 200 / 151 | 4000 / 3589 / 4000 |
+| grid, gauss_lattice, gauss_adaptive, hash | truth | 15000 | as above | 2.168, 0.010, 0.004, 0.007 | 24.4, 55.3, 60.9, 66.5 | 3, 200, 200, 157 | 140, 1103, 1155, 4000 |
+
+Per-band fractional errors are in the full table from `summarise.py`.
+
+**What each approximates.** `grid`: G x G coefficients, G = floor(sqrt(budget)) (70, 122, 212), read at pixel centres by bicubic interpolation (torch `grid_sample`, Keys kernel a = -0.75, border padding; it passes through the nodes), exact weighted least squares by conjugate gradients. `gauss_*`: N = (budget-1)//6 anisotropic Gaussians (833, 2499, 7499) plus one constant background; width = sqrt(0.45^2 + exp(2 l)) so never below 0.45 px; flux = exp(raw) (kept positive, not softplus); 1/12 px^2 added to every variance for the box pixel; each Gaussian evaluated on a square patch of half-width 4 widths (sizes 9 to 129) and scatter-added. Lattice seeding: three square lattices (2%, 18%, 80% of N) plus a Halton remainder, width half the spacing, fixed surface brightness of 0.3 per level; nothing read from the data. Adaptive: at 12% steps of the run (to 75%), Gaussians with flux below 3 counts (at most 30% of N per event) move to positions drawn in proportion to the residual (noisy minus model, positive part, smoothed by 2 px), widths reset to 0.5 px, optimiser state reset. `hash`: 12 levels, resolutions 8 to 512 (geometric), 2 features per level, bilinear, dense where (res+1)^2 <= T else hashed with table size T (664, 2705, 134 for the three budgets, chosen so the total including the 1889 network weights stays within budget), MLP 2 x 32 ReLU, softplus output times 10, Adam on random batches of 16384 pixels, pixel = value at its centre.
+
+**Tuned** (budget 15000, noisy target, chi2_truth): Gaussians, learning-rate multiplier 0.25 / 0.5 / 1 / 2 (lattice 0.265 / 0.266 / 0.297 / 0.291; adaptive 0.268 / 0.225 / 0.233 / 0.253); hash, Adam rate 0.003 / 0.01 / 0.03 (0.630 / 0.397 / 0.501). The best value was reused at the other budgets and on the truth target. Selection used chi2_truth (it needs the truth); the same rule for every method. Hash 2 x 2 sub-samples (batch 4096 so equal cost): 0.413, versus 0.397 for the centre value, so centre kept (one run each). Cosine learning-rate decay in all methods, set by whichever of the iteration cap or the 200 s limit comes first.
+
+**Checks.** Grid at budget 65536 (G = 256) fits the noisy image exactly (data loss 1e-12) and scores 0.992, the same as the noisy image (`results/grid__65536__seed0_zoom1.0_sanity__noisy.json`). Fits to the truth reach chi2 of 0.004 to 0.010 (Gaussians, hash) against 2.17 for the grid at 15000, so the grid's error is lack of capacity; the 45000-budget noisy fits overfit instead (training loss 0.13 for hash against 0.42 for Gaussians; for a linear model with 45000 free numbers the expected training loss is about 0.31).
+
+**Not finished / looked wrong or unfair.**
+- Gaussian widths are capped at 7.8 px (patch at most 65 x 65) to keep a fit near 0.3 s per step; wider structure must be tiled. Without the cap a first attempt ran at over 1.5 s per step. This may handicap Gaussians at large scales (the 128 to 1024 px band) and is not applied to the other methods.
+- At budget 45000 the Gaussian fits managed only about 650 iterations in 200 s and were not converged by the iteration count; their chi2_truth is worse than at 15000, which may be overfitting, under-convergence or both. I did not separate these. Hash at 45000 overfits the noise (no regularisation or early stopping was added).
+- `still_falling` is the mean loss of the last 10% of iterations against the preceding 10% (1% threshold); the learning rate has decayed by then, so it mostly says False. It was True for hash at 45000 (and for hash and adaptive Gaussians on the truth target).
+- Adaptive relocation only moved 60 Gaussians at 15000 and 6 at 5000 (652 at 45000); the lattice/adaptive gap at 15000 (0.266 against 0.225) is within the spread I saw between learning rates for the adaptive method (0.225 to 0.268), single seed, so I do not read it as a result.
+- One seed, one noise realisation; no error bars. Hash budget 5000 is dominated by the network (1889 of 4999 numbers).
+- Iteration counts depend on the load from the other agents; rerunning would give somewhat different numbers.

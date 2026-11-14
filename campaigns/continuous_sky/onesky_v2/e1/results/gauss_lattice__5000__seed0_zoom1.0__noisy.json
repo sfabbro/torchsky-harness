@@ -1,0 +1,76 @@
+{
+ "method": "gauss_lattice",
+ "budget": 5000,
+ "variant": "seed0_zoom1.0",
+ "target": "noisy",
+ "n_params_image": 4999,
+ "n_params_shared": 0,
+ "fit_seconds": 89.87050938606262,
+ "n": 256,
+ "zoom": 1.0,
+ "psnr": 30.174838397278464,
+ "rms": 29.667780319269948,
+ "chi2_truth": 0.8613831640818732,
+ "chi2_data": 1.7212222797865997,
+ "frac_err_by_band": {
+  "1-2": 0.5190560228372949,
+  "2-4": 0.48859806822928686,
+  "4-8": 0.42184077638119405,
+  "8-16": 0.32566173351202427,
+  "16-32": 0.25227807653126816,
+  "32-64": 0.177873746967767,
+  "64-128": 0.13917023625508734,
+  "128-1024": 0.053664969442549997
+ },
+ "resid_rms_by_band": {
+  "1-2": 6.111956463024613,
+  "2-4": 20.16157775049475,
+  "4-8": 17.371045273948578,
+  "8-16": 9.959905667847286,
+  "16-32": 5.1905578635539555,
+  "32-64": 2.393580116763606,
+  "64-128": 1.28765046126454,
+  "128-1024": 0.6284079361788772
+ },
+ "truth_rms_by_band": {
+  "1-2": 11.775138316698596,
+  "2-4": 41.26413725613304,
+  "4-8": 41.179151581712745,
+  "8-16": 30.58359224596936,
+  "16-32": 20.574748051524093,
+  "32-64": 13.456623912000646,
+  "64-128": 9.252340844664408,
+  "128-1024": 11.70983497627083
+ },
+ "neg_fraction": 0.0,
+ "extra": {
+  "iterations": 1500,
+  "final_loss": 1.7212241888046265,
+  "still_falling": false,
+  "n_gaussians": 833,
+  "lr_multiplier": 0.5,
+  "steps_planned": 1500,
+  "timed_out": false,
+  "relocated_total": 0,
+  "relocation_threshold_flux": null,
+  "relocation_every_fraction_of_run": null,
+  "relocation_events": 0,
+  "time_limit_s": 200.0,
+  "flux_param": "exp",
+  "min_width": 0.45,
+  "pixel_variance_added": 0.08333333333333333,
+  "max_width": 7.8,
+  "lattice_fractions": [
+   0.02,
+   0.18,
+   0.8
+  ],
+  "lr_sweep_chi2_truth_at_15000_noisy": {
+   "_lr0.5": 0.266,
+   "_lr1.0": 0.297,
+   "_lr2.0": 0.291,
+   "_lr0.25": 0.265
+  },
+  "chosen_by": "lowest chi2_truth at budget 15000, noisy target (uses the truth; same rule for every method)"
+ }
+}

@@ -1,0 +1,950 @@
+{
+ "F090W": [
+  {
+   "exposure": 0,
+   "detector": "NRCB1",
+   "kernel_integral_full": 0.9986964402435221,
+   "kernel_integral_inside_32px": 0.3380559686696199,
+   "mean_sky_band_MJysr": 0.22994614929327553,
+   "mean_pred_full_MJysr": 0.1852762926624306,
+   "mean_pred_trunc32_MJysr": 0.07694022684659405,
+   "mean_wing_MJysr": 0.10833606581583653,
+   "wing_rms_over_region_MJysr": 0.03480361841664739,
+   "wing_p05_p95_MJysr": [
+    0.05767976395508024,
+    0.16870897429293122
+   ],
+   "background_constant_MJysr": 0.226600781083107,
+   "data_median_bkg0_MJysr": 0.22251781821250916,
+   "gain_exp_gamma_mean": 0.9998711371010678,
+   "wing_over_background_constant": 0.4780921994090732,
+   "wing_over_data_median": 0.48686467756201585,
+   "wing_over_full_prediction": 0.584727081155615,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.9960919618606567,
+     -0.42256999015808105,
+     -0.9960912466049194,
+     -0.3483147621154785
+    ],
+    "constant": 0.226600781083107,
+    "legendre_mean": 0.20046468079090118,
+    "pattern_mean": -0.10537602007389069,
+    "pattern_min_max": [
+     -0.1274583339691162,
+     0.015359601005911827
+    ],
+    "total_mean": 0.0950886458158493,
+    "data_median": 0.22251781821250916
+   },
+   "model_mean_full": 0.2803649384782799
+  },
+  {
+   "exposure": 6,
+   "detector": "NRCB2",
+   "kernel_integral_full": 0.9987947808927083,
+   "kernel_integral_inside_32px": 0.336681514803433,
+   "mean_sky_band_MJysr": 0.23066525964384843,
+   "mean_pred_full_MJysr": 0.18582301442663343,
+   "mean_pred_trunc32_MJysr": 0.07683264401377522,
+   "mean_wing_MJysr": 0.10899037041285818,
+   "wing_rms_over_region_MJysr": 0.03501866086289533,
+   "wing_p05_p95_MJysr": [
+    0.05809085304016784,
+    0.1698340184713549
+   ],
+   "background_constant_MJysr": 0.21085166931152344,
+   "data_median_bkg0_MJysr": 0.20634567737579346,
+   "gain_exp_gamma_mean": 1.0029980330553525,
+   "wing_over_background_constant": 0.5169054187179805,
+   "wing_over_data_median": 0.5281931359015903,
+   "wing_over_full_prediction": 0.586527835366107,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.9960917830467224,
+     -0.3991202712059021,
+     0.42745471000671387,
+     0.9960912466049194
+    ],
+    "constant": 0.21085166931152344,
+    "legendre_mean": 0.19296632707118988,
+    "pattern_mean": -0.07205858081579208,
+    "pattern_min_max": [
+     -0.09973427653312683,
+     0.008826135657727718
+    ],
+    "total_mean": 0.1209077537059784,
+    "data_median": 0.20634567737579346
+   },
+   "model_mean_full": 0.3067307681326118
+  },
+  {
+   "exposure": 16,
+   "detector": "NRCB3",
+   "kernel_integral_full": 0.99874013656374,
+   "kernel_integral_inside_32px": 0.3366412341342504,
+   "mean_sky_band_MJysr": 0.23012851977220564,
+   "mean_pred_full_MJysr": 0.18533954664463873,
+   "mean_pred_trunc32_MJysr": 0.0766420866708321,
+   "mean_wing_MJysr": 0.10869745997380666,
+   "wing_rms_over_region_MJysr": 0.03492892292203713,
+   "wing_p05_p95_MJysr": [
+    0.05789476265938334,
+    0.1693710594752552
+   ],
+   "background_constant_MJysr": 0.2087070643901825,
+   "data_median_bkg0_MJysr": 0.2029762864112854,
+   "gain_exp_gamma_mean": 1.0006641357170565,
+   "wing_over_background_constant": 0.5208135157830324,
+   "wing_over_data_median": 0.5355180247684496,
+   "wing_over_full_prediction": 0.5864774244981726,
+   "background_over_footprint": {
+    "footprint_xi": [
+     0.37176379561424255,
+     0.9960922002792358,
+     -0.9960922002792358,
+     -0.4509037435054779
+    ],
+    "constant": 0.2087070643901825,
+    "legendre_mean": 0.19126732647418976,
+    "pattern_mean": -0.10461463034152985,
+    "pattern_min_max": [
+     -0.12400959432125092,
+     0.00876797828823328
+    ],
+    "total_mean": 0.0866527110338211,
+    "data_median": 0.2029762864112854
+   },
+   "model_mean_full": 0.2719922576784598
+  },
+  {
+   "exposure": 23,
+   "detector": "NRCB1",
+   "kernel_integral_full": 0.9985800286776167,
+   "kernel_integral_inside_32px": 0.34069089860324,
+   "mean_sky_band_MJysr": 0.23062739190089793,
+   "mean_pred_full_MJysr": 0.1859974146626641,
+   "mean_pred_trunc32_MJysr": 0.07778406195486791,
+   "mean_wing_MJysr": 0.1082133527077962,
+   "wing_rms_over_region_MJysr": 0.03476653740135699,
+   "wing_p05_p95_MJysr": [
+    0.05760756898863372,
+    0.16861726577393216
+   ],
+   "background_constant_MJysr": 0.23578985035419464,
+   "data_median_bkg0_MJysr": 0.2358616441488266,
+   "gain_exp_gamma_mean": 1.0028333733586376,
+   "wing_over_background_constant": 0.45893982520978815,
+   "wing_over_data_median": 0.458800128771741,
+   "wing_over_full_prediction": 0.5818003056873577,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.9960919618606567,
+     -0.42256999015808105,
+     -0.9960912466049194,
+     -0.3483147621154785
+    ],
+    "constant": 0.23578985035419464,
+    "legendre_mean": 0.20785756409168243,
+    "pattern_mean": -0.10537602007389069,
+    "pattern_min_max": [
+     -0.1274583339691162,
+     0.015359601005911827
+    ],
+    "total_mean": 0.10248155146837234,
+    "data_median": 0.2358616441488266
+   },
+   "model_mean_full": 0.2884789661310364
+  }
+ ],
+ "F150W": [
+  {
+   "exposure": 41,
+   "detector": "NRCB1",
+   "kernel_integral_full": 0.9982012893186356,
+   "kernel_integral_inside_32px": 0.40237689537518007,
+   "mean_sky_band_MJysr": 0.27365939665705097,
+   "mean_pred_full_MJysr": 0.23071825574897234,
+   "mean_pred_trunc32_MJysr": 0.10943713143731898,
+   "mean_wing_MJysr": 0.12128112431165336,
+   "wing_rms_over_region_MJysr": 0.05167322877124339,
+   "wing_p05_p95_MJysr": [
+    0.051934383211711385,
+    0.21891088868937975
+   ],
+   "background_constant_MJysr": 0.26208412647247314,
+   "data_median_bkg0_MJysr": 0.26332488656044006,
+   "gain_exp_gamma_mean": 0.9977782789155599,
+   "wing_over_background_constant": 0.4627564665744516,
+   "wing_over_data_median": 0.46057600516165464,
+   "wing_over_full_prediction": 0.5256676543342564,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.9960919618606567,
+     -0.42256999015808105,
+     -0.9960912466049194,
+     -0.3483147621154785
+    ],
+    "constant": 0.26208412647247314,
+    "legendre_mean": 0.22961968183517456,
+    "pattern_mean": -0.10537602007389069,
+    "pattern_min_max": [
+     -0.1274583339691162,
+     0.015359601005911827
+    ],
+    "total_mean": 0.12424363195896149,
+    "data_median": 0.26332488656044006
+   },
+   "model_mean_full": 0.3549618877079338
+  },
+  {
+   "exposure": 47,
+   "detector": "NRCB2",
+   "kernel_integral_full": 0.9982794004979235,
+   "kernel_integral_inside_32px": 0.39401076666736856,
+   "mean_sky_band_MJysr": 0.275258615271879,
+   "mean_pred_full_MJysr": 0.23144850539365838,
+   "mean_pred_trunc32_MJysr": 0.10774665825259808,
+   "mean_wing_MJysr": 0.12370184714106033,
+   "wing_rms_over_region_MJysr": 0.05266682044356985,
+   "wing_p05_p95_MJysr": [
+    0.052941329023034986,
+    0.22316216336143468
+   ],
+   "background_constant_MJysr": 0.22936703264713287,
+   "data_median_bkg0_MJysr": 0.22413790225982666,
+   "gain_exp_gamma_mean": 1.0036091241801668,
+   "wing_over_background_constant": 0.5393183393158687,
+   "wing_over_data_median": 0.5519006196357715,
+   "wing_over_full_prediction": 0.5344681182134337,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.9960917830467224,
+     -0.3991202712059021,
+     0.42745471000671387,
+     0.9960912466049194
+    ],
+    "constant": 0.22936703264713287,
+    "legendre_mean": 0.210607647895813,
+    "pattern_mean": -0.07205858081579208,
+    "pattern_min_max": [
+     -0.09973427653312683,
+     0.008826135657727718
+    ],
+    "total_mean": 0.1385490894317627,
+    "data_median": 0.22413790225982666
+   },
+   "model_mean_full": 0.36999759482542105
+  },
+  {
+   "exposure": 53,
+   "detector": "NRCB3",
+   "kernel_integral_full": 0.9980667049840033,
+   "kernel_integral_inside_32px": 0.40492687671608474,
+   "mean_sky_band_MJysr": 0.27531237909892564,
+   "mean_pred_full_MJysr": 0.2322750315877391,
+   "mean_pred_trunc32_MJysr": 0.11079356772915908,
+   "mean_wing_MJysr": 0.12148146385858002,
+   "wing_rms_over_region_MJysr": 0.05179331270197048,
+   "wing_p05_p95_MJysr": [
+    0.05203695585283673,
+    0.21944079793101867
+   ],
+   "background_constant_MJysr": 0.23103360831737518,
+   "data_median_bkg0_MJysr": 0.22783464193344116,
+   "gain_exp_gamma_mean": 1.0038051502603007,
+   "wing_over_background_constant": 0.525817281491352,
+   "wing_over_data_median": 0.5332001438748248,
+   "wing_over_full_prediction": 0.523006984556977,
+   "background_over_footprint": {
+    "footprint_xi": [
+     0.37176379561424255,
+     0.9960922002792358,
+     -0.9960922002792358,
+     -0.4509037435054779
+    ],
+    "constant": 0.23103360831737518,
+    "legendre_mean": 0.2101106196641922,
+    "pattern_mean": -0.10461463034152985,
+    "pattern_min_max": [
+     -0.12400959432125092,
+     0.00876797828823328
+    ],
+    "total_mean": 0.10549598932266235,
+    "data_median": 0.22783464193344116
+   },
+   "model_mean_full": 0.33777102091040145
+  },
+  {
+   "exposure": 64,
+   "detector": "NRCB1",
+   "kernel_integral_full": 0.9980332150456543,
+   "kernel_integral_inside_32px": 0.40552082459182137,
+   "mean_sky_band_MJysr": 0.27487856051363696,
+   "mean_pred_full_MJysr": 0.23189235363855348,
+   "mean_pred_trunc32_MJysr": 0.11083698471260987,
+   "mean_wing_MJysr": 0.12105536892594362,
+   "wing_rms_over_region_MJysr": 0.05147964238984396,
+   "wing_p05_p95_MJysr": [
+    0.051819169142549096,
+    0.2180908148864449
+   ],
+   "background_constant_MJysr": 0.25897592306137085,
+   "data_median_bkg0_MJysr": 0.2604047656059265,
+   "gain_exp_gamma_mean": 1.002223422146161,
+   "wing_over_background_constant": 0.4674387004588705,
+   "wing_over_data_median": 0.4648738614451399,
+   "wing_over_full_prediction": 0.5220326027421779,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.9960919618606567,
+     -0.42256999015808105,
+     -0.9960912466049194,
+     -0.3483147621154785
+    ],
+    "constant": 0.25897592306137085,
+    "legendre_mean": 0.22436299920082092,
+    "pattern_mean": -0.10537602007389069,
+    "pattern_min_max": [
+     -0.1274583339691162,
+     0.015359601005911827
+    ],
+    "total_mean": 0.11898696422576904,
+    "data_median": 0.2604047656059265
+   },
+   "model_mean_full": 0.3508793178643225
+  }
+ ],
+ "F200W": [
+  {
+   "exposure": 82,
+   "detector": "NRCB1",
+   "kernel_integral_full": 0.998000647428073,
+   "kernel_integral_inside_32px": 0.4318613248903343,
+   "mean_sky_band_MJysr": 0.2869960429344524,
+   "mean_pred_full_MJysr": 0.24695577983152286,
+   "mean_pred_trunc32_MJysr": 0.12330669209428886,
+   "mean_wing_MJysr": 0.12364908773723401,
+   "wing_rms_over_region_MJysr": 0.05820566173108568,
+   "wing_p05_p95_MJysr": [
+    0.04939753424251891,
+    0.23600245417189522
+   ],
+   "background_constant_MJysr": 0.23013785481452942,
+   "data_median_bkg0_MJysr": 0.2328796684741974,
+   "gain_exp_gamma_mean": 1.0008741039423956,
+   "wing_over_background_constant": 0.5372826988279878,
+   "wing_over_data_median": 0.5309569897079018,
+   "wing_over_full_prediction": 0.5006932326977298,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.9960919618606567,
+     -0.42256999015808105,
+     -0.9960912466049194,
+     -0.3483147621154785
+    ],
+    "constant": 0.23013785481452942,
+    "legendre_mean": 0.19596266746520996,
+    "pattern_mean": -0.10537602007389069,
+    "pattern_min_max": [
+     -0.1274583339691162,
+     0.015359601005911827
+    ],
+    "total_mean": 0.09058664739131927,
+    "data_median": 0.2328796684741974
+   },
+   "model_mean_full": 0.3375424272228421
+  },
+  {
+   "exposure": 88,
+   "detector": "NRCB2",
+   "kernel_integral_full": 0.9983936524966084,
+   "kernel_integral_inside_32px": 0.4205334285044918,
+   "mean_sky_band_MJysr": 0.28758795945730553,
+   "mean_pred_full_MJysr": 0.24682327460785383,
+   "mean_pred_trunc32_MJysr": 0.12023761260783367,
+   "mean_wing_MJysr": 0.12658566200002017,
+   "wing_rms_over_region_MJysr": 0.05980139885577007,
+   "wing_p05_p95_MJysr": [
+    0.05059218188123302,
+    0.2421721426498648
+   ],
+   "background_constant_MJysr": 0.1891452819108963,
+   "data_median_bkg0_MJysr": 0.18461060523986816,
+   "gain_exp_gamma_mean": 1.0029383620881245,
+   "wing_over_background_constant": 0.6692509626523643,
+   "wing_over_data_median": 0.6856900871731878,
+   "wing_over_full_prediction": 0.5128595032260878,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.9960917830467224,
+     -0.3991202712059021,
+     0.42745471000671387,
+     0.9960912466049194
+    ],
+    "constant": 0.1891452819108963,
+    "legendre_mean": 0.1715197116136551,
+    "pattern_mean": -0.07205858081579208,
+    "pattern_min_max": [
+     -0.09973427653312683,
+     0.008826135657727718
+    ],
+    "total_mean": 0.0994611531496048,
+    "data_median": 0.18461060523986816
+   },
+   "model_mean_full": 0.3462844277574586
+  },
+  {
+   "exposure": 94,
+   "detector": "NRCB3",
+   "kernel_integral_full": 0.9980208230409056,
+   "kernel_integral_inside_32px": 0.4327182794755203,
+   "mean_sky_band_MJysr": 0.28733937479607574,
+   "mean_pred_full_MJysr": 0.24735995386700688,
+   "mean_pred_trunc32_MJysr": 0.12369482402939225,
+   "mean_wing_MJysr": 0.12366512983761466,
+   "wing_rms_over_region_MJysr": 0.05832020351250915,
+   "wing_p05_p95_MJysr": [
+    0.0494354671513135,
+    0.23635488995522927
+   ],
+   "background_constant_MJysr": 0.20209059119224548,
+   "data_median_bkg0_MJysr": 0.19560855627059937,
+   "gain_exp_gamma_mean": 1.0020714443859908,
+   "wing_over_background_constant": 0.6119291804138176,
+   "wing_over_data_median": 0.6322071600310766,
+   "wing_over_full_prediction": 0.49993997777062665,
+   "background_over_footprint": {
+    "footprint_xi": [
+     0.37176379561424255,
+     0.9960922002792358,
+     -0.9960922002792358,
+     -0.4509037435054779
+    ],
+    "constant": 0.20209059119224548,
+    "legendre_mean": 0.18778342008590698,
+    "pattern_mean": -0.10461463034152985,
+    "pattern_min_max": [
+     -0.12400959432125092,
+     0.00876797828823328
+    ],
+    "total_mean": 0.08316878229379654,
+    "data_median": 0.19560855627059937
+   },
+   "model_mean_full": 0.3305287361608034
+  },
+  {
+   "exposure": 106,
+   "detector": "NRCB2",
+   "kernel_integral_full": 0.9984759326126154,
+   "kernel_integral_inside_32px": 0.41484215206281416,
+   "mean_sky_band_MJysr": 0.2856931935163783,
+   "mean_pred_full_MJysr": 0.24476222982186305,
+   "mean_pred_trunc32_MJysr": 0.11787201470809691,
+   "mean_wing_MJysr": 0.12689021511376616,
+   "wing_rms_over_region_MJysr": 0.05973366810250481,
+   "wing_p05_p95_MJysr": [
+    0.05066898997636724,
+    0.24218318561610497
+   ],
+   "background_constant_MJysr": 0.18583950400352478,
+   "data_median_bkg0_MJysr": 0.1865420639514923,
+   "gain_exp_gamma_mean": 0.9963305282521043,
+   "wing_over_background_constant": 0.6827946285917738,
+   "wing_over_data_median": 0.6802230683303805,
+   "wing_over_full_prediction": 0.5184223693586888,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.9960917830467224,
+     -0.3991202712059021,
+     0.42745471000671387,
+     0.9960912466049194
+    ],
+    "constant": 0.18583950400352478,
+    "legendre_mean": 0.15471071004867554,
+    "pattern_mean": -0.07205858081579208,
+    "pattern_min_max": [
+     -0.09973427653312683,
+     0.008826135657727718
+    ],
+    "total_mean": 0.08265211433172226,
+    "data_median": 0.1865420639514923
+   },
+   "model_mean_full": 0.3274143441535853
+  }
+ ],
+ "F277W": [
+  {
+   "exposure": 4,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.9889262988811998,
+   "kernel_integral_inside_32px": 0.47208864206755563,
+   "mean_sky_band_MJysr": 0.29209448267695437,
+   "mean_pred_full_MJysr": 0.24804922644806573,
+   "mean_pred_trunc32_MJysr": 0.1356486060501808,
+   "mean_wing_MJysr": 0.11240062039788494,
+   "wing_rms_over_region_MJysr": 0.04848775159628168,
+   "wing_p05_p95_MJysr": [
+    0.04869700884993462,
+    0.19927009330132295
+   ],
+   "background_constant_MJysr": 0.13996876776218414,
+   "data_median_bkg0_MJysr": 0.13946369290351868,
+   "gain_exp_gamma_mean": 0.9989168963076848,
+   "wing_over_background_constant": 0.8030407225479098,
+   "wing_over_data_median": 0.8059489753770106,
+   "wing_over_full_prediction": 0.4531383629265957,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.13996876776218414,
+    "legendre_mean": 0.11667481064796448,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": -0.01073487102985382,
+    "data_median": 0.13946369290351868
+   },
+   "model_mean_full": 0.23731435541821191
+  },
+  {
+   "exposure": 13,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.9900694374567596,
+   "kernel_integral_inside_32px": 0.47280141867240627,
+   "mean_sky_band_MJysr": 0.29178829577912185,
+   "mean_pred_full_MJysr": 0.24805479509293318,
+   "mean_pred_trunc32_MJysr": 0.1356984663528027,
+   "mean_wing_MJysr": 0.1123563287401305,
+   "wing_rms_over_region_MJysr": 0.04844440420252108,
+   "wing_p05_p95_MJysr": [
+    0.04864933816890178,
+    0.19896074241602865
+   ],
+   "background_constant_MJysr": 0.14073368906974792,
+   "data_median_bkg0_MJysr": 0.14004401862621307,
+   "gain_exp_gamma_mean": 0.9978697855821761,
+   "wing_over_background_constant": 0.7983612842298653,
+   "wing_over_data_median": 0.8022929493334315,
+   "wing_over_full_prediction": 0.45294963436621516,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.14073368906974792,
+    "legendre_mean": 0.11993793398141861,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": -0.0074717639945447445,
+    "data_median": 0.14004401862621307
+   },
+   "model_mean_full": 0.24058303109838844
+  },
+  {
+   "exposure": 22,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.9881035055234157,
+   "kernel_integral_inside_32px": 0.4722080450111168,
+   "mean_sky_band_MJysr": 0.29204926865437364,
+   "mean_pred_full_MJysr": 0.24786516629140187,
+   "mean_pred_trunc32_MJysr": 0.135672891578509,
+   "mean_wing_MJysr": 0.11219227471289285,
+   "wing_rms_over_region_MJysr": 0.0484456717157794,
+   "wing_p05_p95_MJysr": [
+    0.048609146383388445,
+    0.19918630849297006
+   ],
+   "background_constant_MJysr": 0.13778415322303772,
+   "data_median_bkg0_MJysr": 0.13980767130851746,
+   "gain_exp_gamma_mean": 0.9987622715072024,
+   "wing_over_background_constant": 0.8142610894540384,
+   "wing_over_data_median": 0.8024758131141105,
+   "wing_over_full_prediction": 0.4526342946511264,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.13778415322303772,
+    "legendre_mean": 0.11537615209817886,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": -0.012033544480800629,
+    "data_median": 0.13980767130851746
+   },
+   "model_mean_full": 0.23583162181060124
+  },
+  {
+   "exposure": 27,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.989203223046631,
+   "kernel_integral_inside_32px": 0.47185804024682143,
+   "mean_sky_band_MJysr": 0.2932218557422071,
+   "mean_pred_full_MJysr": 0.24904480526336684,
+   "mean_pred_trunc32_MJysr": 0.13610210026674546,
+   "mean_wing_MJysr": 0.11294270499662135,
+   "wing_rms_over_region_MJysr": 0.04873555971496416,
+   "wing_p05_p95_MJysr": [
+    0.048929092041543484,
+    0.20029808877732247
+   ],
+   "background_constant_MJysr": 0.13868150115013123,
+   "data_median_bkg0_MJysr": 0.1409033238887787,
+   "gain_exp_gamma_mean": 1.0027723337435526,
+   "wing_over_background_constant": 0.8144035365924829,
+   "wing_over_data_median": 0.8015616798775598,
+   "wing_over_full_prediction": 0.4535035568285937,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.13868150115013123,
+    "legendre_mean": 0.11367739737033844,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": -0.013732300139963627,
+    "data_median": 0.1409033238887787
+   },
+   "model_mean_full": 0.2353125051234032
+  }
+ ],
+ "F356W": [
+  {
+   "exposure": 45,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.9915886453666055,
+   "kernel_integral_inside_32px": 0.42044576561152436,
+   "mean_sky_band_MJysr": 0.2574880805686821,
+   "mean_pred_full_MJysr": 0.21517110125949682,
+   "mean_pred_trunc32_MJysr": 0.10649504809309124,
+   "mean_wing_MJysr": 0.10867605316640563,
+   "wing_rms_over_region_MJysr": 0.038811150195386494,
+   "wing_p05_p95_MJysr": [
+    0.055234627953490455,
+    0.17663708624886731
+   ],
+   "background_constant_MJysr": 0.13609474897384644,
+   "data_median_bkg0_MJysr": 0.135416641831398,
+   "gain_exp_gamma_mean": 0.99999246365226,
+   "wing_over_background_constant": 0.7985323018398756,
+   "wing_over_data_median": 0.802531001335227,
+   "wing_over_full_prediction": 0.5050680715499154,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.13609474897384644,
+    "legendre_mean": 0.11856811493635178,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": -0.00884157232940197,
+    "data_median": 0.135416641831398
+   },
+   "model_mean_full": 0.20632952893009485
+  },
+  {
+   "exposure": 50,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.9922217471678012,
+   "kernel_integral_inside_32px": 0.42171445359002685,
+   "mean_sky_band_MJysr": 0.2572651896407781,
+   "mean_pred_full_MJysr": 0.21524009550851386,
+   "mean_pred_trunc32_MJysr": 0.10673159093954561,
+   "mean_wing_MJysr": 0.10850850456896824,
+   "wing_rms_over_region_MJysr": 0.03877313408680935,
+   "wing_p05_p95_MJysr": [
+    0.05519224420264133,
+    0.17664650465201726
+   ],
+   "background_constant_MJysr": 0.1385614573955536,
+   "data_median_bkg0_MJysr": 0.13802994787693024,
+   "gain_exp_gamma_mean": 0.999126834270006,
+   "wing_over_background_constant": 0.7831074139124222,
+   "wing_over_data_median": 0.7861229120054164,
+   "wing_over_full_prediction": 0.5041277477256841,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.1385614573955536,
+    "legendre_mean": 0.12119673192501068,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": -0.006212970707565546,
+    "data_median": 0.13802994787693024
+   },
+   "model_mean_full": 0.20902712480094832
+  },
+  {
+   "exposure": 68,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.9917020339177702,
+   "kernel_integral_inside_32px": 0.42051045945291665,
+   "mean_sky_band_MJysr": 0.25805836282865613,
+   "mean_pred_full_MJysr": 0.21570620700365215,
+   "mean_pred_trunc32_MJysr": 0.10675753116812235,
+   "mean_wing_MJysr": 0.10894867583552979,
+   "wing_rms_over_region_MJysr": 0.038925433148622735,
+   "wing_p05_p95_MJysr": [
+    0.055420178973861735,
+    0.17727687259671088
+   ],
+   "background_constant_MJysr": 0.13588255643844604,
+   "data_median_bkg0_MJysr": 0.1369626373052597,
+   "gain_exp_gamma_mean": 1.0022072378696496,
+   "wing_over_background_constant": 0.8017855911099441,
+   "wing_over_data_median": 0.7954627479369214,
+   "wing_over_full_prediction": 0.505079002356595,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.13588255643844604,
+    "legendre_mean": 0.11743558943271637,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": -0.009974109008908272,
+    "data_median": 0.1369626373052597
+   },
+   "model_mean_full": 0.20573209799474387
+  },
+  {
+   "exposure": 72,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.9925008884464134,
+   "kernel_integral_inside_32px": 0.41992135865438573,
+   "mean_sky_band_MJysr": 0.2576050069882351,
+   "mean_pred_full_MJysr": 0.21547784133681908,
+   "mean_pred_trunc32_MJysr": 0.10641811109621965,
+   "mean_wing_MJysr": 0.10905973024059945,
+   "wing_rms_over_region_MJysr": 0.03900175025517335,
+   "wing_p05_p95_MJysr": [
+    0.05551211825416738,
+    0.17778769673567577
+   ],
+   "background_constant_MJysr": 0.13582074642181396,
+   "data_median_bkg0_MJysr": 0.13722066581249237,
+   "gain_exp_gamma_mean": 1.000446564432757,
+   "wing_over_background_constant": 0.8029681261056855,
+   "wing_over_data_median": 0.7947762794681821,
+   "wing_over_full_prediction": 0.5061296770192036,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.13582074642181396,
+    "legendre_mean": 0.11715688556432724,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": -0.010252811014652252,
+    "data_median": 0.13722066581249237
+   },
+   "model_mean_full": 0.20522503032216682
+  }
+ ],
+ "F444W": [
+  {
+   "exposure": 100,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.9904414428523903,
+   "kernel_integral_inside_32px": 0.4023868790407764,
+   "mean_sky_band_MJysr": 0.25320654060196957,
+   "mean_pred_full_MJysr": 0.21067878314354033,
+   "mean_pred_trunc32_MJysr": 0.10037188121051219,
+   "mean_wing_MJysr": 0.11030690193302815,
+   "wing_rms_over_region_MJysr": 0.03570022903657439,
+   "wing_p05_p95_MJysr": [
+    0.05940565552891453,
+    0.17153489594036786
+   ],
+   "background_constant_MJysr": 0.25857388973236084,
+   "data_median_bkg0_MJysr": 0.2591712176799774,
+   "gain_exp_gamma_mean": 1.0006380489460107,
+   "wing_over_background_constant": 0.42659721771290315,
+   "wing_over_data_median": 0.42561401269964416,
+   "wing_over_full_prediction": 0.5235785981252489,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.25857388973236084,
+    "legendre_mean": 0.23625433444976807,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": 0.10884465277194977,
+    "data_median": 0.2591712176799774
+   },
+   "model_mean_full": 0.3195234359154901
+  },
+  {
+   "exposure": 104,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.9903570155035923,
+   "kernel_integral_inside_32px": 0.4028815476728263,
+   "mean_sky_band_MJysr": 0.2530057081926825,
+   "mean_pred_full_MJysr": 0.21056623309808165,
+   "mean_pred_trunc32_MJysr": 0.10041959852006796,
+   "mean_wing_MJysr": 0.1101466345780137,
+   "wing_rms_over_region_MJysr": 0.03565659937425043,
+   "wing_p05_p95_MJysr": [
+    0.05936530259377166,
+    0.17150536100644742
+   ],
+   "background_constant_MJysr": 0.25861746072769165,
+   "data_median_bkg0_MJysr": 0.25991949439048767,
+   "gain_exp_gamma_mean": 0.9998443864011841,
+   "wing_over_background_constant": 0.4259056378795373,
+   "wing_over_data_median": 0.4237721177332544,
+   "wing_over_full_prediction": 0.5230973312169547,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.25861746072769165,
+    "legendre_mean": 0.23618796467781067,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": 0.10877826809883118,
+    "data_median": 0.25991949439048767
+   },
+   "model_mean_full": 0.3193445011969128
+  },
+  {
+   "exposure": 109,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.9917230989112145,
+   "kernel_integral_inside_32px": 0.40382775420974565,
+   "mean_sky_band_MJysr": 0.2523032777369037,
+   "mean_pred_full_MJysr": 0.2103135959829824,
+   "mean_pred_trunc32_MJysr": 0.1003834199462736,
+   "mean_wing_MJysr": 0.10993017603670878,
+   "wing_rms_over_region_MJysr": 0.03559323714995369,
+   "wing_p05_p95_MJysr": [
+    0.05924882150712329,
+    0.17124444183050988
+   ],
+   "background_constant_MJysr": 0.2591058015823364,
+   "data_median_bkg0_MJysr": 0.25943389534950256,
+   "gain_exp_gamma_mean": 0.9970684761030814,
+   "wing_over_background_constant": 0.424267520701485,
+   "wing_over_data_median": 0.4237309696507225,
+   "wing_over_full_prediction": 0.5226964786698993,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.2591058015823364,
+    "legendre_mean": 0.2368958592414856,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": 0.1094861626625061,
+    "data_median": 0.25943389534950256
+   },
+   "model_mean_full": 0.3197997586454885
+  },
+  {
+   "exposure": 113,
+   "detector": "NRCBLONG",
+   "kernel_integral_full": 0.9925159901071288,
+   "kernel_integral_inside_32px": 0.4019503120770986,
+   "mean_sky_band_MJysr": 0.2535586032956402,
+   "mean_pred_full_MJysr": 0.21136687995076228,
+   "mean_pred_trunc32_MJysr": 0.10041233309463453,
+   "mean_wing_MJysr": 0.11095454685612777,
+   "wing_rms_over_region_MJysr": 0.0359135000009967,
+   "wing_p05_p95_MJysr": [
+    0.059758841697573596,
+    0.17267106099845092
+   ],
+   "background_constant_MJysr": 0.25926756858825684,
+   "data_median_bkg0_MJysr": 0.259733110666275,
+   "gain_exp_gamma_mean": 1.0020293531598106,
+   "wing_over_background_constant": 0.42795382183853015,
+   "wing_over_data_median": 0.4271867632567288,
+   "wing_over_full_prediction": 0.5249381874869635,
+   "background_over_footprint": {
+    "footprint_xi": [
+     -0.3629699945449829,
+     0.314117968082428,
+     -0.3248654901981354,
+     0.34929147362709045
+    ],
+    "constant": 0.25926756858825684,
+    "legendre_mean": 0.23695991933345795,
+    "pattern_mean": -0.1274096965789795,
+    "pattern_min_max": [
+     -0.15262188017368317,
+     -0.048714909702539444
+    ],
+    "total_mean": 0.10955023020505905,
+    "data_median": 0.259733110666275
+   },
+   "model_mean_full": 0.32091711015582136
+  }
+ ]
+}

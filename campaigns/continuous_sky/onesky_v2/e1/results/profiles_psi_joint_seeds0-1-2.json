@@ -1,0 +1,39 @@
+{
+ "iterations": 204,
+ "schedule": "cosine over wall-clock time limit",
+ "final_loss": 0.9452908039093018,
+ "still_falling": false,
+ "relocated_total": 141,
+ "seconds": 480.6495499610901,
+ "budget_items_per_sky": 15000,
+ "n_items_per_sky": 1499,
+ "chi2_truth_per_sky": [
+  0.26190556867812476,
+  0.3070387817309259,
+  0.4712051410788398
+ ],
+ "psi_weights": 1152,
+ "config": {
+  "R_SUP": 3.0,
+  "RHO0": 1.0,
+  "T_KNOTS": 12,
+  "M_HARM": 3,
+  "D_LAT": 4,
+  "HIDDEN": 12,
+  "subsampling": "o=clip(ceil(3/min width),1,7) per axis",
+  "psi_table": "19x19 bilinear over [-3.0,3.0]^2",
+  "relocation": "S/N<1, at most 5% of items, at 20/35/50% of iterations",
+  "width_floor": 0.45,
+  "lr": {
+   "x": 0.2,
+   "y": 0.2,
+   "la": 0.03,
+   "lb": 0.03,
+   "th": 0.03,
+   "lf": 0.05,
+   "z": 0.03,
+   "bg": 0.1
+  },
+  "lr_psi": 0.005
+ }
+}
