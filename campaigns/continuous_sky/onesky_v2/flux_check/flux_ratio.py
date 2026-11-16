@@ -19,7 +19,7 @@ def sky_coeffs(s, pkg=None):
     sys.path.insert(0, pkg or "/home/claude/work/fieldop_items")
     from fieldop.sky import ItemSky, RBFBasis
     K = sk["lc"].shape[-1]; N = sk["resid"].shape[-1]; pitch = 24.48 / (N - 1)
-    it = ItemSky(torch.zeros(K, N, N), pitch, RBFBasis(K), sk["pos"].shape[1], max_width=float(s.get("item_max_width", 0.32)), raster="pyramid")
+    it = ItemSky(torch.zeros(K, N, N), pitch, RBFBasis(K), sk["pos"].shape[1], max_width=float(sys.argv[3]) if len(sys.argv) > 3 else 0.32, raster="pyramid")
     with torch.no_grad():
         for k in ("pos", "lw", "ang", "lc"):
             getattr(it, k).data[:] = sk[k]

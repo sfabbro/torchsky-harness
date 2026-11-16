@@ -30,6 +30,20 @@ APPROXIMATIONS (also in the report)
    P4  bootstrap: dither groups are resampled, pixels within a group are treated as independent samples of the same sums (as in score.py, S2).
    P5  byscale: pixels of all S/N are included (option --snr-min); the common pixel set of all requested methods is used for every method.
    P6  byscale pools exposures by weighting each with sum(w^2) (effective number of pixels); bands with fewer than 4 modes in an exposure are dropped.
+   P7  --level rate (16 Nov 2026): data = _rate SCI, sigma = _rate ERR x protocol noise_factor, pixels = protocol mask (--dq-zero on the _rate
+       flags); calibrated-unit predictions x C = rate SCI / cal SCI (conversion_map: exact where both are finite and non-zero; rejected
+       pixels that are scored get the 5 x 5 local median of C); predictions whose meta says units = 'rate' are used as they are; the
+       scorer's offset b is a constant in rate units. The rate-level sigma has no flat-field variance and comes from the current files,
+       while the protocol sigma was built from the earlier _cal files (1.0125 x the current cal ERR x noise_factor on NRCB1): a
+       calibrated-unit method scores ~2-3 per cent higher at rate level (12-exposure sample, S/N 5-50: +0.029 stage3_blot, +0.034
+       fieldop_fix_200); with the protocol sigma carried over (C x sigma) the two levels agree to 4e-16 (tests/check_rate_scoring.py).
+       Compare rate-trained and calibrated-trained fits at the SAME level (rate, paired), not each at its own level.
+   P8  --offset-rank METHOD (16 Nov 2026): the scorer's background offset is fitted on the 2000 scored pixels with the lowest value of
+       METHOD's prediction (a prediction built from the training exposures only), not on the lowest snr_ref of the official mosaic. The
+       official mosaic contains the held-out exposure, so its faintest pixels are those where that exposure's own noise is low: a model
+       that does not follow the noise then receives a spurious negative offset. The ranking prediction is box-averaged over
+       --offset-rank-smooth arcsec (default 1) so that it carries almost none of the training exposures' pixel noise either: ranking by
+       an unsmoothed training mosaic would bias noise-following models the other way. Approximation: nominal pixel scales.
 """
 import argparse
 import json
@@ -68,7 +82,22 @@ def pixel_state(d, model, mask, model_valid=None):
     base = valid & np.isfinite(d) & np.isfinite(sigma) & (sigma > 0) & np.isfinite(snr)
     claimed = np.isfinite(m) if model_valid is None else (np.asarray(model_valid, bool) & np.isfinite(m))
     sel = base & claimed
-    return dict(sel=sel, resid=d - m, b=float(info["offset"]), info=info, model=m)
+    b = float(info["offset"])
+    if mask.get("offset_rank") is not None:
+        # P8 (16 Nov 2026): the protocol chooses the offset pixels by the lowest snr_ref of the official mosaic, which is built from ALL
+        # exposures, the held-out one included; that selects pixels where the held-out exposure's own noise is low, so a model that does
+        # not follow the noise is given a negative offset (measured on SMACS: -0.45 sigma on the faintest 2 per cent for a positive item
+        # sky against -0.13 for a grid sky, and no trend at all when the pixels are ranked by a prediction that shares no noise with the
+        # held-out exposure). Here the offset pixels are the FALLBACK_N scored pixels with the lowest value of a prediction made from the
+        # training exposures only (--offset-rank METHOD); binning by snr_ref is unchanged.
+        rank = np.asarray(mask["offset_rank"], np.float64)
+        ok = sel & np.isfinite(rank)
+        if ok.sum() >= S.FALLBACK_N:
+            thr = np.partition(rank[ok], S.FALLBACK_N - 1)[S.FALLBACK_N - 1]
+            b, nb = S.background_offset(np.where(sel, d - m, 0.0), sigma, ok & (rank <= thr))
+            b = float(b)
+            info = dict(info, offset=b, n_offset_pixels=int(nb), offset_rank="independent")
+    return dict(sel=sel, resid=d - m, b=b, info=info, model=m)
 
 
 def channel_of(detector):
@@ -574,6 +603,66 @@ def byscale_figures(res, outdir):
         figure("byscale_channel.png", chans, ("auto", "diff"), [c.split(":")[1] + "-wavelength detectors" for c in chans], len(chans), "residual power")
 
 
+# =============================================================================== rate level (--level rate)
+def conversion_map(cal_path, rate_path, need=None):
+    """C = rate SCI / cal SCI of the same exposure: per-pixel ratio map from calibrated units (MJy/sr) to count rate (DN/s); it contains the
+    official flat field and the photometric conversion, C = flat / PHOTMJSR (calwebb_image2: cal = rate x PHOTMJSR / flat).
+    Both files come from the same ramp fit (checked: CAL_VER, CRDS context and the stage-1 reference files are compared), so the ratio is
+    exact to float32 rounding wherever both are finite and cal != 0, at any signal level (noise cancels); measured on NRCB1 F090W: the
+    pixel-to-pixel scatter of C is 1.6 per cent at |rate| > 10 ERR and at |rate| < 0.5 ERR alike.
+    Rejected pixels: non-finite or zero cal or rate, or C x PHOTMJSR outside [0.2, 5] (an implausible flat value; also catches a cal file from
+    a different ramp fit, where the ratio would be noisy). At rejected pixels that are needed (`need`, the scored pixels) C is filled with
+    the median of the accepted C in the 5 x 5 neighbourhood (the smooth part of the flat only; that pixel's own flat value is lost), else
+    1 / PHOTMJSR. Returns (C float64 (ny, nx) with NaN where rejected and not needed, info dict)."""
+    from astropy.io import fits
+    with fits.open(cal_path, memmap=False) as h:
+        cal = np.asarray(h["SCI"].data, np.float64)
+        hc, h0c = h["SCI"].header, h[0].header
+    with fits.open(rate_path, memmap=False) as h:
+        rate = np.asarray(h["SCI"].data, np.float64)
+        h0r = h[0].header
+    phot = hc.get("PHOTMJSR")
+    with np.errstate(invalid="ignore", divide="ignore"):
+        C = rate / cal
+    ok = np.isfinite(C) & (cal != 0) & np.isfinite(rate) & (rate != 0)
+    if phot:
+        ok &= (C * phot > 0.2) & (C * phot < 5.0)
+    keys = ("CAL_VER", "CRDS_CTX", "R_DARK", "R_LINEAR", "R_SUPERB", "R_MASK", "R_GAIN", "R_READNO", "R_SATURA")
+    mism = {k: [str(h0c.get(k)), str(h0r.get(k))] for k in keys if str(h0c.get(k)) != str(h0r.get(k))}
+    C = np.where(ok, C, np.nan)
+    nfill = nfill_phot = 0
+    if need is not None:
+        bad = np.argwhere(np.asarray(need, bool) & ~ok)
+        ny, nx = C.shape
+        for y, x in bad:
+            w = C[max(0, y - 2):min(ny, y + 3), max(0, x - 2):min(nx, x + 3)]
+            w = w[np.isfinite(w)]
+            if w.size:
+                C[y, x] = float(np.median(w))
+                nfill += 1
+            else:
+                C[y, x] = 1.0 / phot if phot else np.nan
+                nfill_phot += 1
+    info = dict(photmjsr=phot, n_accepted=int(ok.sum()), frac_accepted=float(ok.mean()), n_filled_local_median=nfill, n_filled_photmjsr=nfill_phot,
+                median_C_x_photmjsr=float(np.nanmedian(C[ok] * phot)) if phot and ok.any() else None, header_mismatch=mism)
+    return C, info
+
+
+def rate_path_of(rate_dir, root):
+    return os.path.join(rate_dir, root + "_rate.fits")
+
+
+def prediction_units(pr):
+    """'rate' if the prediction file's meta says so (rate-trained fieldop writes units = 'rate'), else 'cal'."""
+    if "meta" not in pr:
+        return "cal"
+    try:
+        m = json.loads(str(pr["meta"]))
+    except Exception:
+        return "cal"
+    return "rate" if isinstance(m, dict) and str(m.get("units", "cal")).lower() == "rate" else "cal"
+
+
 # =============================================================================== driver
 def load_sci(path):
     import warnings
@@ -592,11 +681,46 @@ def make_loaders(a):
             p = os.path.join(a.data_root, ex[r]["file"])
         return p
 
+    level = getattr(a, "level", "cal")
+    cache = {}
+
+    def rate_file(r):
+        """SCI, ERR, DQ of the _rate file of r (one exposure cached)."""
+        if cache.get("root") != r:
+            from astropy.io import fits
+            cache.clear()
+            with fits.open(rate_path_of(a.rate_dir, r), memmap=False) as hl:
+                cache.update(root=r, sci=np.asarray(hl["SCI"].data, np.float64), err=np.asarray(hl["ERR"].data, np.float64),
+                             dq=np.asarray(hl["DQ"].data))
+        return cache
+
+    def conv(r, mk):
+        if cache.get("C_root") != r:
+            need = mk["valid"].astype(bool)
+            C, info = conversion_map(cal_path(r), rate_path_of(a.rate_dir, r), need=need)
+            cache.update(C_root=r, C=C, C_info=info)
+            print("conversion %s: C accepted on %.4f of the detector; scored pixels filled with the local median %d, with 1/PHOTMJSR %d; "
+                  "median C x PHOTMJSR %.4f; header mismatches %s" % (r, info["frac_accepted"], info["n_filled_local_median"],
+                                                                     info["n_filled_photmjsr"], info["median_C_x_photmjsr"] or float("nan"),
+                                                                     info["header_mismatch"] or "none"))
+            CONV_LOG[r] = info
+        return cache["C"]
+
     def mask_for(r):
         p = os.path.join(a.root, "heldout", a.field, r + ".npz")
         if not os.path.exists(p):
             return None
         m = dict(np.load(p))
+        if level == "rate":
+            # rate level: sigma = _rate ERR x the protocol's noise factor; pixels = the protocol mask (and --dq-zero on the _rate flags)
+            rf = rate_file(r)
+            m["sigma"] = (rf["err"] * m["noise_factor"].astype(np.float64)).astype(np.float64)
+            if getattr(a, "dq_zero", False):
+                n0 = int(m["valid"].sum())
+                m["valid"] = m["valid"].astype(bool) & (rf["dq"] == 0)
+                print("dq-zero (rate flags) %s: %d of %d protocol-valid pixels dropped" % (r, n0 - int(m["valid"].sum()), n0))
+            cache["mask_valid"] = m["valid"].astype(bool)
+            return m
         if getattr(a, "dq_zero", False):
             # the protocol mask was built from the files as they were then; a re-fetched file can flag pixels the mask calls valid
             # (14 Nov 2026: SATURATED on the brightest cores). Keep only pixels whose data-quality flag is zero in the file being scored.
@@ -610,19 +734,95 @@ def make_loaders(a):
 
     def pred_for(m, r):
         p = os.path.join(a.root, "pred", a.field, m, a.split, r + ".npz")
-        return dict(np.load(p, allow_pickle=False)) if os.path.exists(p) else None
+        if not os.path.exists(p):
+            return None
+        pr = dict(np.load(p, allow_pickle=False))
+        u = prediction_units(pr)
+        UNITS_LOG.setdefault(m, set()).add(u)
+        if level == "rate" and u == "cal":
+            mk = mask_for(r) if cache.get("root") != r or "mask_valid" not in cache else {"valid": cache["mask_valid"]}
+            pr["model"] = np.asarray(pr["model"], np.float64) * conv(r, mk)
+        elif level == "cal" and u == "rate":
+            raise SystemExit("method %s: prediction %s is in rate units; score it with --level rate --rate-dir DIR" % (m, r))
+        return pr
 
     def data_for(r):
+        if level == "rate":
+            return rate_file(r)["sci"]
         return load_sci(cal_path(r))
 
+    if getattr(a, "offset_rank", ""):
+        mask_plain = mask_for
+
+        def mask_for(r):                                           # noqa: F811
+            m = mask_plain(r)
+            p = os.path.join(a.root, "pred", a.field, a.offset_rank, a.split, r + ".npz")
+            if m is not None and os.path.exists(p):
+                rk = np.asarray(np.load(p, allow_pickle=False)["model"], np.float64)
+                if a.offset_rank_smooth > 0:
+                    # box average over about offset_rank_smooth arcsec (nominal 0.031 / 0.063 arcsec pixels): the ranking then carries
+                    # almost none of the training exposures' pixel noise either, so it favours neither noise-following nor smooth models
+                    from scipy.ndimage import uniform_filter
+                    n = max(3, int(round(a.offset_rank_smooth / (0.063 if "long" in r else 0.031))) | 1)
+                    fin = np.isfinite(rk)
+                    w = uniform_filter(fin.astype(np.float64), n, mode="constant")
+                    rk = np.where(fin & (w > 0.5), uniform_filter(np.where(fin, rk, 0.0), n, mode="constant") / np.maximum(w, 1e-9), np.nan)
+                m["offset_rank"] = rk
+            return m
+
     return sp, mask_for, pred_for, data_for
+
+
+CONV_LOG, UNITS_LOG = {}, {}
+
+
+def _outdir(a):
+    sub = (("dq0",) if a.dq_zero else ()) + (("rate",) if getattr(a, "level", "cal") == "rate" else ()) + \
+          (("offrank",) if getattr(a, "offset_rank", "") else ())
+    return os.path.join(a.out or os.path.join(a.root, "scores_paired"), a.field, *sub)
+
+
+def pooled_bins(res_levels_field, variant, lo, hi):
+    """chi2/N pooled over the S/N bins [lo, hi) of score.py's field-level entry (pixel-weighted)."""
+    bins = res_levels_field[variant]["bins"]
+    n = sum(b["n_pixels"] for b in bins[lo:hi])
+    c = sum(b["chi2_per_pixel"] * b["n_pixels"] for b in bins[lo:hi] if b["n_pixels"])
+    return c / n if n else float("nan"), n
+
+
+def cmd_score(a):
+    """Single-method scores with score.py's own score_run (same bins, offset and bootstrap), at the chosen level."""
+    sp, mask_for, pred_for, data_for = make_loaders(a)
+    d = _outdir(a)
+    os.makedirs(d, exist_ok=True)
+    lines = ["| method | level | units of the prediction | variant | " + " | ".join(BIN_NAMES) + " | S/N>=5 | S/N 5-50 |", "|" + "---|" * (NB + 6)]
+    for m in a.methods:
+        res = S.score_run(sp, m, a.split, mask_for, lambda r, m=m: pred_for(m, r), data_for, a.nboot)
+        res["level"] = getattr(a, "level", "cal")
+        res["prediction_units"] = sorted(UNITS_LOG.get(m, []))
+        res["conversion"] = {r: CONV_LOG[r] for r in res["per_exposure"] if r in CONV_LOG} if res["level"] == "rate" else None
+        lv = res["levels"]["field"]["all"] if res["levels"] else None
+        if lv:
+            for var in VARIANTS:
+                b = lv[var]["bins"]
+                p550, n550 = pooled_bins(lv, var, 2, 4)
+                res.setdefault("pooled_snr_5_50", {})[var] = {"chi2": p550, "n_pixels": n550}
+                lines.append("| %s | %s | %s | %s | " % (m, res["level"], "+".join(res["prediction_units"]), var)
+                             + " | ".join("%.4f" % x["chi2_per_pixel"] if x["n_pixels"] else "n/a" for x in b)
+                             + " | %.4f | %.4f |" % (lv[var]["headline_chi2_snr_ref_ge5"]["value"], p550))
+        json.dump(res, open(os.path.join(d, "score_%s_%s.json" % (m, a.split)), "w"), indent=1, default=str)
+    md = "\n".join(lines)
+    open(os.path.join(d, "score_%s_%s.md" % ("+".join(a.methods), a.split)), "w").write(md + "\n")
+    print(md)
+    print("wrote", d)
 
 
 def cmd_paired(a):
     sp, mask_for, pred_for, data_for = make_loaders(a)
     methods = [m for m in a.methods if m != a.reference]
     res = paired_run(sp, a.split, methods, a.reference, mask_for, pred_for, data_for, a.nboot, a.seed)
-    d = os.path.join(a.out or os.path.join(a.root, "scores_paired"), a.field, *(("dq0",) if a.dq_zero else ()))
+    res["level"], res["prediction_units"] = getattr(a, "level", "cal"), {k: sorted(v) for k, v in UNITS_LOG.items()}
+    d = _outdir(a)
     os.makedirs(d, exist_ok=True)
     stem = "paired_%s_vs_%s_%s" % ("+".join(methods), a.reference, a.split)
     json.dump(res, open(os.path.join(d, stem + ".json"), "w"), indent=1)
@@ -635,7 +835,8 @@ def cmd_paired(a):
 def cmd_byscale(a):
     sp, mask_for, pred_for, data_for = make_loaders(a)
     res = byscale_run(sp, a.split, list(a.methods), mask_for, pred_for, data_for, a.nboot, a.seed, a.snr_min, a.taper)
-    d = os.path.join(a.out or os.path.join(a.root, "scores_paired"), a.field, *(("dq0",) if a.dq_zero else ()))
+    res["level"] = getattr(a, "level", "cal")
+    d = _outdir(a)
     os.makedirs(d, exist_ok=True)
     stem = "byscale_%s_%s" % ("+".join(a.methods), a.split)
     json.dump(res, open(os.path.join(d, stem + ".json"), "w"), indent=1)
@@ -649,7 +850,7 @@ def cmd_byscale(a):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name, fn in (("paired", cmd_paired), ("byscale", cmd_byscale)):
+    for name, fn in (("paired", cmd_paired), ("byscale", cmd_byscale), ("score", cmd_score)):
         s = sub.add_parser(name)
         s.add_argument("--field", required=True)
         s.add_argument("--split", required=True)
@@ -659,8 +860,18 @@ def main():
         s.add_argument("--out", default="", help="output folder (default <root>/scores_paired)")
         s.add_argument("--nboot", type=int, default=S.N_BOOT)
         s.add_argument("--seed", type=int, default=S.SEED)
+        s.add_argument("--offset-rank", default="", help="paired/byscale: choose the scorer's offset pixels by the lowest values of this "
+                       "method's prediction (one made from the training exposures only, e.g. stage3_blot) instead of the lowest snr_ref of "
+                       "the official mosaic, which shares noise with the held-out exposure (P8); output goes to an offrank/ subfolder")
+        s.add_argument("--offset-rank-smooth", type=float, default=1.0,
+                       help="arcsec; box-average the --offset-rank prediction over this width before ranking (0 = no smoothing)")
         s.add_argument("--dq-zero", action="store_true",
                        help="also require the data-quality flag of the file being scored to be zero (output goes to a dq0/ subfolder)")
+        s.add_argument("--level", choices=["cal", "rate"], default="cal",
+                       help="cal: data = _cal SCI, sigma = protocol sigma (default, as score.py). rate: data = _rate SCI, sigma = _rate ERR x the "
+                       "protocol noise factor, pixels = protocol mask; calibrated-unit predictions are multiplied by C = rate SCI / cal SCI of "
+                       "the same exposure, rate-unit predictions (meta units = 'rate') are used as they are (output in a rate/ subfolder)")
+        s.add_argument("--rate-dir", default="", help="folder holding <rootname>_rate.fits (needed with --level rate)")
         if name == "paired":
             s.add_argument("--reference", required=True)
         else:

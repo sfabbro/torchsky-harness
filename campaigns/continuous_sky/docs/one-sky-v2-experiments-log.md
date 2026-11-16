@@ -2,6 +2,48 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 16 Nov 2026: round 3 collected; the "faint-pixel bias" was the scorer's; raw-input build ready
+
+The session stopped on 14 Nov at about 06:20 UTC (weekly usage limit) and resumed on 16 Nov at 21:05 UTC. The six fits launched before the stop all finished.
+
+**1. Reference confirmed on the protocol's own mask.** The grid fit that keeps the saturated-flagged cores (`onesky_grid004_dq2`, `--dq-ignore-bits 2`) scores 1.73 [1.65, 1.81] against 1.75 for `fieldop_fix_200`. From here on the plain protocol mask is used, with fits made with `--dq-ignore-bits 2`.
+
+**2. Item sky, round 3** (60,000 items, any-size rasteriser with sheared patches, coarse buckets, 32 M chunks; 200 minutes). Paired on identical pixels, scoring each method's full prediction (no scorer offset), 68% intervals:
+
+| Fit | steps (s per step) | headline against grid | headline against official pipeline | 1 to 5 | 5 to 20 | 20 to 50 | 50 to 200 | above 200 |
+|---|---|---|---|---|---|---|---|---|
+| items, raster 0.04, cap 0.32 (`items004c`) | 4,428 (2.7) | +0.043 [-0.101, +0.204] | not run | -0.136 | -0.181 | -0.160 | +4.07 [+2.82, +5.71] | -26 [-54, +1] |
+| items, raster 0.04, cap 2.56 (`items004w`) | 2,983 (4.0) | -0.024 [-0.120, +0.097] | -0.133 [-0.270, -0.005] | -0.139 | -0.183 | -0.176 | +3.33 [+2.39, +4.64] | -31 [-56, -10] |
+| items, cap 2.56 + smooth grid 0.64 (`items004ws`) | 3,665 (3.3) | +0.336 [+0.183, +0.519] | not run | -0.143 | -0.177 | -0.086 | +7.1 [+5.0, +10.1] | -3 [-29, +21] |
+| items, raster 0.02, cap 2.56 (`items002w`) | 2,494 (4.8) | -0.047 [-0.120, +0.042] | -0.156 [-0.311, -0.014] | -0.132 | -0.177 | -0.146 | +2.96 [+2.12, +4.07] | -33 [-59, -17] |
+| items, raster 0.01, cap 2.56 (`items001w`) | 1,193 (10.1) | worse (2.56 against 1.71) | not run | | | | | |
+
+Bin columns are item minus grid (`onesky_grid004_dq2`: 1.09, 1.25, 1.32, 3.23, 112 in those bins). Against the official pipeline, `items004w` by bin: below 1: -0.047; 1 to 5: -0.141 [-0.146, -0.135]; 5 to 20: -0.103 [-0.117, -0.091]; 20 to 50: -0.095 [-0.148, -0.055]; 50 to 200: -0.14 [-1.64, +1.20]; above 200: -10 [-30, +11]. The grid against the pipeline: -0.109 [-0.293, +0.029] headline, worse from 5 to 50 (+0.08), better from 50 to 200 (-3.5).
+- With wide items allowed the item sky is ahead of or level with the official pipeline in every signal-to-noise bin, and level with the grid on the headline. 20% of the items end wider than 0.32 arcsec (carrying 29% of the summed coefficients), 2.5% at the 2.56 arcsec cap.
+- The bright-core deficit against the grid (50 to 200) remains: +3.0 to +3.3, from +5.9 in round 2. Above 200 the item sky is better than the grid.
+- The smooth grid makes things worse (kernel reference moment 1145e-6 arcsec^2 against the floor 533e-6): dropped.
+- The larger chunks and coarser patch ladder halve the step time (2.7 s against 5.2 s at the same cap). Wide items cost more (4.0 s); a 0.01 arcsec raster is too slow for a 200-minute fit.
+- Flux scale of `items004w` (sky over official mosaic, brightest galaxy): 0.98 to 1.00 inside 1 arcsec in all six filters, 1.00 to 1.09 inside 0.3 arcsec, 0.93 to 1.00 box total. `items002w`: 1.00 to 1.05 and 1.03 to 1.16. `items004c`: 1.00 to 1.09.
+
+**3. The "faint-pixel bias" of the item sky was an artefact of the scorer's background offset.** My explanation of 14 Nov (items cannot carry diffuse light) was wrong: wider items changed nothing (below 1: 0.86 with the offset, 1.15 without, for every item fit).
+- The protocol fits its offset on the 2,000 scored pixels with the lowest signal-to-noise in the official mosaic. That mosaic is built from all exposures, the held-out one included, so those pixels are the ones where the held-out exposure's own noise is low. A model that does not follow the noise is then given a negative offset; a model that follows the training exposures' noise (the grid) is not.
+- Check (five held-out exposures): median (data - model) / sigma on the faintest 2% of pixels ranked by the official mosaic: -0.38 to -0.57 for the item fit and -0.13 to -0.21 for the grid fit in the short-wavelength exposures. Ranked instead by the other method's prediction, which shares no noise with the held-out exposure: +0.13 to +0.17 for both, with no trend across the whole range.
+- Fix (mine): `score_paired.py --offset-rank METHOD --offset-rank-smooth 1`: the offset pixels are the 2,000 with the lowest value of a training-only prediction, box-averaged over 1 arcsec so that it carries almost none of the training exposures' pixel noise either (an unsmoothed training mosaic biases the other way: it costs the pipeline 0.05 on the five-exposure sample). On that sample the scores with the new offset equal those without any offset to 0.01 for all three methods (item 1.392 and 1.390; grid 1.854 and 1.848; pipeline 1.678 and 1.680). Full-set run queued on CANFAR.
+- Consequence: the protocol's headline "with offset" form understates the item sky by 0.14 (1.83 against 1.69) and should not be used to compare smooth models with noise-following ones. All conclusions of 14 Nov drawn from the "with offset" column are withdrawn; those from the "without offset" column stand.
+
+**4. Raw inputs: rate-level fits with a learned per-pixel gain (Opus agent; unit tests re-run by me, 6 pass).** Folder `fieldop_gain/`, report `RATE_GAIN_REPORT.md`, package `fieldop-gain-a7950e8c.tar.gz`.
+- `--pixel-gain {off,detector,detector-filter}`: a log-gain map per detector over the pixels seen in training, multiplying sky signal and sky background (not the detector pattern or stripes); gauge by exact projection (zero mean and zero polynomial part to degree 2 over the observed pixels), no prior; `off` is bit-identical to the item package.
+- `_rate` files: DN/s; ERR without flat-field variance; no AREA extension; **the `_rate` header WCS has no distortion correction** (0.07 arcsec median, 0.24 arcsec maximum from the `_cal` WCS), so positions come from the matching `_cal` header (`--rate-wcs cal`): a stated shortcut, not yet raw.
+- Rate-level scoring (`score_paired.py --level rate`): calibrated-unit predictions are converted with the per-pixel ratio rate/cal of the same exposure (exact to 4e-16). At rate level the scores are 0.03 higher (pipeline 1.251 to 1.280 on 12 exposures, signal-to-noise 5 to 50): compare rate fits with calibrated fits at the same level, paired.
+- Synthetic test (3% injected flat): the gain map removes 79% of the excess on background pixels (2.85 to 1.48; 1.105 without flat error) and recovers the injected map with correlation 0.92 and 0.89 against 0.98 and 0.95 at the noise limit. With no injected flat it learns spurious structure at 1.7 times the noise limit and costs +0.22 on background pixels: cause not established.
+- Expectation on SMACS: marginal. Each detector pixel is seen in 4 to 6 training exposures at background signal-to-noise 9 to 31; the official flat's pixel-to-pixel rms is 0.02 to 0.04 against a noise limit of 0.017 to 0.043 per pixel. Best possible correlation 0.6 to 0.7; expected about 0.45 to 0.5. The drop rule is a correlation below 0.3.
+- Not yet run: any real fit. The command-line path for rate input needs torchsky, absent from the cloud workspace; a six-minute smoke run is queued.
+- Noted by the agent: about 10% of pixels carry the cosmic-ray jump flag and are excluded under every current setting.
+
+**5. Figures (Sonnet agent; looked at by me):** `figs_round2/`: fitted skies beside the official mosaic, enclosed flux over mosaic against radius, kernel profiles and encircled fractions, item sizes. Notes and approximations in `FIGS_NOTES.md`.
+
+**CANFAR.** The account's quota was full of other jobs on 16 Nov evening; the scoring and smoke jobs were queued, not running, when this entry was written.
+
 ## 14 Nov 2026, 04:10 to 06:00 UTC: first real-data results for the item sky; the re-fetched files differ from the protocol's
 
 Scores below are mean squared held-out residuals in noise units (1 is ideal, lower is better). "Paired" = difference on identical pixels with a 68% interval from a bootstrap over the 12 dither groups; negative = the first-named fit predicts better. All fits: SMACS, 86 training exposures, 24 held out, 200 minutes on one GPU slice.
@@ -27,7 +69,7 @@ Scores below are mean squared held-out residuals in noise units (1 is ideal, low
 
 - As a predictor of the whole exposure (no offset added by the scorer) the item sky is better than the grid from signal-to-noise 1 to 50, which is 95% of the scored pixels, and better than the official pipeline from 1 to 20 (-0.141 [-0.147, -0.134] and -0.093 [-0.108, -0.080]); equal to it from 20 to 50.
 - It is much worse from 50 to 200 (bright cores): too few steps (2,327) and a blunter sharpest point source (kernel reference moment 853e-6 arcsec^2 against the floor 533e-6).
-- **The gain from 1 to 50 disappears when the scorer adds its own background offset** (the protocol's headline form; the offset is the clipped median residual over the faintest pixels). So the item fit is inconsistent between the faintest pixels and the rest by roughly 0.45 noise units: a real defect for faint diffuse light. Likely cause: 27% of the items sit at the width cap (0.32 arcsec) and 5% have both widths there, so the items cannot carry diffuse light and the per-exposure background compensates on average. Round 3 tests this.
+- **The gain from 1 to 50 disappears when the scorer adds its own background offset** (the protocol's headline form; the offset is the clipped median residual over the faintest pixels). So the item fit is inconsistent between the faintest pixels and the rest by roughly 0.45 noise units: a real defect for faint diffuse light. Likely cause: 27% of the items sit at the width cap (0.32 arcsec) and 5% have both widths there, so the items cannot carry diffuse light and the per-exposure background compensates on average. Round 3 tests this. Sign and size, from the scorer's per-exposure offsets: the item fit predicts the faintest pixels too high, by 0.008 MJy/sr in the short-wavelength exposures (median; up to 0.017) and 0.0015 in the long-wavelength ones; the grid fit by 0.002 and 0.0001.
 - Item sky at 0.02 arcsec raster pitch (`onesky_items002p`, 1,850 steps): same gains without offset (1 to 5: -0.139; 5 to 20: -0.179; 20 to 50: -0.149 [-0.181, -0.115]) and a smaller bright-core deficit (+3.8 [+2.5, +5.5]). Against the pipeline without offset: -0.135, -0.091, -0.065 [-0.121, -0.024] and unresolved above 50; headline +0.03 [-0.15, +0.19]. The grid sky at 0.02 arcsec is worse than at 0.04 in every bin (headline 3.43 against 1.58): a finer grid hurts the grid form and helps the item form.
 
 **3. The item sky is flux-calibrated and gives a diffraction-like kernel; the grid sky is neither.** Fitted sky over official mosaic on the brightest galaxy (my script `flux_check/flux_ratio.py`; one object, annulus background):
