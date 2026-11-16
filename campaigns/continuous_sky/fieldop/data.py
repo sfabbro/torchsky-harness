@@ -152,8 +152,14 @@ def tangent_positions(wcs_det, wcs_t, cols, rows, scale, size):
     return ((tp[:, 0] - c) * scale).reshape(cols.shape), ((tp[:, 1] - c) * scale).reshape(cols.shape)
 
 
+RATE_WCS = "cal"     # --rate-wcs: with _rate input, the header WCS comes from the matching _cal file ("cal") or the _rate file ("rate")
+
+
 def read_exposure_file(path, rate_path=None):
-    """SCI / ERR / DQ / AREA and the header WCS of one _cal (or _rate) file."""
+    """SCI / ERR / DQ / AREA and the header WCS of one _cal (or _rate) file. With rate_path, SCI / ERR / DQ come from the _rate file and,
+    unless RATE_WCS == "rate", the header WCS (and PIXAR_A2) from the SCI header of the _cal file `path`: the _rate header carries only the
+    linear TAN WCS of the pointing (no distortion; 0.07 arcsec median, 0.24 arcsec maximum from the _cal SIP WCS over NRCB1), and the WCS is a
+    geometric, not a photometric, calibration (F46)."""
     from astropy.io import fits
     from torchsky.wcs import WCS
     src = rate_path or path
@@ -164,6 +170,8 @@ def read_exposure_file(path, rate_path=None):
         dq = h["DQ"].data
         h0 = h[0].header
         area = h["AREA"].data.astype(np.float32) if "AREA" in h else None
+    if rate_path and RATE_WCS == "cal":
+        sh = fits.getheader(path, "SCI")
     hd = {k: sh[k] for k in sh.keys() if k and k not in ("COMMENT", "HISTORY", "")}
     return dict(sci=sci, err=err, dq=dq, area=area, w=WCS(header=hd), pixar_a2=float(sh.get("PIXAR_A2", float("nan"))),
                 detector=str(h0.get("DETECTOR", "")).strip().upper(), instrument=str(h0.get("INSTRUME", "")).strip().upper())

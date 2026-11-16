@@ -163,4 +163,30 @@ APPROXIMATIONS = [
     "earlier files with DQ == 0, call them valid; with strict DQ == 0 the fit never sees those cores and under-predicts them (0.84 of the "
     "data at reference S/N > 200 in one F277W exposure; chi2/N there 415 against 53). B = 2 keeps them; their slopes come from fewer groups, "
     "so they carry more non-linearity error than ERR states",
+    "F43 per-pixel gain (--pixel-gain detector | detector-filter, 16 Nov 2026; default off, bit-identical): d = N_e[G(p) S] + G(p) x "
+    "(per-exposure quadratic background) + per-detector pattern + NIRCam stripes, G = exp(logg) per detector pixel p (one map per detector, "
+    "or per detector and filter); the sky signal and the sky background pass through G, the pattern and the stripes (additive detector "
+    "terms: residual dark, amplifier offsets, 1/f noise) do not; the non-linearity acts on G S (background excluded, as before); maps are "
+    "allocated over the bounding box of the detector pixels valid in at least one TRAINING cut; pixels outside it or never observed in "
+    "training (held-out pixels beyond the training footprint) get G = 1, i.e. no flat correction; one map per detector assumes a "
+    "filter-independent pixel-to-pixel flat (official flats of one detector correlate at 0.98-0.99 between SW filters but only 0.85-0.90 "
+    "between LW filters); with several tiles, cuts of one exposure that overlap on the detector are counted twice in the count / "
+    "information maps (diagnostics only)",
+    "F44 gain gauge (exact, by projection after every gain step, no penalty, no prior): over the observed pixels of each map, logg is made "
+    "orthogonal (uniform weights) to the monomials of total degree <= --pixel-gain-poly (default 2: mean, tilts, curvatures) of the pixel "
+    "coordinates scaled to [-1, 1] over the box; this removes the mean (degenerate with the throughput and the per-exposure gains u_e) and "
+    "the lowest-order smooth part (degenerate with the smooth throughput detector field and the quadratic backgrounds); smooth structure "
+    "above degree 2 stays in the map, partly degenerate with the throughput detector field where that axis is on; no smoothness prior on "
+    "the pixel-to-pixel part. Diagnostic stored with the map: information I_p = sum over training cuts of max(d^2 / sig^2 - 1, 0) (the "
+    "Cramer-Rao bound 1 / sqrt(I_p) of logg if all else were known and m ~ d)",
+    "F45 gain optimisation: its own Adam (lr --lr-gain, default 3e-3 in log G, same warm-up + cosine factor as the operator, no gradient "
+    "clipping), stepped in the joint step only, from progress --pixel-gain-start (0.1) on, so that the sky exists first; frozen in the "
+    "held-out fit and in the validation steps. The step was chosen on the synthetic field (tests/synth_gain.py: 3e-4, 1e-3, 3e-3, 1e-2 "
+    "scanned, about 130 gradient visits per pixel in 200 steps); a SMACS pixel gets only ~30-35 visits in a 200-minute fit, so the map may "
+    "be under-converged there. Adam's momentum moves pixels between visits (no row masking as for per-exposure nuisances)",
+    "F46 _rate input (--input-level rate): SCI / ERR / DQ from the _rate file (DN/s; ERR without the flat-field variance; DQ without the "
+    "NO_FLAT_FIELD bit the _cal adds), header WCS and PIXAR_A2 from the SCI header of the matching _cal file (--rate-wcs cal, default): the "
+    "_rate header has only the linear TAN WCS of the pointing (0.07 arcsec median, 0.24 arcsec maximum from the _cal SIP WCS over NRCB1); "
+    "the WCS is a geometric step of calwebb_image2, kept, while flat field and photometric conversion are not applied; predictions are "
+    "written in DN/s with meta units = 'rate' (score_paired.py --level rate converts calibrated-unit predictions with C = rate / cal)",
 ]

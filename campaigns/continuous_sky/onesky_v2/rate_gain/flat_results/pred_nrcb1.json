@@ -1,0 +1,138 @@
+{
+ "detector": "NRCB1",
+ "filters_with_pairs": [
+  "F090W",
+  "F150W",
+  "F200W"
+ ],
+ "pairs": [
+  "jw02736001001_02101_00009_nrcb1",
+  "jw02736001001_02103_00009_nrcb1",
+  "jw02736001001_02105_00009_nrcb1"
+ ],
+ "approximations": [
+  "official map = log(C x PHOTMJSR) with C = rate SCI / cal SCI; it includes everything calwebb_image2 divides by besides PHOTMJSR, i.e. the flat reference file (pixel-to-pixel QE and the large-scale response); its smooth part is removed by the gauge projection anyway",
+  "pixels where C is rejected (non-finite, zero, or C x PHOTMJSR outside [0.2, 5]) are left out of every statistic",
+  "noise limit = 1 / sqrt(I_p): the Cramer-Rao bound of log G_p if the sky and all other terms were known exactly and the model mean equals the data; the sky is fitted from the same data (each sky position is seen by about as many exposures as each pixel), which inflates the variance by roughly N / (N - 1) (reported as 'noise_limit_inflated', N = median number of training exposures per filter of the detector, since each sky position is seen by about that many); kernel and sky-model errors near bright sources are not in it",
+  "with --ref-state (no gain map yet) the footprint is a 22.48-arcsec square per training exposure (data region) centred on its cut rectangle and rotated by the stored mean rotation (pixel scale 0.0311 / 0.0630 arcsec), ignoring distortion and the learned shifts (1-2 pixel errors at the edges); I_p = sum over training exposures covering p of (bkg0 / sigbar)^2 (background only: a lower bound where sources are)",
+  "detector mode with several filters: truth = information-weighted mean of the per-filter maps (the learned map is one map for all filters; its best constant-in-filter approximation of filter-dependent flats is this weighted mean only if the information is spread evenly)"
+ ],
+ "mode": "prediction from a state without a gain map",
+ "box": [
+  0,
+  0,
+  669,
+  591
+ ],
+ "gauge_order": 2,
+ "background_snr_per_exposure_by_filter": {
+  "F090W": {
+   "n": 6,
+   "median": 8.946751835807055,
+   "min": 8.823942217675388,
+   "max": 9.17233749882151
+  },
+  "F150W": {
+   "n": 6,
+   "median": 12.05415686245832,
+   "min": 11.573644201494302,
+   "max": 12.29833453624485
+  },
+  "F200W": {
+   "n": 6,
+   "median": 12.236363407740914,
+   "min": 11.802721632572789,
+   "max": 12.701309008148598
+  }
+ },
+ "training_background_information_by_filter": {
+  "F090W": 484.3012170150425,
+  "F150W": 865.0084193037628,
+  "F200W": 902.7637897654687
+ },
+ "truth": {
+  "weighted mean of": {
+   "F090W": 0.215,
+   "F150W": 0.3841,
+   "F200W": 0.4009
+  },
+  "training filters without a pair": []
+ },
+ "n_observed": 259580,
+ "n_used": 254670,
+ "cuts_per_pixel": {
+  "median": 4.0,
+  "p10": 2.0,
+  "p90": 10.0,
+  "histogram": {
+   "1": 1740,
+   "2": 124243,
+   "3": 752,
+   "4": 3757,
+   "5": 8366,
+   "6": 1325,
+   "7": 83004,
+   "8": 210,
+   "9": 1510,
+   "10": 11514,
+   "11": 611,
+   "12": 17638
+  }
+ },
+ "official_rms_after_gauge": 0.04248016702222484,
+ "official_robust_rms_after_gauge": 0.018733854986756514,
+ "official_fraction_beyond_5_robust_rms": 0.06268504338948443,
+ "official_rms_highpass_9x9": 0.04019840160256829,
+ "official_rms_by_filter": {
+  "F090W": 0.04391326984696728,
+  "F150W": 0.04315146670859146,
+  "F200W": 0.04130111182392608
+ },
+ "official_corr_between_filters": {
+  "F090W~F150W": 0.9940576555661284,
+  "F090W~F200W": 0.9912687245220339,
+  "F150W~F200W": 0.993890372438895
+ },
+ "training_exposures_per_filter": {
+  "F090W": 6,
+  "F150W": 6,
+  "F200W": 6
+ },
+ "noise_limit": {
+  "median": 0.043370019644498825,
+  "p10": 0.02804444171488285,
+  "p90": 0.05809801444411278,
+  "rms": 0.047391317784786224
+ },
+ "noise_limit_inflated": {
+  "factor_on_variance": 1.2,
+  "median": 0.04750948026776314
+ },
+ "expected_corr_at_noise_limit": 0.6674700936288227,
+ "expected_corr_at_inflated_noise_limit": 0.6332788247048338,
+ "n_background_dominated": 254670,
+ "by_noise_limit": [
+  {
+   "sigma_p": "0-0.005",
+   "n": 0
+  },
+  {
+   "sigma_p": "0.005-0.01",
+   "n": 0
+  },
+  {
+   "sigma_p": "0.01-0.02",
+   "n": 0
+  },
+  {
+   "sigma_p": "0.02-0.05",
+   "n": 127938,
+   "expected_corr": 0.7907602127147972
+  },
+  {
+   "sigma_p": "0.05-inf",
+   "n": 126732,
+   "expected_corr": 0.5876168224261246
+  }
+ ]
+}

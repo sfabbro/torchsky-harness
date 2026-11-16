@@ -8,6 +8,7 @@
                         + tau_gx u_e  -  m(lambda)                                     (m = gauge projection, F17)
   alpha = 1 (_cal / _flt) or |det dOmega/dxi| (_rate)
   B_e(xi) = sum_6 b_ej P_j(xi) + pattern_det(xi) + rows_e[row] + cols_e[col] (NIRCam)
+  --pixel-gain on (F43): d = N_e[ G(p) S ] + G(p) sum_6 b_ej P_j + pattern + stripes, G(p) = exp(logg_key(e)(p)) per detector pixel p
   sigma^2 = (sigma_pipe exp(h_sigma[det, filter]))^2 + (f_floor[channel] |S|)^2
 """
 from __future__ import annotations
@@ -37,6 +38,131 @@ def quad_fields(xi):
     z = torch.zeros_like(x)
     return torch.stack([torch.stack([p2x, z], -1), torch.stack([pxy, z], -1), torch.stack([p2y, z], -1),
                         torch.stack([z, p2x], -1), torch.stack([z, pxy], -1), torch.stack([z, p2y], -1)], -2)  # (..., 6, 2)
+
+
+def poly_basis(rows, cols, box, order):
+    """Monomials x^i y^j (i + j <= order) of the pixel coordinates scaled to [-1, 1] over the box (r0, c0, nr, nc): (n, P) float64."""
+    r0, c0, nr, nc = box
+    x = (cols.double() - (c0 + (nc - 1) / 2)) / max((nc - 1) / 2, 1)
+    y = (rows.double() - (r0 + (nr - 1) / 2)) / max((nr - 1) / 2, 1)
+    return torch.stack([x ** i * y ** j for d in range(order + 1) for i in range(d + 1) for j in [d - i]], -1)
+
+
+class PixelGain(nn.Module):
+    """Per-pixel log-gain maps (--pixel-gain, F43-F45): one map per key (detector, or detector x filter), allocated only over the bounding
+    box of the detector pixels that are valid in at least one TRAINING cut of that key. G = exp(logg) multiplies the light falling on the
+    pixel (sky signal and sky background). Gauge, exact, by projection after every step: over the OBSERVED pixels of each key (valid in a
+    training cut) logg is orthogonal to the monomials of total degree <= order (order 0: zero mean; 2: mean, tilt and curvature removed);
+    pixels of the box never observed in training are held at logg = 0 (G = 1), as is every pixel outside the box."""
+
+    def __init__(self, labels, boxes, obs, info, count, order, dev):
+        super().__init__()
+        self.labels, self.boxes, self.order = list(labels), [tuple(int(v) for v in b) for b in boxes], int(order)
+        sizes = [b[2] * b[3] for b in self.boxes]
+        self.off = [0] + list(np.cumsum(sizes)[:-1].astype(int))
+        self.logg = nn.Parameter(torch.zeros(int(sum(sizes)), device=dev))
+        self.register_buffer("box_t", torch.tensor(self.boxes, dtype=torch.long, device=dev))
+        self.register_buffer("obs", torch.cat([torch.as_tensor(o, dtype=torch.bool).flatten() for o in obs]).to(dev))
+        self.register_buffer("info", torch.cat([torch.as_tensor(o, dtype=torch.float32).flatten() for o in info]).to(dev))
+        self.register_buffer("count", torch.cat([torch.as_tensor(o, dtype=torch.float32).flatten() for o in count]).to(dev))
+        self.n_proj = []
+        for k, b in enumerate(self.boxes):
+            o = torch.as_tensor(obs[k], dtype=torch.bool).flatten()
+            idx = torch.nonzero(o)[:, 0]
+            rr, cc = idx // b[3] + b[0], idx % b[3] + b[1]
+            V = poly_basis(rr, cc, b, self.order)
+            Q = torch.linalg.qr(V)[0] if idx.numel() > V.shape[1] else torch.zeros(idx.numel(), 0, dtype=torch.float64)
+            self.register_buffer(f"pidx{k}", (idx + self.off[k]).to(dev), persistent=False)
+            self.register_buffer(f"pQ{k}", Q.float().to(dev), persistent=False)
+            self.n_proj.append(int(Q.shape[1]))
+
+    def log_at(self, k, row, col):
+        """log G of key k at detector pixels (row, col) (long tensors); 0 outside the key's box."""
+        r0, c0, nr, nc = self.boxes[k]
+        rr, cc = row - r0, col - c0
+        inside = (rr >= 0) & (rr < nr) & (cc >= 0) & (cc < nc)
+        idx = self.off[k] + rr.clamp(0, nr - 1) * nc + cc.clamp(0, nc - 1)
+        return torch.where(inside, self.logg[idx], torch.zeros((), device=self.logg.device))
+
+    @torch.no_grad()
+    def project(self):
+        """Gauge (exact): per key, remove the low-order polynomial (incl. the mean) over the observed pixels; unobserved pixels -> 0."""
+        full = torch.zeros_like(self.logg)
+        for k in range(len(self.boxes)):
+            idx, Q = getattr(self, f"pidx{k}"), getattr(self, f"pQ{k}")
+            v = self.logg[idx]
+            if Q.shape[1]:
+                v = v - Q @ (Q.t() @ v)
+            full[idx] = v
+        self.logg.data.copy_(full)
+
+    @torch.no_grad()
+    def gauge_residual(self):
+        """max over keys of |Q^T logg| / sqrt(n_obs) (the projected components, as an rms over the observed pixels) and the max |logg| at
+        unobserved pixels: both ~0 when the gauge holds."""
+        proj = 0.0
+        for k in range(len(self.boxes)):
+            idx, Q = getattr(self, f"pidx{k}"), getattr(self, f"pQ{k}")
+            if Q.shape[1] and idx.numel():
+                proj = max(proj, float((Q.t() @ self.logg[idx]).abs().max()) / math.sqrt(idx.numel()))
+        un = self.logg[~self.obs]
+        return {"max_projected_component_rms": proj, "max_abs_unobserved": float(un.abs().max()) if un.numel() else 0.0}
+
+    def map(self, k):
+        """(nr, nc) log-gain map of key k (host numpy) and its observed mask, count and information maps."""
+        r0, c0, nr, nc = self.boxes[k]
+        s = slice(self.off[k], self.off[k] + nr * nc)
+        f = lambda t: t[s].detach().cpu().numpy().reshape(nr, nc)  # noqa: E731
+        return f(self.logg), f(self.obs), f(self.count), f(self.info)
+
+
+def build_pixel_gain(cuts, meta, mode, order, dev, fset_names=None, det_names=None):
+    """PixelGain from the TRAINING cuts (split == 'train'): per key the bounding box of the detector pixels valid in at least one cut, the
+    observed mask, the number of training cuts seeing each pixel and the information sum_e max(d^2 / sig^2 - 1, 0) (Fisher information of
+    log G per pixel if the rest of the model were known and m ~ d; F44). Returns (PixelGain, key of every exposure (list, -1 = none))."""
+    E = len(meta["det"])
+    keyof = {}
+    ekey = []
+    for i in range(E):
+        kk = (int(meta["det"][i]),) if mode == "detector" else (int(meta["det"][i]), int(meta["filt"][i]))
+        ekey.append(keyof.setdefault(kk, len(keyof)))
+    tr = [c for c in cuts if c.split == "train"]
+    bb = {}
+    for c in tr:
+        v = c.hostv("valid")
+        if not bool(v.any()):
+            continue
+        rows = torch.nonzero(v.any(1))[:, 0]
+        cols = torch.nonzero(v.any(0))[:, 0]
+        k = ekey[c.eid]
+        b = (int(rows.min()) + c.cut0[0], int(rows.max()) + 1 + c.cut0[0], int(cols.min()) + c.cut0[1], int(cols.max()) + 1 + c.cut0[1])
+        o = bb.get(k)
+        bb[k] = b if o is None else (min(o[0], b[0]), max(o[1], b[1]), min(o[2], b[2]), max(o[3], b[3]))
+    keys = sorted(keyof.items(), key=lambda x: x[1])
+    boxes, obs, info, count, labels = [], [], [], [], []
+    for kk, k in keys:
+        y0, y1, x0, x1 = bb.get(k, (0, 0, 0, 0))
+        nr, nc = y1 - y0, x1 - x0
+        boxes.append((y0, x0, nr, nc))
+        ob, inf_, cnt = np.zeros((nr, nc), bool), np.zeros((nr, nc), np.float64), np.zeros((nr, nc), np.float32)
+        for c in tr:
+            if ekey[c.eid] != k:
+                continue
+            v = c.hostv("valid").cpu().numpy()
+            d = c.hostv("d").cpu().numpy().astype(np.float64)
+            s = c.hostv("sig").cpu().numpy().astype(np.float64)
+            a, b_ = v.shape
+            ry, rx = c.cut0[0] - y0, c.cut0[1] - x0
+            sl = (slice(ry, ry + a), slice(rx, rx + b_))
+            ob[sl] |= v
+            cnt[sl] += v
+            inf_[sl] += np.where(v, np.maximum(d * d / (s * s) - 1.0, 0.0), 0.0)
+        obs.append(ob)
+        info.append(inf_.astype(np.float32))
+        count.append(cnt)
+        dn = det_names[kk[0]] if det_names else str(kk[0])
+        labels.append(dn if len(kk) == 1 else f"{dn}/{fset_names[kk[1]] if fset_names else kk[1]}")
+    return PixelGain(labels, boxes, obs, info, count, order, dev), ekey
 
 
 class FieldOperator(nn.Module):
@@ -198,6 +324,27 @@ class FieldOperator(nn.Module):
         r2 = (self.blur_u ** 2).sum(-1)
         self.register_buffer("blur_r2", r2, persistent=False)
         self.register_buffer("blur_logw", -0.5 * r2 / Rw ** 2, persistent=False)
+        # ---- per-pixel gain (--pixel-gain): attached after loading (attach_pixel_gain), None = off (the forward model is then unchanged)
+        self.pixgain = None
+        self.gain_key = None
+
+    # ------------------------------------------------------------------ per-pixel gain (F43-F45)
+    def attach_pixel_gain(self, cuts, cfg, fset_names=None, det_names=None):
+        """--pixel-gain detector / detector-filter: build the log-gain maps from the training cuts (model.PixelGain). No-op when off."""
+        mode = getattr(cfg, "pixel_gain", "off")
+        if mode == "off":
+            return None
+        pg, ekey = build_pixel_gain(cuts, self.meta, mode, getattr(cfg, "pixel_gain_poly", 2), self.dev, fset_names=fset_names, det_names=det_names)
+        self.pixgain = pg
+        self.gain_key = ekey
+        return pg
+
+    def gain_of(self, e, pix):
+        """G (M,) at the pixels of exposure e (host int or 0-d tensor), or None when the per-pixel gain is off."""
+        if self.pixgain is None:
+            return None
+        k = self.gain_key[int(e)]
+        return torch.exp(self.pixgain.log_at(k, pix["row"], pix["col"]))
 
     # ------------------------------------------------------------------ setup helpers
     @staticmethod
@@ -425,8 +572,12 @@ class FieldOperator(nn.Module):
         JA = torch.einsum("ij,qmjk->qmik", A, J)
         return (JA[..., 0, 0] * JA[..., 1, 1] - JA[..., 0, 1] * JA[..., 1, 0]).abs()
 
-    def background(self, e, xi, row, col):
+    def background(self, e, xi, row, col, G=None):
+        """Quadratic per-exposure background (sky / zodiacal light: passes through the per-pixel gain G when it is on) + per-detector
+        pattern and NIRCam stripes (additive detector terms: NOT multiplied by G, F43)."""
         B = (legendre6(xi) * self.bkg[e]).sum(-1)
+        if G is not None:
+            B = B * G
         if self.pattern is not None:
             pat = self.pattern[self.e_det[e]]
             pat = pat - pat.mean()
@@ -492,17 +643,23 @@ class FieldOperator(nn.Module):
         if self.input_level == "rate":
             amp = amp * self.pixel_area(e_t, pix["Jpix"], pix["xi"], P)
         S = (self.wq[f][:, None] * amp * c).sum(0)
-        m = self.apply_nonlin(e_t, S) + self.background(e_t, pix["xi"], pix["row"], pix["col"])
+        G = self.gain_of(e, pix)
+        if G is not None:                     # per-pixel gain: light on the pixel (signal S and sky background) x G (F43)
+            S = S * G
+        m = self.apply_nonlin(e_t, S) + self.background(e_t, pix["xi"], pix["row"], pix["col"], G)
         return {"S": S, "m": m, "pos": pos}
 
-    def finish(self, e_t, pix, P, c, f=None):
+    def finish(self, e_t, pix, P, c, f=None, e_host=None):
         f = int(self.e_filt[e_t]) if f is None else f
         gam = self.gamma_at(e_t, pix["xi"], P)
         amp = torch.exp(gam)
         if self.input_level == "rate":
             amp = amp * self.pixel_area(e_t, pix["Jpix"], pix["xi"], P)
         S = (self.wq[f][:, None] * amp * c).sum(0)
-        m = self.apply_nonlin(e_t, S) + self.background(e_t, pix["xi"], pix["row"], pix["col"])
+        G = self.gain_of(e_t if e_host is None else e_host, pix)
+        if G is not None:                     # per-pixel gain (F43)
+            S = S * G
+        m = self.apply_nonlin(e_t, S) + self.background(e_t, pix["xi"], pix["row"], pix["col"], G)
         return {"S": S, "m": m}
 
     def render_batch(self, items, P, view=None, detach_sky=False, jitter=False, region_px=None):
@@ -547,7 +704,7 @@ class FieldOperator(nn.Module):
             c = render_fft_batch(self.sky, A, torch.stack(Phis), lv, Ks, Wb, Pb, shift0=sh, interp=self.cfg.interp, Rs=Rb, det_frame=det_frame)
             for b, k in enumerate(ks):
                 e, pix = items[k]
-                outs[k] = self.finish(torch.as_tensor(e, device=self.dev), pix, P, c[b, :, :nps[b]], f=self.l_filt[e])
+                outs[k] = self.finish(torch.as_tensor(e, device=self.dev), pix, P, c[b, :, :nps[b]], f=self.l_filt[e], e_host=e)
         return outs
 
     @torch.no_grad()
@@ -662,7 +819,8 @@ class FieldOperator(nn.Module):
         nuis_ids = {id(p) for p in nuis.values()}
         tau_ids = {id(p) for p in self.tau.parameters()}
         sky_ids = {id(p) for p in self.sky.parameters()}
-        op = [p for p in self.parameters() if id(p) not in nuis_ids | tau_ids | sky_ids]
+        gain_ids = {id(self.pixgain.logg)} if self.pixgain is not None else set()     # the gain map has its own Adam (train.fit)
+        op = [p for p in self.parameters() if id(p) not in nuis_ids | tau_ids | sky_ids | gain_ids]
         return op, nuis, list(self.tau.parameters()), list(self.sky.parameters())
 
 

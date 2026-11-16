@@ -498,3 +498,17 @@ at 0.02" (0.6%); held-out nuisance fit (198 held-out cuts of 62 exposures) ~15 m
   held-out masks (built from the earlier files) call them valid; with strict DQ == 0 the fit never sees those cores. `B = 2` keeps them.
 * **Scoring** on re-fetched files: `protocol/score_paired.py --dq-zero` also requires the scored file's flag to be zero (0.35 per cent of
   the SMACS held-out pixels dropped), so that fits made before and after the re-fetch are compared on pixels all of them could train on.
+
+## Rate input and per-pixel gain, 16 Nov 2026 (F43-F46)
+
+* **Question**: does the flat field calibrate itself from the science exposures? `--input-level rate` fits `_rate` images (DN/s; no flat,
+  no photometric conversion; WCS from the matching `_cal` header, F46); `--pixel-gain detector` adds a per-pixel log-gain map per detector
+  that multiplies the light on the pixel (sky signal and sky background; not the pattern and the stripes), gauge by exact projection
+  (mean and degree-2 monomials over the observed pixels, F44), its own Adam (F45). Default off, bit-identical (synthetic checksum).
+* **Scoring**: `score_paired.py --level rate` (P7); `flat_check.py` compares a learned map with the official flat (C = rate / cal).
+* **Results and launch recipe**: RATE_GAIN_REPORT.md beside the package. Synthetic: an injected 3 per cent flat is recovered with
+  correlation 0.92 / 0.89 (0.98 / 0.95 expected at the noise limit), map error 1.4-1.8 x the noise limit; held-out background chi2 2.85
+  without the map, 1.48 with it, 1.105 with no flat error. SMACS prediction: noise limit per pixel about equal to the official
+  pixel-to-pixel rms (median 2 to 6 training cuts per pixel), expected correlation 0.57-0.69 at best: the real test is marginal.
+* **Not done**: no real-data fit (GPU); the `cli` path with `--input-level rate` was not run here (torchsky is not installed on the CPU
+  machine); per-filter photometric conversion is still not an input (F15).

@@ -472,6 +472,15 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     if not ts.multi:
         ts.opt_sky[ts.keys[0]] = opt_sky0          # identical to the single-box optimiser
     op, nuis, taus, _ = model.param_groups()
+    # per-pixel gain (--pixel-gain, F43-F45): its own Adam (step --lr-gain in log G, same warm-up + cosine factor), not clipped, stepped from
+    # progress --pixel-gain-start on, projected onto the gauge after every step
+    gp = [model.pixgain.logg] if getattr(model, "pixgain", None) is not None else []
+    opt_gain = torch.optim.Adam([{"params": gp, "lr": cfg.lr_gain, "base": cfg.lr_gain}]) if gp else None
+    if gp:
+        model.pixgain.project()
+        log(f"pixel gain: {len(model.pixgain.boxes)} maps {model.pixgain.labels}, {gp[0].numel() / 1e6:.3f} M log-gain values "
+            f"({int(model.pixgain.obs.sum()) / 1e6:.3f} M observed in training), gauge: {model.pixgain.n_proj} projected monomials per map "
+            f"(degree <= {model.pixgain.order}), lr {cfg.lr_gain}, from progress {cfg.pixel_gain_start}")
     learn_tau = opt_tau is not None and len(va) > 0
     k = ts.keys[0] if not ts.multi else ts.draw(trng)
     ts.activate(k)
@@ -515,7 +524,7 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
         visit_left -= 1
         ts.stats[k]["steps"] += 1
         pool, vpool, opt_sky, sig_b = pools[k], vpools[k], ts.opt_sky[k], ts.sig_b[k]
-        set_lr([opt_op, opt_nuis, opt_sky], lr_factor(prog))
+        set_lr([opt_op, opt_nuis, opt_sky, opt_gain], lr_factor(prog))
         if xfit_on and prog >= cfg.xfit_frac:
             model.sky.average_views()
             xfit_on = False
@@ -534,7 +543,8 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
                 loss.backward()
                 opt_sky.step()
         # (b) joint step: operator + nuisances (+ sky unless cross-fitting, where the operator reads the other fold's sky, detached)
-        params = op + list(nuis.values()) + ([] if xfit_on else skyp)
+        gain_on = bool(gp) and prog >= cfg.pixel_gain_start
+        params = op + list(nuis.values()) + ([] if xfit_on else skyp) + (gp if gain_on else [])
         with only_grad(model, params):
             P = model.prepare()
             items = pool.draw(cfg.batch_patches, rng)
@@ -547,9 +557,14 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             opt_op.zero_grad()
             opt_nuis.zero_grad()
             opt_sky.zero_grad()
+            if opt_gain is not None:
+                opt_gain.zero_grad()
             tot.backward()
             torch.nn.utils.clip_grad_norm_(op, cfg.clip)
             opt_op.step()
+            if gain_on:
+                opt_gain.step()
+                model.pixgain.project()
             step_rows(opt_nuis, list(nuis.values()), eids)
             model.project_gauges(tr_by_f if cfg.pedestal_gauge else None, eids)
             for g in ts.shift_groups:
@@ -615,6 +630,8 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     if cfg.xfit > 1 and xfit_on:
         model.sky.average_views()
     rec["n_steps"] = step
+    if gp:
+        rec["pixel_gain_gauge"] = model.pixgain.gauge_residual()
     rec["seconds"] = time.perf_counter() - t0
     rec["s_per_step"] = rec["seconds"] / max(step, 1)
     if ts.multi:

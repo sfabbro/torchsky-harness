@@ -1,0 +1,56 @@
+{
+ "args": {
+  "inject_rms": 0.0,
+  "pixel_gain": "off",
+  "pixel_gain_poly": 2,
+  "lr_gain": 0.001,
+  "pixel_gain_start": 0.1,
+  "bkg": 40.0,
+  "steps": 200,
+  "seed": 0,
+  "out": "tests/gain_results/r0_noflat_off.json"
+ },
+ "steps": 200,
+ "fit_seconds": 142.6845687140003,
+ "loss_last5_logged": [
+  0.4794480502605438,
+  0.759680986404419,
+  0.8604349493980408,
+  0.6687083840370178,
+  0.5903933644294739
+ ],
+ "heldout": {
+  "all": 3.0479601535149077,
+  "faint": 1.105118806506801,
+  "truth_all": 0.9900827399079574,
+  "truth_faint": 0.9850090066004188
+ },
+ "heldout_n": {
+  "all": 4356,
+  "faint": 3313,
+  "truth_all": 4356,
+  "truth_faint": 3313
+ },
+ "per_exposure": {
+  "A1_0": {
+   "chi2": 5.746966361999512,
+   "chi2_faint": 1.1195399761199951,
+   "n": 1600,
+   "n_faint": 1302
+  },
+  "A2_0": {
+   "chi2": 1.4605615139007568,
+   "chi2_faint": 1.1246066093444824,
+   "n": 1600,
+   "n_faint": 1190
+  },
+  "B1_0": {
+   "chi2": 1.5094026327133179,
+   "chi2_faint": 1.054002046585083,
+   "n": 1156,
+   "n_faint": 821
+  }
+ },
+ "state_sha256": "eb7b41c23d9ecf1480aae1b262b133047d800c26ad25c918814eedff46be8177",
+ "total_seconds": 180.85172266600011
+}

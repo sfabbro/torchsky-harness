@@ -147,6 +147,16 @@ def build_parser():
     g.add_argument("--distortion", type=int, default=1)
     g.add_argument("--affine-prior", type=float, default=0.01)
     g.add_argument("--input-level", choices=["cal", "rate"], default="cal")
+    g.add_argument("--rate-wcs", choices=["cal", "rate"], default="cal",
+                   help="--input-level rate: header WCS (pixel positions) from the matching _cal file (distortion-corrected SIP, default) or "
+                   "from the _rate file itself (linear TAN from the pointing, no distortion: up to 0.24 arcsec off at the detector corners)")
+    g.add_argument("--pixel-gain", choices=["off", "detector", "detector-filter"], default="off",
+                   help="per-pixel log-gain map (flat field) learned from the exposures: one per detector, or per detector and filter (F43)")
+    g.add_argument("--pixel-gain-poly", type=int, default=2, help="gauge of the gain map: monomials of total degree <= this are projected out "
+                   "over the observed pixels of each map (0 = mean only)")
+    g.add_argument("--lr-gain", type=float, default=3e-3, help="Adam step of the log-gain map (F45; chosen on the synthetic field among "
+                   "3e-4, 1e-3, 3e-3, 1e-2)")
+    g.add_argument("--pixel-gain-start", type=float, default=0.1, help="the gain map is stepped from this fraction of the fit on")
     g.add_argument("--dq-ignore-bits", type=int, default=0,
                    help="data-quality bits that do not exclude a pixel (F42); 0 = strict DQ == 0; 2 = keep pixels flagged SATURATED only")
     g.add_argument("--nonlin", type=int, default=0)
@@ -248,6 +258,7 @@ def main(argv=None):
     from .train import chi2_exposure, fit, fit_heldout, predict_exposure, predict_merged, register_prepass, warm_kernel, write_prediction
     cfg = build_parser().parse_args(argv)
     _data.DQ_IGNORE_BITS = int(cfg.dq_ignore_bits)
+    _data.RATE_WCS = cfg.rate_wcs
     from . import sky as _sky
     if cfg.item_chunk > 0:
         _sky.ITEM_CHUNK = int(cfg.item_chunk)
@@ -303,6 +314,14 @@ def main(argv=None):
     else:
         log(f"sky grid {N} x {N} at {cfg.sky_pitch}\" ({sky.A.numel() / 1e6:.2f} M coefficients per tile, {sky.n_views} view(s)) x {len(skies)} tile(s)")
     model = FieldOperator(cfg, fset, meta, sky, dev).to(dev)
+    pg = model.attach_pixel_gain(exps, cfg, fset_names=fset.names, det_names=info["dets"])
+    if pg is not None:
+        for k, lab in enumerate(pg.labels):
+            lg_, ob_, cn_, inf_ = pg.map(k)
+            nl = 1.0 / np.sqrt(np.maximum(inf_[ob_], 1e-30))
+            log(f"pixel gain map {lab}: box {pg.boxes[k]} (r0, c0, rows, cols), {int(ob_.sum())} observed pixels, training cuts per pixel "
+                f"median {np.median(cn_[ob_]):.0f} (min {cn_[ob_].min():.0f}, max {cn_[ob_].max():.0f}), information limit of log G per pixel "
+                f"(1 / sqrt(sum (d / sig)^2 - 1), F44) median {np.median(nl):.4f}, 10-90 % {np.percentile(nl, 10):.4f}-{np.percentile(nl, 90):.4f}")
     ts = TileSet(model, exps, skies, cfg, log=log)
     if ts.multi:
         log(f"tiles: p {dict(zip(ts.keys, np.round(ts.p, 3).tolist()))}; data GB {({k: round(v / 2 ** 30, 2) for k, v in ts.nbytes.items()})}; "
@@ -329,7 +348,10 @@ def main(argv=None):
         i = e.eid
         return {"fitted_on_heldout": ["background quadratic", "affine (4 matrix + 2 shift)", "gain u_e", "code z_e (kernel) and zD_e (distortion)",
                                       "NIRCam row/column stripes"], "method": cfg.method_name, "affine": (model.affine[i] * model.aff_scale).tolist(),
-                "u": float(model.u[i]), "bkg": model.bkg[i].tolist()}
+                "u": float(model.u[i]), "bkg": model.bkg[i].tolist(),
+                "units": "rate" if cfg.input_level == "rate" else "cal",
+                "units_note": "rate: DN/s of the _rate file (count rate, no flat, no photometric conversion)" if cfg.input_level == "rate"
+                else "cal: MJy/sr, as SCI of the _cal file", "pixel_gain": cfg.pixel_gain}
     scores = {}
     if ts.multi:
         scores = predict_merged(model, exps, held, P, cfg, ts, pred_dir=pred_dir if cfg.write_pred else None, meta_fn=meta_of, log=log)
@@ -353,6 +375,15 @@ def main(argv=None):
     json.dump(metrics, open(out / "metrics.json", "w"), indent=1, default=str)
     st = {k: v.detach().cpu() for k, v in model.state_dict().items() if not k.startswith("sky.")}
     st["skies"] = {k: {kk: vv.detach().cpu() for kk, vv in s_.state_dict().items()} for k, s_ in skies.items()}
+    if model.pixgain is not None:
+        pg = model.pixgain
+        st["pixel_gain_meta"] = {"mode": cfg.pixel_gain, "labels": pg.labels, "boxes": pg.boxes, "offsets": [int(o) for o in pg.off],
+                                 "poly_order": pg.order, "input_level": cfg.input_level, "det_names": info["dets"], "filters": info["filters"],
+                                 "gauge": pg.gauge_residual(), "note": "pixgain.logg: flat log-gain values, map k = logg[off_k : off_k + rows x cols] "
+                                 "reshaped (rows, cols), detector rows r0.., cols c0.. (box = (r0, c0, rows, cols)); pixgain.obs / count / info: "
+                                 "observed in training, training cuts per pixel, sum of max(d^2/sig^2 - 1, 0)"}
+        metrics["pixel_gain"] = {k: v for k, v in st["pixel_gain_meta"].items() if k != "note"}
+        json.dump(metrics, open(out / "metrics.json", "w"), indent=1, default=str)
     torch.save(st, out / "fieldop_state.pt")
     log(f"done; predictions in {pred_dir}")
     return metrics

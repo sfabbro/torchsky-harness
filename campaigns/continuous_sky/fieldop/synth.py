@@ -84,9 +84,15 @@ def render_truth(truth, inst, filt, X, Y, xi, n_dense=24, epoch_effect=0.0):
 
 
 def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="cpu", insts=None, epochs=(0.0, 1.0),
-               shift_rms=0.03, rot_choices=(0, 1), epoch_effect=0.0, centre_range=0.35, patch_px=64, truth_half=1.5):
-    """Exposures (header WCS without the true offsets), FilterSet, meta, truth and per-exposure true offsets."""
+               shift_rms=0.03, rot_choices=(0, 1), epoch_effect=0.0, centre_range=0.35, patch_px=64, truth_half=1.5,
+               pix_gain_rms=0.0, bkg_mean=5.0):
+    """Exposures (header WCS without the true offsets), FilterSet, meta, truth and per-exposure true offsets.
+
+    pix_gain_rms > 0 injects a per-pixel gain (flat field) per detector: G = exp(g), g white Gaussian of rms pix_gain_rms (from its own random
+    stream, so the rest of the field is unchanged), and d = G (clean + background) + noise. The true maps are in truth.gain {det: (n, n)}
+    and each exposure's extra["gain_true"]. Defaults (0, 5.0) reproduce the original field exactly."""
     rng = np.random.default_rng(seed)
+    grng = np.random.default_rng(10007 + seed)
     if insts is None:
         insts = [SynthInstrument("A", 0.06, 40, 6.5, 0.05, 1.5, space_grad=0.12, chromatic=1.0, flat_grad=0.06,
                                  filters=[("A1", 1.0, 1.3), ("A2", 1.6, 2.1)]),
@@ -97,11 +103,16 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
             filters.append(box_filter(name, ins.name, lo, hi, Q))
     fset = FilterSet(filters)
     truth = make_truth(rng, half=truth_half)
+    truth.gain = {}
     exps, dets, chans = [], [], []
     k = 0
     for ii, ins in enumerate(insts):
         dets.append(ins.name)
         chans.append(ins.name)
+        gmap = None
+        if pix_gain_rms > 0:
+            gmap = torch.tensor(np.exp(grng.normal(0.0, pix_gain_rms, (ins.npix, ins.npix))), dtype=torch.float32)
+            truth.gain[ii] = gmap
         for name, lo, hi in ins.filters:
             f = fset.index[name]
             for j in range(n_per_filter):
@@ -120,8 +131,11 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
                 eff = epoch_effect * (1 if t > 0 else -1)
                 clean = render_truth(truth, ins, fset.filters[f], Xh.reshape(-1) + float(true_shift[0]), Yh.reshape(-1) + float(true_shift[1]), xi,
                                      epoch_effect=eff).view(n, n)
-                bk = float(rng.normal(5.0, 1.0))
-                d = clean + bk + noise * torch.randn(n, n, generator=torch.Generator().manual_seed(1000 + k))
+                bk = float(rng.normal(bkg_mean, 1.0))
+                if gmap is None:
+                    d = clean + bk + noise * torch.randn(n, n, generator=torch.Generator().manual_seed(1000 + k))
+                else:
+                    d = gmap * (clean + bk) + noise * torch.randn(n, n, generator=torch.Generator().manual_seed(1000 + k))
                 split = "held" if j < n_held else ("val" if j < n_held + n_val else "train")
                 ins_name = ins.name
                 e = Exposure(name=f"{name}_{j}", filt=f, inst=ii, chan=ii, det=ii, t=float(t), mjd=float(t), det_shape=(n, n), cut0=(0, 0),
@@ -129,7 +143,7 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
                              X=Xh.to(dev), Y=Yh.to(dev), R=Rm, split=split, group=f"{name}_{j}", stripes=False, bkg0=float(d.median()),
                              Jpix=torch.tensor(np.broadcast_to(Rm * ins.pixel, (n, n, 2, 2)).copy(), dtype=torch.float32, device=dev),
                              extra={"J": (Rm * ins.pixel).tolist(), "true_shift": true_shift.tolist(), "clean": clean.to(dev), "bkg_true": bk,
-                                    "diameter_m": ins.diameter_m})
+                                    "diameter_m": ins.diameter_m, **({} if gmap is None else {"gain_true": gmap.to(dev)})})
                 e.eid = k
                 exps.append(e)
                 k += 1
