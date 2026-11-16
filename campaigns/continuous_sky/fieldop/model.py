@@ -153,7 +153,12 @@ def build_pixel_gain(cuts, meta, mode, order, dev, fset_names=None, det_names=No
             s = c.hostv("sig").cpu().numpy().astype(np.float64)
             a, b_ = v.shape
             ry, rx = c.cut0[0] - y0, c.cut0[1] - x0
-            sl = (slice(ry, ry + a), slice(rx, rx + b_))
+            # the box is the bounding box of the VALID pixels, so a cut's array can stick out of it (invalid margins): keep the overlap only
+            i0, i1, j0, j1 = max(0, -ry), min(a, nr - ry), max(0, -rx), min(b_, nc - rx)
+            if i1 <= i0 or j1 <= j0:
+                continue
+            sl = (slice(ry + i0, ry + i1), slice(rx + j0, rx + j1))
+            v, d, s = v[i0:i1, j0:j1], d[i0:i1, j0:j1], s[i0:i1, j0:j1]
             ob[sl] |= v
             cnt[sl] += v
             inf_[sl] += np.where(v, np.maximum(d * d / (s * s) - 1.0, 0.0), 0.0)

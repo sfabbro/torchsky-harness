@@ -157,3 +157,25 @@ if __name__ == "__main__":
         if name.startswith("test_"):
             fn()
             print("ok", name)
+
+
+def test_cut_with_invalid_margins():
+    """Regression (16 Nov 2026, first real-data smoke run): the gain box is the bounding box of the VALID pixels, so a cut whose array
+    has invalid margins sticks out of it; build_pixel_gain must keep the overlap only."""
+    from types import SimpleNamespace
+    from fieldop.model import build_pixel_gain
+    g = torch.Generator().manual_seed(3)
+    cuts = []
+    for e, (y0, x0) in enumerate([(100, 200), (110, 190)]):
+        v = torch.zeros(40, 30, dtype=torch.bool)
+        v[7:33, 5:22] = True                                     # invalid margins on every side
+        d = torch.rand(40, 30, generator=g) + 5.0
+        s = torch.ones(40, 30)
+        cuts.append(SimpleNamespace(split="train", eid=e, cut0=(y0, x0), hostv=lambda k, v=v, d=d, s=s: {"valid": v, "d": d, "sig": s}[k]))
+    meta = {"det": [0, 0], "filt": [0, 0]}
+    pg, ekey = build_pixel_gain(cuts, meta, "detector", 2, torch.device("cpu"))
+    r0, c0, nr, nc = pg.boxes[0]
+    assert (r0, c0, nr, nc) == (107, 195, 36, 27), pg.boxes[0]
+    lg, ob, cnt, inf = pg.map(0)
+    assert int(ob.sum()) == int(cnt.astype(bool).sum()) and cnt.max() == 2 and int((cnt > 0).sum()) > 26 * 17
+    assert int(ob.sum()) == 2 * 26 * 17 - int((cnt == 2).sum())

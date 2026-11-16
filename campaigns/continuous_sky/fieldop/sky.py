@@ -703,7 +703,7 @@ class ItemSky(nn.Module):
             if low.numel() == 0:
                 continue
             low = low[torch.argsort((peak / sig_b[None]).amax(1)[low])][:max(1, int(max_frac * self.n_items))]
-            pick = torch.multinomial(r / r.sum(), low.numel(), replacement=True, generator=rng)
+            pick = torch.multinomial((r / r.sum()).cpu(), low.numel(), replacement=True, generator=rng).to(r.device)   # the generator lives on the CPU
             jy, jx = (pick // self.N).to(self.pos.dtype), (pick % self.N).to(self.pos.dtype)
             jit = torch.rand(low.numel(), 2, generator=rng).to(self.pos.device, self.pos.dtype) - 0.5
             self.pos.data[v, low, 0] = self.x0 + (jx + jit[:, 0]) * self.pitch

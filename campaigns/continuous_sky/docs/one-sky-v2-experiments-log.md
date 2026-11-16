@@ -2,6 +2,34 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 16 Nov 2026, 22:30 to 23:00 UTC: two crashes fixed, raw-input fits started, where the bright-pixel deficit sits, sharpness
+
+**Two code crashes found by the first runs on real data, both fixed (package `fieldop-gain-322a22f9.tar.gz`):**
+- Pixel-gain builder: the gain box is the bounding box of the valid pixels, and a cut's array with invalid margins stuck out of it (never the case in the synthetic tests). Fixed by keeping the overlap; regression test added (7 tests pass).
+- Item relocation (`--item-relocate 1`): a CPU random generator was used with a GPU tensor. It crashed at the first relocation, 30 minutes into the fit. Fixed. The relocation path had never run on a GPU.
+- The six-minute rate-level smoke run then passed: five gain maps (1.17 M pixels seen in training, 4 to 6 training exposures per pixel), batch score 107 at step 0 falling to 7 after 200 steps, predictions written.
+
+**CANFAR.** One GPU node fails every job at container start ("failed to initialize NVML: Driver/library version mismatch"); six of my launches died there. Two healthy slices take my jobs, so the remaining fits run two at a time. Running since about 22:35 and 22:45 UTC: items with relocation (`onesky_smacs_items004wr_s0`) and rate input with learned gain, grid sky (`fieldop_rate_gain_grid`). Waiting: rate grid without gain, rate items with and without gain, 120,000 items.
+
+**Count-rate files against calibrated files, measured on 12 pairs** (log of rate over calibrated): the per-filter conversion is a factor 0.28 (F090W) to 2.8 (F444W); detectors of one filter differ by 1% to 3%; the flat's structure on 32-pixel scales is 1.0% to 2.9% rms, 0.5% to 1.6% after removing a degree-2 polynomial. So the model's smooth throughput field at its default starting scale (2%) is of the right size, and the per-filter factor goes into the sky's spectrum: a rate-level sky is in instrument units per filter, not in flux units (absolute flux cannot calibrate itself, as stated in the design).
+
+**Where the item sky still loses to the grid sky (signal-to-noise 50 to 200).** Splitting that bin into connected bright regions on four held-out exposures: one bright star carries 96% of the excess in an F090W exposure and all of it in an F277W exposure; in the other two exposures the item sky is level or better. At the nine brightest pixels of those stars the item fit is right to 0.1% (F090W) while the grid fit is 7% low; the loss is in the pixels around the peak (rings and spikes).
+- Reading: both sky forms paint part of the telescope's diffraction pattern into the sky around bright stars (spikes are visible in both fitted skies), the grid more freely. With one telescope orientation, as in SMACS, nothing separates "spike on the sky" from "spike in the kernel". This needs exposures at several orientations, not a change of sky form.
+- Not a number to chase on SMACS alone.
+
+**Sharpness of the fitted skies** (`flux_check/sharpness.py`; median width at half maximum of the 12 most concentrated sources, against the official mosaic):
+
+| Filter | official mosaic | grid sky 0.04 | item sky, raster 0.04 | item sky, raster 0.02 |
+|---|---|---|---|---|
+| F090W | 0.127 | 0.084 | 0.108 | 0.093 |
+| F200W | 0.128 | 0.092 | 0.106 | 0.089 |
+| F277W | 0.233 | 0.153 | 0.097 | 0.085 |
+| F444W | 0.264 | 0.199 | 0.102 | 0.087 |
+
+- The item sky shows the same widths in all six filters: 0.40 of the mosaic's at F444W (0.33 at the 0.02 raster). The grid sky keeps wavelength-dependent widths (0.74 of the mosaic's).
+- **This is an assumption of the item form, to be stated:** one item has one position, size and orientation at every wavelength and only its spectrum varies, so the sharp short-wavelength exposures set the shapes that the long-wavelength exposures are then asked to confirm. Colour gradients need several overlapping items. The support for it is predictive only: the long-wavelength held-out exposures are predicted as well as or better than by the grid sky (-0.094 [-0.238, +0.060] in round 2) and better than by the pipeline. A source whose shape truly changes with wavelength inside one item's footprint would be misrepresented.
+- Approximations: nearest-pixel peaks, no deblending, sources are compact galaxies and stars together, widths are limited by the raster (smallest 0.053 and 0.028 arcsec).
+
 ## 16 Nov 2026: round 3 collected; the "faint-pixel bias" was the scorer's; raw-input build ready
 
 The session stopped on 14 Nov at about 06:20 UTC (weekly usage limit) and resumed on 16 Nov at 21:05 UTC. The six fits launched before the stop all finished.
@@ -28,7 +56,7 @@ Bin columns are item minus grid (`onesky_grid004_dq2`: 1.09, 1.25, 1.32, 3.23, 1
 **3. The "faint-pixel bias" of the item sky was an artefact of the scorer's background offset.** My explanation of 14 Nov (items cannot carry diffuse light) was wrong: wider items changed nothing (below 1: 0.86 with the offset, 1.15 without, for every item fit).
 - The protocol fits its offset on the 2,000 scored pixels with the lowest signal-to-noise in the official mosaic. That mosaic is built from all exposures, the held-out one included, so those pixels are the ones where the held-out exposure's own noise is low. A model that does not follow the noise is then given a negative offset; a model that follows the training exposures' noise (the grid) is not.
 - Check (five held-out exposures): median (data - model) / sigma on the faintest 2% of pixels ranked by the official mosaic: -0.38 to -0.57 for the item fit and -0.13 to -0.21 for the grid fit in the short-wavelength exposures. Ranked instead by the other method's prediction, which shares no noise with the held-out exposure: +0.13 to +0.17 for both, with no trend across the whole range.
-- Fix (mine): `score_paired.py --offset-rank METHOD --offset-rank-smooth 1`: the offset pixels are the 2,000 with the lowest value of a training-only prediction, box-averaged over 1 arcsec so that it carries almost none of the training exposures' pixel noise either (an unsmoothed training mosaic biases the other way: it costs the pipeline 0.05 on the five-exposure sample). On that sample the scores with the new offset equal those without any offset to 0.01 for all three methods (item 1.392 and 1.390; grid 1.854 and 1.848; pipeline 1.678 and 1.680). Full-set run queued on CANFAR.
+- Fix (mine): `score_paired.py --offset-rank METHOD --offset-rank-smooth 1`: the offset pixels are the 2,000 with the lowest value of a training-only prediction, box-averaged over 1 arcsec so that it carries almost none of the training exposures' pixel noise either (an unsmoothed training mosaic biases the other way: it costs the pipeline 0.05 on the five-exposure sample). On that sample the scores with the new offset equal those without any offset to 0.01 for all three methods (item 1.392 and 1.390; grid 1.854 and 1.848; pipeline 1.678 and 1.680). Full set (24 held-out exposures): with the new offset the headline is 1.691 for the wide-item fit, 1.719 for the grid and 1.813 for the pipeline, against 1.689, 1.713 and 1.822 with no offset; item minus pipeline -0.121 [-0.261, +0.006], item minus grid -0.028 [-0.127, +0.092]. Output: `protocol/v1/scores_paired/SMACS/offrank/`.
 - Consequence: the protocol's headline "with offset" form understates the item sky by 0.14 (1.83 against 1.69) and should not be used to compare smooth models with noise-following ones. All conclusions of 14 Nov drawn from the "with offset" column are withdrawn; those from the "without offset" column stand.
 
 **4. Raw inputs: rate-level fits with a learned per-pixel gain (Opus agent; unit tests re-run by me, 6 pass).** Folder `fieldop_gain/`, report `RATE_GAIN_REPORT.md`, package `fieldop-gain-a7950e8c.tar.gz`.
@@ -42,7 +70,7 @@ Bin columns are item minus grid (`onesky_grid004_dq2`: 1.09, 1.25, 1.32, 3.23, 1
 
 **5. Figures (Sonnet agent; looked at by me):** `figs_round2/`: fitted skies beside the official mosaic, enclosed flux over mosaic against radius, kernel profiles and encircled fractions, item sizes. Notes and approximations in `FIGS_NOTES.md`.
 
-**CANFAR.** The account's quota was full of other jobs on 16 Nov evening; the scoring and smoke jobs were queued, not running, when this entry was written.
+**CANFAR, 16 Nov 21:45 UTC.** The first rate-level smoke run failed at container start with a GPU driver error on the node ("failed to initialize NVML: Driver/library version mismatch"), before any code ran; relaunched as `onesky_smacs_rate_smoke2_s0`, queued. The four 200-minute rate fits wait for it. Queued on the tested item package (`fieldop-items-a542655b.tar.gz`), both aimed at the bright-core deficit: `onesky_smacs_items004wr_s0` (wide items plus `--item-relocate 1`: faint items moved to where the back-projected residual is positive) and `onesky_smacs_items004w120_s0` (120,000 items). The account was running 14 other jobs, so mine wait their turn.
 
 ## 14 Nov 2026, 04:10 to 06:00 UTC: first real-data results for the item sky; the re-fetched files differ from the protocol's
 
