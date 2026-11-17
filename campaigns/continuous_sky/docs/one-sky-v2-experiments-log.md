@@ -2,6 +2,52 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 17 Nov 2026, 23:15 UTC: first sound count-rate fits on SMACS: the fit learns the true flat field, but not yet well enough to help prediction
+
+Collection by a Haiku agent; flat comparison and flux check by me. Fits: `fieldop_rate_grid3` (control, 9,140 steps, 1.31 s per step) and `fieldop_rate_gain_grid3` (learned gain per detector pixel, 8,821 steps), both from count-rate files in sky units, 200 minutes, grid sky.
+
+**The count-rate path is sound now.** Learned noise floor 2% to 5% (1,000% in the broken fits); learned noise scale 0.68 to 0.88; held-out score against input noise 2.78 (control) and 2.70 (gain); the fitted sky is 1.9 to 3.1 times the official mosaic's flux, the same factor as the calibrated grid fit (the known split between far kernel wings and background), so the sky units agree between input levels.
+
+**Paired scores at count-rate level** (24 held-out exposures; no scorer offset; difference from the calibrated twin `onesky_grid004_dq2`, 68% interval):
+
+| Signal-to-noise | Calibrated twin | Count-rate, no gain | Count-rate, learned gain |
+|---|---|---|---|
+| headline (5 and above) | 1.95 | 2.50 (+0.55 [+0.32, +0.78]) | 2.48 (+0.53 [+0.45, +0.61]) |
+| 1 to 5 | 1.11 | 1.24 (+0.13) | 1.35 (+0.24) |
+| 5 to 20 | 1.28 | 1.50 (+0.22) | 1.57 (+0.29) |
+| 20 to 50 | 1.35 | 1.72 (+0.37) | 1.70 (+0.35) |
+| 50 to 200 | 3.51 | 7.22 (+3.71) | 5.16 (+1.66) |
+| above 200 | 182 | 204 (+23) | 228 (+47) |
+
+Against the official pipeline at count-rate level: headline +0.54 (control) and +0.51 (gain); the gain fit is better than the pipeline at 50 to 200 (-2.0 [-3.8, -0.7]).
+
+**The learned gain is the real flat field, at about 70% to 80% of the correlation the noise allows.** Against the official flat (ratio of count-rate to calibrated files, same polynomial removed):
+
+| Detector | Official flat rms | Learned map rms | Correlation | Correlation the noise allows | Slope |
+|---|---|---|---|---|---|
+| NRCB1 | 4.3% | 4.9% | 0.49 | 0.67 | 0.56 |
+| NRCB3 | 3.0% | 4.4% | 0.40 | 0.56 | 0.58 |
+| NRCBLONG | 2.1% | 3.4% | 0.44 | 0.67 | 0.71 |
+
+- So a flat field can be learned from the sky exposures alone, with no flat-field frames: criterion 1 of test 3 passes (rule: at least 0.3 where the noise allows more than 0.5; measured 0.45 to 0.50 there).
+- Criterion 2 fails on SMACS: the count-rate fit with gain is worse than its calibrated twin by 0.29 to 0.35 at signal-to-noise 5 to 50 (rule: at most 0.05), and it is not better than the control without gain except on bright pixels (50 to 200: 5.2 against 7.2). At faint pixels it is worse (1.35 against 1.24).
+- Reading: each SMACS detector pixel is seen about 30 times, so the per-pixel noise of the learned gain (median 1.7% to 3.9%) is as large as the flat itself (2% to 4%); the map is half signal, half noise (slope 0.56 to 0.71), and the noise half costs more on faint pixels than the signal half gains. Two things follow, neither tested yet: shrink the map by its own noise (a learned prior on its amplitude), and use more visits per pixel, which is what LMC programme 1476 provides (680 exposures).
+- **Verdict for test 3 on SMACS:** the element is not dropped and not adopted. It learns the right thing but does not pay yet; the LMC fit decides. I am not applying the letter of the drop rule (which says drop) because its first criterion passed clearly and the failure of the second has a specific, testable cause.
+- Open doubt (long-wavelength pixel area counted twice) not settled: the per-detector throughput field was pruned in both fits, the detector pattern is larger on the long-wavelength detector (3.0 to 3.7 sigma against 1.5 to 2.1), consistent with it but not proof.
+- Also visible in the new end-of-fit report: 53% to 56% of the F090W kernel lies beyond 2.5 arcsec (the wings and background trade again); held-out background constants sit 1.2 sigma from the data median (training: 0.27).
+
+**LMC item fit (`onesky_lmc_items002w_s0b`), still running (68% at 22:55): it is not fitting.** The guard warned at step 674: the learned noise floor passed 0.2 and is now 0.36 and 0.50; the score against input noise is 27 to 28 while the model-noise score reads 1.1. At 4.9 s per step it will have about 4,000 steps over 10 tiles (400 per tile). Expect a poor score; the cause to check first is too few steps per tile and too few items for a crowded star field (60,000 per tile).
+
+## 17 Nov 2026, 18:30 to 19:30 UTC: GPU back; three GPU nodes are 10 to 30 times slow; fits relaunched on the fast one
+
+- The node with the driver fault is `keel-prod-g0123.arbutus.uvic.ca` (captured at 17:54:27 UTC: "failed to initialize NVML: Driver/library version mismatch"; 29 of our launches failed there between 02:25 and 17:54). It was repaired before 18:30.
+- At 18:32 to 18:35 the three queued fits started, on `g0126`, `g0125` and `g0124` (one H100 each). They ran 10 to 30 times slower than yesterday: registration pre-pass of 100 steps in 981 s and 1,475 s (yesterday 35 s), first fit step after 85 s (yesterday 2 s), no step 100 after 11 minutes; the LMC fit had not finished its pre-pass after 40 minutes.
+- Cause separated with four 5-minute runs on the same data: yesterday's package and today's package (with and without the new count-rate options) all ran at normal speed on `g0123` (pre-pass 27 to 32 s, about 1.2 s per step). So it is the nodes, not the code. Not known why (the GPU-bound kernel warm start took its usual 24 s on the slow nodes, so the processors or storage of those nodes are the likely limit, not the GPUs).
+- I stopped my three slow jobs and relaunched them at 19:21 to 19:24; all landed on `g0123`: `fieldop_rate_gain_grid3` (session oneskyrgg3), `fieldop_rate_grid3` (oneskyrg3), `onesky_lmc_items002w_s0b` (oneskylmcj, method `onesky_lmc_items002w`). The runs `fieldop_rate_gain_grid2`, `fieldop_rate_grid2` and `onesky_lmc_items002w_s0` are incomplete and void.
+- First steps of the relaunched count-rate fit with gain: 1.16 s per step (yesterday 1.43), learned noise floor 0.011, score against input noise 18.5 at step 0 and 13.4 at step 100. Count-rate fits end about 22:50 UTC, the LMC fit about 00:30 UTC.
+- Package archive in use: `fieldop-tsky-67a98fa5.tar.gz`. Count-rate arguments now include `--rate-units sky --nuisance-steps exposure`.
+- Lesson for launches: after starting a fit, read the pre-pass time in its log (about 30 s per 100 steps on SMACS); if it is several times longer, find the node with `canfar events <id>` and relaunch.
+
 ## 17 Nov 2026, 07:45 to 11:25 UTC: a round of debugging, performance and simplification while the GPU is blocked (Seb's request)
 
 Seb: "do a round of debugging, performance, simplifying, but always with the goal of multi-survey joint analysis for new science discovery, ultimately probing the deepest sky latent field." Five agents (Opus: audit, then two model changes; Sonnet: truth test, then performance and simplification). I re-ran the new tests on the final tree (25 pass in the seven files touched; the agents report 54 in all). All work is in `fieldop_tsky/`; reports: `AUDIT_2026-11-17.md`, `tests/truth/TRUTH_REPORT.md`, `PERF_SIMPLIFY_2026-11-17.md`.
