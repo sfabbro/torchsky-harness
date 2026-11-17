@@ -53,6 +53,7 @@ def spectral_init(S_band, Phi_band, mu=1e-5):
 
 class SkyGrid(nn.Module):
     """Spectral grid sky with optional cross-fitting views (V copies of the coefficients)."""
+    ped = None        # --sky-positivity-margin: constant spectral coefficients p (K,); the positivity penalty acts on sky + p
 
     def __init__(self, A0, pitch, basis, n_views=1, precond=None):
         """precond (N, N): optional fixed diagonal preconditioner, coefficients = precond x A (Adam then moves bright pixels proportionally
@@ -392,9 +393,9 @@ class PyramidPlan:
 
 
 class ItemSky(nn.Module):
-    """Sky made of Gaussian items (+ optional coarse smooth grid), RASTERISED onto the same coefficient grid as SkyGrid:
+    """Sky made of Gaussian items, RASTERISED onto the same coefficient grid as SkyGrid:
 
-        s(X, Y, lambda) = sum_n [sum_k c_nk phi_k(lambda)] G(X - x_n, Y - y_n; Sigma_n)  (+ tent interpolant of a coarse smooth grid)
+        s(X, Y, lambda) = sum_n [sum_k c_nk phi_k(lambda)] G(X - x_n, Y - y_n; Sigma_n)
 
     Item n: position (x_n, y_n) [arcsec, continuous], widths w_i = sqrt(floor^2 + exp(2 l_i)) (never below --item-floor, capped at
     --item-max-width), angle theta_n, coefficients c_nk = exp(r_nk) > 0 on the package's basis phi_k (so s >= 0 at every lambda from the items).
@@ -415,8 +416,8 @@ class ItemSky(nn.Module):
     band_images = SkyGrid.band_images
     half_extent = SkyGrid.half_extent
 
-    def __init__(self, A0, pitch, basis, n_items, floor=0.0, max_width=0.0, n_levels=3, smooth_pitch=0.0, n_views=1, coef_min=None,
-                 relocate=0, seed=0, raster="direct", patch="square", impl="prototype"):
+    def __init__(self, A0, pitch, basis, n_items, floor=0.0, max_width=0.0, n_levels=3, n_views=1, coef_min=None,
+                 seed=0, raster="direct", patch="square", impl="prototype"):
         super().__init__()
         assert impl in ("prototype", "torchsky"), impl
         self.item_impl = impl            # --item-impl: "torchsky" rasterises through torchsky's GaussianItemScene (tsky_backends.py)
@@ -434,7 +435,6 @@ class ItemSky(nn.Module):
         self.n_items, self.n_levels = int(n_items), int(n_levels)
         self.floor = float(floor) if floor > 0 else 0.4 * self.pitch
         self.max_width = float(max_width) if max_width > 0 else 16.0 * self.pitch
-        self.relocate_on = int(relocate)
         self.seed = seed
         dev, dt = A0.device, A0.dtype
         self.pos = nn.Parameter(torch.zeros(n_views, self.n_items, 2, device=dev, dtype=dt))
@@ -442,25 +442,16 @@ class ItemSky(nn.Module):
         self.ang = nn.Parameter(torch.zeros(n_views, self.n_items, device=dev, dtype=dt))
         self.lc = nn.Parameter(torch.zeros(n_views, self.n_items, K, device=dev, dtype=dt))
         self.register_buffer("level", torch.zeros(self.n_items, dtype=torch.long, device=dev))
-        self.smooth_pitch = float(smooth_pitch)
-        if smooth_pitch > 0:
-            Ns = int(math.ceil(2 * self.half_extent / smooth_pitch)) + 1
-            self.Ns = Ns
-            self.S = nn.Parameter(torch.zeros(n_views, K, Ns, Ns, device=dev, dtype=dt))
-        else:
-            self.Ns = 0
-            self.S = None
-        self.register_buffer("resid", torch.zeros(N, N, device=dev, dtype=dt))     # accumulated back-projected residual (relocation)
+        self.ped = None   # --sky-positivity-margin: constant spectral coefficients p (K,); the items carry sky + p, the sky is items - p
         self.coef_min = coef_min
         self._cache = None
         self._mut = 0
         self.reset_from_coeffs(A0)
-        self.reloc_log = []
 
     # ------------------------------------------------------------------ bookkeeping
     def n_fitted(self):
-        """Fitted sky numbers (one view): items x (2 position + 2 width + 1 angle + K) + smooth grid."""
-        return self.n_items * (5 + self.K) + (self.K * self.Ns * self.Ns if self.S is not None else 0)
+        """Fitted sky numbers (one view): items x (2 position + 2 width + 1 angle + K)."""
+        return self.n_items * (5 + self.K)
 
     def widths(self, view):
         lw = self.lw[view].clamp(max=math.log(self.max_width))
@@ -470,7 +461,9 @@ class ItemSky(nn.Module):
     def reset_from_coeffs(self, A0):
         """(Re)seed: lattice positions and widths (data-blind), coefficients read from the warm-start coadd coefficients A0 (K, N, N): level l
         gets the share of the items it holds, c_nk = (n_l / n) x (cell area of its items) x max(A0_k smoothed at the item width, coef_min);
-        the smooth grid (if any) starts at zero. Used at construction and when the registration pre-pass rebuilds the warm start."""
+        Used at construction and when the registration pre-pass rebuilds the warm start."""
+        if getattr(self, "ped", None) is not None:
+            A0 = A0 + self.ped.to(A0)[:, None, None]
         x, y, w, lv, area = item_lattice(self.n_items, self.half_extent, self.n_levels, self.floor, self.max_width)
         dev, dt = self.pos.device, self.pos.dtype
         cmin = self.coef_min
@@ -495,15 +488,11 @@ class ItemSky(nn.Module):
         self.ang.data[:] = ang.to(dev, dt)[None]
         self.lc.data[:] = torch.log(c.clamp(min=1e-30))[None]
         self.level.copy_(lv.to(dev))
-        if self.S is not None:
-            self.S.data.zero_()
-        self.resid.zero_()
         self._mut += 1
 
     @torch.no_grad()
     def average_views(self):
-        """End of cross-fitting: views averaged PARAMETER-wise (positions, log widths, doubled-angle vectors, linear coefficients; smooth grid
-        linearly). Exact only while item n plays the same role in every view (they start identical); not the average of the two skies."""
+        """End of cross-fitting: views averaged PARAMETER-wise (positions, log widths, doubled-angle vectors, linear coefficients). Exact only while item n plays the same role in every view (they start identical); not the average of the two skies."""
         if self.n_views == 1:
             return
         self.pos.data[:] = self.pos.data.mean(0, keepdim=True)
@@ -511,22 +500,18 @@ class ItemSky(nn.Module):
         a2 = 2 * self.ang.data
         self.ang.data[:] = (0.5 * torch.atan2(torch.sin(a2).mean(0), torch.cos(a2).mean(0)))[None]
         self.lc.data[:] = torch.log(torch.exp(self.lc.data).mean(0, keepdim=True))
-        if self.S is not None:
-            self.S.data[:] = self.S.data.mean(0, keepdim=True)
         self._mut += 1
 
-    def opt_groups(self, lr_sky_sig, cfg):
+    def opt_groups(self, cfg):
         """Adam parameter groups with their own step sizes (each scaled by the run's schedule through 'base')."""
         p = self.pitch
         gs = [("pos", self.pos, cfg.item_lr_pos * p), ("lw", self.lw, cfg.item_lr_width), ("ang", self.ang, cfg.item_lr_angle),
               ("lc", self.lc, cfg.item_lr_coef)]
-        if self.S is not None:
-            gs.append(("S", self.S, lr_sky_sig))
         return [{"params": [t], "lr": lr, "base": lr, "name": n} for n, t, lr in gs]
 
     # ------------------------------------------------------------------ rasterisation
     def _key(self, view):
-        ps = [self.pos, self.lw, self.ang, self.lc] + ([self.S] if self.S is not None else [])
+        ps = [self.pos, self.lw, self.ang, self.lc]
         # version counters miss writes through .data, so the key also holds two content checksums per parameter
         with torch.no_grad():
             sums = tuple((float(t.sum()), float((t * t).sum())) for t in ps)
@@ -642,26 +627,11 @@ class ItemSky(nn.Module):
             G = torch.zeros(K, N, N, device=pos.device, dtype=pos.dtype) + 0.0 * (pos.sum() + wid.sum() + ang.sum() + c.sum())
         return G
 
-    def smooth_up(self, v):
-        """Smooth grid of view v read by its own tent interpolant at the fine nodes: (K, N, N)."""
-        g = (torch.arange(self.N, device=self.S.device, dtype=self.S.dtype) * self.pitch + self.x0)
-        YY, XX = torch.meshgrid(g, g, indexing="ij")
-        hs = (self.Ns - 1) / 2 * self.smooth_pitch
-        gr = torch.stack([XX / hs, YY / hs], -1)[None]
-        return F.grid_sample(self.S[v][None], gr, mode="bilinear", padding_mode="zeros", align_corners=True)[0]
-
     def view_coeffs(self, v):
         A = self.raster(v)
-        if A.requires_grad and self.relocate_on:
-            A.register_hook(self._accumulate)
-        if self.S is not None:
-            A = A + self.smooth_up(v)
+        if self.ped is not None:
+            A = A - self.ped.to(A)[:, None, None]
         return A
-
-    def _accumulate(self, grad):
-        with torch.no_grad():
-            self.resid.mul_(0.98).add_(-grad.sum(0))       # minus the gradient of the data loss = back-projected (weighted) residual
-        return grad
 
     def coeffs(self, view=None):
         live = torch.is_grad_enabled() and any(t.requires_grad for t in self.parameters())
@@ -679,54 +649,9 @@ class ItemSky(nn.Module):
             self._cache = None
         return A
 
-    # ------------------------------------------------------------------ regularisers and relocation
-    def reg_terms(self, Phi_band, sig_b, cfg, view=None):
-        """Items are non-negative by construction, so the soft positivity penalty (--sky-neg) acts on the smooth grid's band images only
-        (none without a smooth grid); TV is not applied to items."""
-        if self.S is None or cfg.sky_neg <= 0:
-            return 0.0
-        vs = range(self.n_views) if view is None else [view]
-        S = torch.stack([self.smooth_up(v) for v in vs]).mean(0)
-        Sb = torch.einsum("bk,khw->bhw", Phi_band, S) / sig_b[:, None, None]
-        return cfg.sky_neg * F.relu(-Sb).pow(2).mean()
-
-    @torch.no_grad()
-    def relocate(self, Phi_band, sig_b, opt, rng, thr=0.5, max_frac=0.05):
-        """Items whose peak band surface brightness is below thr x the band noise are moved (at most max_frac of the items) to nodes drawn
-        in proportion to the positive part of the accumulated back-projected residual (minus the gradient of the data loss with respect to the
-        coefficient grid, summed over k, exponentially averaged over the sky steps), with sub-node jitter; width reset to the floor x 1.5,
-        coefficients to the residual level, Adam state of those items zeroed. Returns the number moved."""
-        moved = 0
-        r = self.resid.clamp(min=0).flatten()
-        if float(r.sum()) <= 0:
-            return 0
-        for v in range(self.n_views):
-            wid = self.widths(v)
-            c = torch.exp(self.lc[v])
-            peak = (c @ Phi_band.T) / (2 * math.pi * (wid[:, 0] ** 2 + self.pitch ** 2 / 12).sqrt() * (wid[:, 1] ** 2 + self.pitch ** 2 / 12).sqrt())[:, None]
-            low = torch.nonzero((peak / sig_b[None]).amax(1) < thr).squeeze(1)
-            if low.numel() == 0:
-                continue
-            low = low[torch.argsort((peak / sig_b[None]).amax(1)[low])][:max(1, int(max_frac * self.n_items))]
-            pick = torch.multinomial((r / r.sum()).cpu(), low.numel(), replacement=True, generator=rng).to(r.device)   # the generator lives on the CPU
-            jy, jx = (pick // self.N).to(self.pos.dtype), (pick % self.N).to(self.pos.dtype)
-            jit = torch.rand(low.numel(), 2, generator=rng).to(self.pos.device, self.pos.dtype) - 0.5
-            self.pos.data[v, low, 0] = self.x0 + (jx + jit[:, 0]) * self.pitch
-            self.pos.data[v, low, 1] = self.x0 + (jy + jit[:, 1]) * self.pitch
-            self.lw.data[v, low] = 0.5 * math.log((1.5 ** 2 - 1) * self.floor ** 2)
-            cnew = (2 * math.pi * 1.5 ** 2 * self.floor ** 2) * float(sig_b.mean())   # an item at about the band noise
-            self.lc.data[v, low] = math.log(cnew)
-            for t in (self.pos, self.lw, self.ang, self.lc):
-                st = opt.state.get(t, {})
-                for kk in ("exp_avg", "exp_avg_sq"):
-                    if kk in st:
-                        st[kk][v, low] = 0
-            moved += int(low.numel())
-        self._mut += 1
-        return moved
-
-    def _load_from_state_dict(self, *a, **k):
-        super()._load_from_state_dict(*a, **k)
+    def _load_from_state_dict(self, state_dict, prefix, *a, **k):
+        state_dict.pop(prefix + "resid", None)       # saved before the item relocation was removed: an all-zero buffer, no longer kept
+        super()._load_from_state_dict(state_dict, prefix, *a, **k)
         self._mut += 1
         self._cache = None
 

@@ -307,11 +307,15 @@ def render_fft_batch(sky, A, Phi_b, levels, kernels, node_w, pos, shift0=None, i
     n_h = levels.n_h
     dev, dt = A.device, A.dtype
     flat = pos.detach().reshape(B, -1, 2)
-    lo_s, hi_s = flat.min(1).values.cpu().double(), flat.max(1).values.cpu().double()
+    ext = [flat.min(1).values, flat.max(1).values]
     if det_frame:
         posd = torch.einsum("bqni,bij->bqnj", pos, Rs)                      # detector-frame coordinates (about the box centre)
         fd = posd.detach().reshape(B, -1, 2)
-        lo_d, hi_d = fd.min(1).values.cpu().double(), fd.max(1).values.cpu().double()
+        ext += [fd.min(1).values, fd.max(1).values]
+    ext = torch.stack(ext).cpu().double()                                   # the only device read of the render: one copy for all four extents
+    lo_s, hi_s = ext[0], ext[1]
+    if det_frame:
+        lo_d, hi_d = ext[2], ext[3]
     out = 0.0
     for l in range(levels.L + 1):
         p = levels.pitch[l]

@@ -4,7 +4,7 @@
                             raster to 1e-5 of the image maximum, gradients to 1e-4 relative (direct and pyramid)
   B  --rate-wcs telescope   count-rate positions from the telescope frame against the calibrated file's header WCS on a sample file (3 to 60 mas)
   C  --loader torchfits     identical arrays and header values at usable pixels, identical cut dictionaries, and the astropy fallback
-  D  --render-impl torchsky not wired in: the refusal, and the measured agreement of NestedKernelPSF with the prototype's render (1e-3 on a resolved sky)
+  D  (no switch) the measured agreement of NestedKernelPSF with the prototype's render (1e-3 on a resolved sky)
   and that every default is the prototype's.
 Run:  PYTHONPATH=<torchsky>/src python -m pytest tests/test_torchsky_backends.py -q"""
 import math
@@ -28,7 +28,7 @@ need_files = pytest.mark.skipif(not (os.path.exists(RATE) and os.path.exists(CAL
 def test_defaults_are_the_prototypes():
     from fieldop.cli import build_parser
     a = build_parser().parse_args([])
-    assert (a.item_impl, a.rate_wcs, a.loader, a.render_impl) == ("prototype", "cal", "astropy", "prototype")
+    assert (a.item_impl, a.rate_wcs, a.loader) == ("prototype", "cal", "astropy")
     from fieldop import data
     assert data.LOADER == "astropy" and data.RATE_WCS == "cal"
 
@@ -179,12 +179,6 @@ def test_C_import_failure_falls_back_to_astropy_with_a_message(capsys):
 
 
 # ----------------------------------------------------------------------------- D
-def test_D_render_impl_torchsky_is_refused():
-    from fieldop.cli import main
-    with pytest.raises(SystemExit, match="not wired in"):
-        main(["--render-impl", "torchsky"])
-
-
 def test_D_nested_kernel_agrees_with_the_prototype_render_on_a_resolved_sky():
     sys.path.insert(0, HERE)
     import check_render_nested as c

@@ -30,8 +30,6 @@ def parse():
     ap.add_argument("--seed", type=int, default=0, help="synthetic field (truth, noise) AND fit seed")
     ap.add_argument("--steps", type=int, default=150)
     ap.add_argument("--item-count", type=int, default=1500)
-    ap.add_argument("--item-relocate", type=int, default=0)
-    ap.add_argument("--item-smooth-pitch", type=float, default=0.0)
     ap.add_argument("--item-raster", default="", help="direct / pyramid (empty = not passed, for packages without the flag)")
     ap.add_argument("--item-patch", default="square")
     ap.add_argument("--item-impl", default="", help="prototype / torchsky (empty = not passed, for packages without the flag)")
@@ -68,7 +66,7 @@ def main():
               val_every=2, held_steps=50, held_reg_steps=30, log_every=10, is_snr=10.0, reg_prepass_steps=40, reg_prepass_iters=1, seed=a.seed)
     kw.update(filter_shift=a.filter_shift, lr_filter_shift=a.lr_filter_shift, filter_shift_init=a.filter_shift_init)
     if not a.legacy:
-        kw.update(sky_form=a.sky_form, item_count=a.item_count, item_relocate=a.item_relocate, item_smooth_pitch=a.item_smooth_pitch)
+        kw.update(sky_form=a.sky_form, item_count=a.item_count)
         if a.item_raster:
             kw.update(item_raster=a.item_raster, item_patch=a.item_patch)
         if a.item_impl:
@@ -116,7 +114,7 @@ def main():
            "setup_seconds": t_setup, "heldout_seconds": t_held, "train_loss_log": rec["steps"], "heldout_chi2": chi2, "heldout_chi2_snr5": chi2b,
            "heldout_n_px": n, "heldout_n_px_snr5": nb, "heldout_per_exposure": sc, "heldout_truth_noise_chi2": noise_floor,
            "sky_fitted_numbers": int(n_fit), "sky_grid_N": N, "state_sha256": h.hexdigest(), "registration": reg,
-           "relocated": rec.get("relocated", []), "filter_shift": fs, "inject": a.inject, "filter_shift_mode": a.filter_shift,
+           "filter_shift": fs, "inject": a.inject, "filter_shift_mode": a.filter_shift,
            "injected_px": {f"{k[0]}/{k[1]}": list(v) for k, v in INJECTED.items()} if a.inject else None, "total_seconds": time.perf_counter() - T0}
     if a.truth_eval:
         res["sky_error"] = sky_error(model, exps, fset, truth)

@@ -3,7 +3,7 @@
   A. --item-impl torchsky      item sky rasterised by torchsky.scene.GaussianItemScene            (item_raster_torchsky)
   B. --rate-wcs telescope      count-rate pixel positions from torchsky.wcs.TelescopeFrameDetectorToSky (telescope_wcs_for_rate_file)
   C. --loader torchfits        exposure files read by torchsky.map.field.field_observation_from_exposure_file (read_exposure_file_torchfits)
-  D. --render-impl torchsky    NOT WIRED IN: see TORCHSKY_INTEGRATION_REPORT.md (render_nested_psf_reference is the measurement helper only)
+  D. (no switch)               NestedKernelPSF cannot replace the model's render: see TORCHSKY_INTEGRATION_REPORT.md (render_nested_psf_reference is the measurement helper only)
 
 torchsky is imported lazily, only when a switch asks for it, so the default path never imports it through this module.  If an import
 fails the error says which switch needs it and that the default value of the switch needs no torchsky piece.

@@ -113,8 +113,8 @@ APPROXIMATIONS = [
     "the field varied by up to 1.9 in log g across the footprint); throughput scales are capped at --tau-g-max (rms log g) and static / drift "
     "distortion at --tau-d-max, because an axis kept by the likelihood-ratio check follows the validation gradient with no Occam pressure; "
     "the footprint is a bounding box (a box straddling a detector corner yields a lattice point without data)",
-    "F38 item sky (--sky-form items, 13 Nov 2026; default grid unchanged): s = sum_n [sum_k c_nk phi_k] G(. - x_n; Sigma_n) (+ optional coarse "
-    "smooth grid at --item-smooth-pitch, signed, tent-read, --sky-neg on its band images only); c_nk = exp(r_nk) > 0; widths sqrt(floor^2 + "
+    "F38 item sky (--sky-form items, 13 Nov 2026; default grid unchanged): s = sum_n [sum_k c_nk phi_k] G(. - x_n; Sigma_n); "
+    "c_nk = exp(r_nk) > 0; widths sqrt(floor^2 + "
     "exp(2 l)) >= --item-floor (0 = 0.4 x sky pitch), capped at --item-max-width (0 = 16 x pitch). The items are RASTERISED on the SkyGrid "
     "coefficient grid at --sky-pitch and read by the unchanged renderers through the tent interpolant (so the sky is still a tent grid; the "
     "change is the parametrisation). Cell integral approximated by adding p^2/12 to both principal variances (the box replaced by an isotropic "
@@ -126,9 +126,7 @@ APPROXIMATIONS = [
     "per cent), spacing 2 half / m, width half the spacing (>= floor), random angle, fine-level remainder on a Halton set; coefficients = level "
     "share x item area x max(warm-start coefficients smoothed at the item width, 1e-3 x their median peak); reseeded when the registration "
     "pre-pass rebuilds the warm start; Adam groups: positions --item-lr-pos x pitch, log widths, angles, log coefficients (their own steps, "
-    "untuned, from the image-only experiment), smooth grid as the grid sky; optional relocation (--item-relocate) at 15/30/45/60 per cent of "
-    "faint items (peak below 0.5 band noise, at most 5 per cent) to nodes drawn from the positive part of an exponentially averaged "
-    "back-projected residual (minus the gradient of the data loss w.r.t. the coefficient grid), active tile only; cross-fitting views "
+    "untuned, from the image-only experiment); cross-fitting views "
     "averaged PARAMETER-wise (not the average of the two skies); the rasterised grid is cached while no sky parameter requires a gradient",
     "F40 item pyramid rasteriser (--item-raster pyramid, 13 Nov 2026; default direct, bit-identical to F38): Gaussian semigroup. Level l has "
     "pitch p_l = 2^l p (level 0 = the sky grid); level l is carried to level l-1 by a fixed separable upsample-and-blur (stride-2 transposed "

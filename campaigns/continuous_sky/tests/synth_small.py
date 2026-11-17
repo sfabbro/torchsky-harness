@@ -32,8 +32,6 @@ def parse():
     ap.add_argument("--seed", type=int, default=0, help="synthetic field (truth, noise) AND fit seed")
     ap.add_argument("--steps", type=int, default=150)
     ap.add_argument("--item-count", type=int, default=1500)
-    ap.add_argument("--item-relocate", type=int, default=0)
-    ap.add_argument("--item-smooth-pitch", type=float, default=0.0)
     ap.add_argument("--item-raster", default="", help="direct / pyramid (empty = not passed, for packages without the flag)")
     ap.add_argument("--item-patch", default="square")
     ap.add_argument("--item-impl", default="", help="prototype / torchsky (empty = not passed, for packages without the flag)")
@@ -63,7 +61,7 @@ def main():
               warm_kernel_steps=150, pattern_grid=0, stripes=0, batch_patches=4, inner_sky=1, budget_min=1e6, steps=a.steps, tau_mode="fixed",
               val_every=2, held_steps=50, held_reg_steps=30, log_every=10, is_snr=10.0, reg_prepass_steps=40, reg_prepass_iters=1, seed=a.seed)
     if not a.legacy:
-        kw.update(sky_form=a.sky_form, item_count=a.item_count, item_relocate=a.item_relocate, item_smooth_pitch=a.item_smooth_pitch)
+        kw.update(sky_form=a.sky_form, item_count=a.item_count)
         if a.item_raster:
             kw.update(item_raster=a.item_raster, item_patch=a.item_patch)
         if a.item_impl:
@@ -102,17 +100,26 @@ def main():
     for k in sorted(st):
         h.update(k.encode())
         h.update(st[k].detach().cpu().contiguous().numpy().tobytes())
+    # The item sky used to carry an all-zero buffer sky.resid (N x N, for the removed item relocation). Hashing the state with that buffer
+    # put back reproduces the hash recorded before it was removed, so the other tensors can be compared bit for bit with older records.
+    legacy = dict(st)
+    if a.sky_form == "items" and not a.legacy:
+        legacy["sky.resid"] = torch.zeros(N, N, dtype=sky.pos.dtype)
+    h2 = hashlib.sha256()
+    for k in sorted(legacy):
+        h2.update(k.encode())
+        h2.update(legacy[k].detach().cpu().contiguous().numpy().tobytes())
     n_fit = sky.n_fitted() if hasattr(sky, "n_fitted") else sky.A[0].numel()
     res = {"pkg": a.pkg, "sky_form": a.sky_form, "seed": a.seed, "steps": rec["n_steps"], "fit_seconds": rec["seconds"], "s_per_step": rec["s_per_step"],
            "setup_seconds": t_setup, "heldout_seconds": t_held, "train_loss_log": rec["steps"], "heldout_chi2": chi2, "heldout_chi2_snr5": chi2b,
            "heldout_n_px": n, "heldout_n_px_snr5": nb, "heldout_per_exposure": sc, "heldout_truth_noise_chi2": noise_floor,
-           "sky_fitted_numbers": int(n_fit), "sky_grid_N": N, "state_sha256": h.hexdigest(), "registration": reg,
-           "relocated": rec.get("relocated", []), "total_seconds": time.perf_counter() - T0}
+           "sky_fitted_numbers": int(n_fit), "sky_grid_N": N, "state_sha256": h.hexdigest(), "state_sha256_with_legacy_resid": h2.hexdigest(), "registration": reg,
+           "total_seconds": time.perf_counter() - T0}
     if a.truth_eval:
         res["sky_error"] = sky_error(model, exps, fset, truth)
     json.dump(res, open(a.out, "w"), indent=1, default=str)
     short = {k: res[k] for k in ("sky_form", "seed", "steps", "s_per_step", "heldout_chi2", "heldout_chi2_snr5", "heldout_truth_noise_chi2",
-                                 "sky_fitted_numbers", "state_sha256", "total_seconds")}
+                                 "sky_fitted_numbers", "state_sha256", "state_sha256_with_legacy_resid", "total_seconds")}
     print(json.dumps(short))
     if "sky_error" in res:
         print(json.dumps(res["sky_error"]["summary"]))

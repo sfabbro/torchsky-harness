@@ -172,6 +172,9 @@ def read_exposure_file(path, rate_path=None):
             print(_LOADER_NOTE[0], flush=True)
     if raw is None:
         raw = _read_exposure_file_astropy(path, rate_path)
+    if rate_path and RATE_WCS == "cal" and "photmjsr" not in raw:       # torchfits reader: PHOTMJSR from the _cal SCI header
+        from astropy.io import fits
+        raw["photmjsr"] = float(fits.getheader(path, "SCI").get("PHOTMJSR", float("nan")))
     if rate_path and RATE_WCS == "telescope":
         raw["w"] = tb.TelescopeRateWCS(rate_path)
         raw["pixar_a2"] = raw["w"].pixar_a2
@@ -196,7 +199,9 @@ def _read_exposure_file_astropy(path, rate_path=None):
     if rate_path and RATE_WCS == "cal":
         sh = fits.getheader(path, "SCI")
     hd = {k: sh[k] for k in sh.keys() if k and k not in ("COMMENT", "HISTORY", "")}
+    # PHOTMJSR (MJy/sr per DN/s) of the calibrated file whose header is read (--rate-units sky); absent from _rate headers
     return dict(sci=sci, err=err, dq=dq, area=area, w=WCS(header=hd), pixar_a2=float(sh.get("PIXAR_A2", float("nan"))),
+                photmjsr=float(sh.get("PHOTMJSR", float("nan"))) if (rate_path and RATE_WCS == "cal") else float("nan"),
                 detector=str(h0.get("DETECTOR", "")).strip().upper(), instrument=str(h0.get("INSTRUME", "")).strip().upper())
 
 
@@ -246,7 +251,7 @@ def load_exposure_file(path, box, half_data, scale=0.01, want_jac=False, rate_pa
                Y=Y.astype(np.float32), cut0=(int(y0), int(x0)), det_shape=(ny, nx), J=mean_jacobian(X, Y),
                detector=raw["detector"], instrument=raw["instrument"],
                bkg0=float(np.median(d[valid])), area_ext=None if area is None else area[y0:y1, x0:x1],
-               pixar_a2=raw["pixar_a2"])
+               pixar_a2=raw["pixar_a2"], photmjsr=raw.get("photmjsr", float("nan")))
     if want_jac:
         out["Jpix"] = pixel_jacobian(X.astype(np.float64), Y.astype(np.float64))
     return out
@@ -258,6 +263,17 @@ def svo_id(instrument, filt):
     if instrument == "WFC3":
         return f"HST/WFC3_IR.{filt}"
     return f"HST/ACS_WFC.{filt}"
+
+
+def filter_instruments(ex):
+    """{filter name: instrument} of the split's exposures. Filters are keyed by NAME everywhere (FilterSet.index), so a name used by two
+    instruments (e.g. F814W on ACS and WFC3) is refused rather than given one instrument's curve."""
+    out = {}
+    for e in ex:
+        f, i = e["filter"], e.get("instrument", "NIRCAM")
+        if out.setdefault(f, i) != i:
+            raise SystemExit(f"filter {f} is used by two instruments ({out[f]}, {i}); filters are keyed by name: rename one of them in the splits file")
+    return out
 
 
 def parse_tiles(cfg, sp):
@@ -338,7 +354,8 @@ def load_field(cfg, dev, log=print):
                 shifts[fn.replace("_cal.fits", "")] = (r["shift_mas"][0] / 1000.0, r["shift_mas"][1] / 1000.0)
     filters = sorted({e["filter"] for e in ex}, key=lambda f: int("".join(c for c in f if c.isdigit())))
     insts = sorted({e.get("instrument", "NIRCAM") for e in ex})
-    fl = [svo_filter(f, insts[0], svo_id(insts[0], f), cfg.n_lambda, cfg.svo_cache or None) for f in filters]
+    f_inst = filter_instruments(ex)       # audit 17 Nov 2026: each curve from ITS instrument (was insts[0] for every filter)
+    fl = [svo_filter(f, f_inst[f], svo_id(f_inst[f], f), cfg.n_lambda, cfg.svo_cache or None) for f in filters]
     fset = FilterSet(fl)
     # validation carve-out: per filter one TRAINING dither group (deterministic; global over the selected boxes)
     rng = np.random.default_rng(cfg.seed)
@@ -390,12 +407,15 @@ def load_field(cfg, dev, log=print):
                               d=host["d"], sig=host["sig"], valid=host["valid"], X=host["X"], Y=host["Y"], R=rotation_of(r["J"]), split=split_lab,
                               group=e["dither_group"], shift0=shifts.get(e["rootname"], (0.0, 0.0)), stripes=chan.startswith("NIRCAM"), bkg0=r["bkg0"],
                               Jpix=host["Jpix"],
-                              extra={"file": e["file"], "path": path, "J": r["J"].tolist(), "detector": det, "filter": e["filter"], "pixar_a2": r["pixar_a2"]},
+                              extra={"file": e["file"], "path": path, "J": r["J"].tolist(), "detector": det, "filter": e["filter"], "pixar_a2": r["pixar_a2"],
+                                     "photmjsr": r.get("photmjsr", float("nan"))},
                               tile=tile, c0=c0s[tile], host=host if multi else None)
                 ee.eid = gid.setdefault(e["rootname"], len(gid))
                 cuts.append(ee)
             if (k + 1) % 10 == 0:
                 log(f"loaded {k + 1}/{len(ex)} files ({len(cuts)} cuts)")
+    if cfg.input_level == "rate" and getattr(cfg, "rate_units", "dn") == "sky":
+        set_rate_to_sky(cuts, cfg, log)
     span = max(float(mjds.max() - mjds.min()), 1e-9) if len(mjds) else 1.0
     for i, e in enumerate(cuts):
         e.cid = i
@@ -421,6 +441,38 @@ def load_field(cfg, dev, log=print):
     if multi:
         meta["aff_ref"] = affine_refs(cuts_by_eid)
     return cuts, fset, meta, info
+
+
+def set_rate_to_sky(cuts, cfg, log=print):
+    """--input-level rate --rate-units sky: per exposure (cut), the conversion C (MJy/sr per DN/s) and the nominal pixel area a_nom [arcsec^2],
+    stored as extra["rate_kappa"] = 1 / (a_nom C), so that count rate per pixel = sky [MJy/sr] x a_pix x rate_kappa (x learned terms).
+    C: PHOTMJSR of the matching _cal file when --rate-wcs cal (its header is read for the positions anyway), else the --rate-photom table
+    {"DETECTOR/FILTER": C}; a_nom: PIXAR_A2 of the header read, else the table's "DETECTOR/FILTER/area", else the median header pixel area of
+    the cut (|det J|). Refuses to run without a conversion for every exposure."""
+    tab = {}
+    if getattr(cfg, "rate_photom", ""):
+        tab = {str(k).upper(): float(v) for k, v in json.load(open(cfg.rate_photom)).items()}
+    use_hdr = getattr(cfg, "rate_wcs", "cal") == "cal"
+    if not use_hdr and not tab:
+        raise SystemExit("--rate-units sky needs a conversion: --rate-wcs cal (PHOTMJSR of the _cal files) or --rate-photom FILE")
+    seen = {}
+    for e in cuts:
+        key = f"{e.extra['detector']}/{e.extra['filter']}".upper()
+        C = float(e.extra.get("photmjsr", float("nan"))) if use_hdr else float("nan")
+        src = "header PHOTMJSR"
+        if not (math.isfinite(C) and C > 0):
+            C, src = tab.get(key, float("nan")), "--rate-photom"
+        if not (math.isfinite(C) and C > 0):
+            raise SystemExit(f"--rate-units sky: no conversion for {e.name} ({key}): neither a PHOTMJSR in its _cal header nor an entry in --rate-photom")
+        a = float(e.extra.get("pixar_a2", float("nan")))
+        if not (math.isfinite(a) and a > 0):
+            a = tab.get(key + "/AREA", float("nan"))
+        if not (math.isfinite(a) and a > 0):
+            a = float(abs(np.linalg.det(np.asarray(e.extra["J"], np.float64))))
+        e.extra["rate_to_sky"], e.extra["nominal_area"], e.extra["rate_kappa"] = C, a, 1.0 / (a * C)
+        seen.setdefault(key, (C, a, src))
+    log("count rate in sky units: conversion (MJy/sr per DN/s), nominal pixel area (arcsec^2), source per detector/filter: "
+        + ", ".join(f"{k} {v[0]:.4g} {v[1]:.5g} ({v[2]})" for k, v in sorted(seen.items())))
 
 
 def det_footprints(cuts):
@@ -461,14 +513,18 @@ def build_meta(exps, dets, chans, insts, cuts_by_eid=None):
     """Per GLOBAL exposure metadata from one representative cut per exposure (exps[i].eid == i); `cuts_by_eid` (optional) lists every cut of
     each exposure (detector rows / columns used, for the stripe gauge)."""
     cb = cuts_by_eid if cuts_by_eid is not None else [[e] for e in exps]
-    return {"filt": [e.filt for e in exps], "inst": [e.inst for e in exps], "chan": [e.chan for e in exps], "det": [e.det for e in exps],
+    # telescope diameter per exposure, by the same rule as the kernel warm start (cli.filt_info_of), so that the blur gauge (model.py) and
+    # the warm start use one value (audit 17 Nov 2026: the blur gauge read a key that was never set and always used 6.5 m)
+    diam = [float(e.extra.get("diameter_m", INST_DIAM.get(insts[e.inst] if e.inst < len(insts) else "", 6.5))) for e in exps]
+    return {"diameter_m_e": diam, "filt": [e.filt for e in exps], "inst": [e.inst for e in exps], "chan": [e.chan for e in exps], "det": [e.det for e in exps],
             "t": [e.t for e in exps], "train": [e.split == "train" for e in exps], "R": np.stack([e.R for e in exps]),
             "sigbar": [float(e.sig[e.valid].median()) for e in exps], "det_shape": [list(e.det_shape) for e in exps],
             "shift0": [list(e.shift0) for e in exps], "stripes": [e.stripes for e in exps], "bkg0": [e.bkg0 for e in exps],
             "n_det": len(dets), "n_inst": len(insts), "n_chan": len(chans), "det_names": list(dets),
             "cut": [(int(e.cut0[0]), int(e.cut0[1]), int(e.shape[0]), int(e.shape[1])) for e in exps],
             "cuts": [[(int(c.cut0[0]), int(c.cut0[1]), int(c.shape[0]), int(c.shape[1])) for c in cs] for cs in cb],
-            "chan_pix": [float(np.median([abs(np.linalg.det(np.asarray(e.extra["J"]))) ** 0.5 for e in exps if e.chan == c])) for c in range(len(chans))]}
+            "chan_pix": [float(np.median([abs(np.linalg.det(np.asarray(e.extra["J"]))) ** 0.5 for e in exps if e.chan == c])) for c in range(len(chans))],
+            "rate_kappa": [float(e.extra["rate_kappa"]) for e in exps] if all("rate_kappa" in e.extra for e in exps) else None}
 
 
 # ----------------------------------------------------------------------------- sky warm start
@@ -484,8 +540,9 @@ def pixel_area_of(e):
 def splat_coadd(exps, nf, N, pitch, dev, extra_shift=None, per_area=False):
     """Inverse-variance bilinear splat of (d - bkg0) of the given exposures at their header positions (+ shift0) onto the sky nodes,
     per filter: (nf, N, N) and the weight maps. Used only for the warm start of the sky and the bright-patch strata.
-    per_area (--input-level rate): data and sigma are divided by the header pixel area first, so that the warm start is in the units the
-    rate-level model gives the sky (count rate per arcsec^2; the model multiplies by the pixel area, F15). Without it the warm start of a
+    per_area (--input-level rate): data and sigma are divided by the header pixel area first (and, with --rate-units sky, multiplied by the
+    nominal area x the conversion, i.e. divided by rate_kappa too), so that the warm start is in the units the rate-level model gives the sky
+    (count rate per arcsec^2, or MJy/sr with --rate-units sky; the model multiplies by the pixel area and rate_kappa, F15). Without it the warm start of a
     rate-level fit is low by the pixel area (0.001 to 0.004 arcsec^2 on NIRCam), see RATE_HELDOUT_DIAGNOSIS.md."""
     num = torch.zeros(nf, N * N, device=dev)
     den = torch.zeros(nf, N * N, device=dev)
@@ -496,7 +553,7 @@ def splat_coadd(exps, nf, N, pitch, dev, extra_shift=None, per_area=False):
         X = (e.X[v] + e.shift0[0] + es[0] - x0) / pitch
         Y = (e.Y[v] + e.shift0[1] + es[1] - x0) / pitch
         if per_area:
-            a = pixel_area_of(e)[v]
+            a = pixel_area_of(e)[v] * float(e.extra.get("rate_kappa", 1.0))    # --rate-units sky: x 1 / (nominal area x conversion)
             w = (a / e.sig[v]) ** 2
             val = (e.d[v] - e.bkg0) / a * w
         else:

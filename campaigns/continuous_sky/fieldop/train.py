@@ -12,7 +12,6 @@ import torch
 import torch.nn.functional as F
 
 from .kernel import inv_softplus
-from .model import LATTICE
 from .render import quad_points
 
 
@@ -98,7 +97,7 @@ def patch_loss(model, exps, eid, sl, P, cfg, view=None, detach_sky=False, method
     v = pix["valid"]
     if half is not None:
         v = v & ((((pix["row"] // 4) + (pix["col"] // 4)) % 2) == half)
-    et = torch.as_tensor(e.eid, device=model.dev)
+    et = model.et(e.eid)
     sig = model.sigma(et, out["S"], pix["sig"])
     z2 = ((pix["d"] - out["m"]) / sig) ** 2
     rho = huber_rho(z2, cfg.huber_delta) if cfg.loss == "huber" else z2
@@ -129,7 +128,7 @@ def pix_loss(model, e, pix, out, cfg, half=None):
     v = pix["valid"]
     if half is not None:
         v = v & ((((pix["row"] // 4) + (pix["col"] // 4)) % 2) == half)
-    et = torch.as_tensor(e.eid, device=model.dev)
+    et = model.et(e.eid)
     sig = model.sigma(et, out["S"], pix["sig"])
     z2 = ((pix["d"] - out["m"]) / sig) ** 2
     rho = huber_rho(z2, cfg.huber_delta) if cfg.loss == "huber" else z2
@@ -206,11 +205,13 @@ def ablation_evidence(model, exps, items, cfg, stats, view_of=None):
 
 
 def sky_regs(model, sig_b, cfg, view=None):
-    if hasattr(model.sky, "reg_terms"):          # item sky (--sky-form items): its own regularisers
-        return model.sky.reg_terms(model.Phi_band, sig_b, cfg, view=view)
+    if hasattr(model.sky, "opt_groups"):         # item sky (--sky-form items): non-negative by construction, no regulariser
+        return 0.0
     if cfg.sky_neg <= 0 and cfg.sky_tv <= 0:
         return 0.0
     S = torch.einsum("bk,khw->bhw", model.Phi_band, model.sky.coeffs(view)) / sig_b[:, None, None]
+    if getattr(model.sky, "ped", None) is not None:         # --sky-positivity-margin: the penalty acts on sky + p
+        S = S + (model.Phi_band @ model.sky.ped.to(S))[:, None, None] / sig_b[:, None, None]
     r = cfg.sky_neg * F.relu(-S).pow(2).mean()
     if cfg.sky_tv > 0:
         r = r + cfg.sky_tv * ((S[:, 1:] - S[:, :-1]).abs().mean() + (S[:, :, 1:] - S[:, :, :-1]).abs().mean())
@@ -310,7 +311,7 @@ def register_prepass(model, exps, cfg, log=print, ts=None):
                     opt.zero_grad()
                     loss.backward()
                     model.affine.grad[:, :4] = 0          # translation only
-                    step_rows(opt, [nuis["affine"], nuis["bkg"]], ev)
+                    step_rows(opt, [nuis["affine"], nuis["bkg"]], ev, rows=row_steps(model, cfg, [nuis["bkg"]]))
                     if cfg.pedestal_gauge:
                         model.project_gauges(ped)
         with torch.no_grad():
@@ -340,14 +341,6 @@ def register_prepass(model, exps, cfg, log=print, ts=None):
 
 # ----------------------------------------------------------------------------- main fit
 EM_AXES = ("k_exp", "g_exp", "D_exp")
-
-
-def train_ids_by_filter(exps):
-    out = {}
-    for e in exps:
-        if e.split == "train":
-            out.setdefault(e.filt, []).append(e.eid)
-    return {f: torch.tensor(v) for f, v in out.items()}
 
 
 def set_prior_pixels(cfg, exps, log=print):
@@ -416,22 +409,46 @@ def evidence_step(model, stats, cfg):
         raw.data.fill_(float(torch.log(torch.expm1(torch.tensor(new)))))
 
 
-def step_rows(opt, tensors, eids):
+def step_rows(opt, tensors, eids, rows=None):
     """Adam step that leaves the rows (exposures) absent from the batch untouched (no momentum-driven 'phantom' updates of per-exposure
-    nuisances, F24)."""
+    nuisances, F24). rows = (scale (E,), set of tensor ids): the update of those tensors is multiplied per row by scale (per-exposure step
+    size, --nuisance-steps exposure; None = today)."""
     keep = torch.ones(tensors[0].shape[0], dtype=torch.bool, device=tensors[0].device)
     keep[eids] = False
     saved = [t.data.clone() for t in tensors]
     opt.step()
     for t, s in zip(tensors, saved):                 # restore absent rows with a masked copy (no boolean indexing: no device sync)
+        if rows is not None and id(t) in rows[1]:
+            t.data.copy_(s + (t.data - s) * rows[0].view(-1, *([1] * (t.dim() - 1))))
         t.data.copy_(torch.where(keep.view(-1, *([1] * (t.dim() - 1))), s, t.data))
+
+
+def row_steps(model, cfg, tensors):
+    """--nuisance-steps exposure: per-exposure step factor sigbar_e / mean(sigbar) for the data-unit nuisances (background, stripes), whose
+    Adam step is lr x mean(sigbar) (audit A6); returns (scale, ids) for step_rows, or None (--nuisance-steps mean, today). With it, a fit
+    is unchanged when the data and sigma of each exposure are multiplied by a constant (e.g. count rate in place of surface brightness)."""
+    if getattr(cfg, "nuisance_steps", "mean") != "exposure":
+        return None
+    return (model.e_sigbar / model.e_sigbar.mean(), {id(t) for t in tensors})
+
+
+def step_scaled(opt, tensors, rows):
+    """opt.step() with the per-row step factor of row_steps (all rows stepped, as the held-out fit does)."""
+    if rows is None:
+        opt.step()
+        return
+    saved = [t.data.clone() if id(t) in rows[1] else None for t in tensors]
+    opt.step()
+    for t, s in zip(tensors, saved):
+        if s is not None:
+            t.data.copy_(s + (t.data - s) * rows[0].view(-1, *([1] * (t.dim() - 1))))
 
 
 def sky_optimizer(sky, cfg, sig_sky):
     """Adam of one sky: one group (grid; lr = --lr-sky x band noise) or the item sky's own groups (positions, log widths, angles, log
-    coefficients, smooth grid)."""
+    coefficients)."""
     if hasattr(sky, "opt_groups"):
-        return torch.optim.Adam(sky.opt_groups(cfg.lr_sky * sig_sky, cfg))
+        return torch.optim.Adam(sky.opt_groups(cfg))
     skyp = list(sky.parameters())
     return torch.optim.Adam([{"params": skyp, "lr": cfg.lr_sky * sig_sky, "base": cfg.lr_sky * sig_sky}])
 
@@ -477,6 +494,61 @@ def sky_noise(sky, Phi_band):
         return torch.stack([1.4826 * (s - s.median()).abs().median() for s in S]).clamp(min=1e-6)
 
 
+def smooth_image(img, w, s_px):
+    """Normalised Gaussian smoothing (width s_px detector pixels) of img over the pixels where w is true; s_px <= 0 returns img."""
+    if s_px <= 0:
+        return img
+    r = int(math.ceil(3 * s_px))
+    g = torch.exp(-0.5 * (torch.arange(-r, r + 1, device=img.device, dtype=img.dtype) / s_px) ** 2)
+    g = g / g.sum()
+    wf = w.to(img.dtype)
+
+    def conv(x):
+        x = F.conv2d(x[None, None], g.view(1, 1, 1, -1), padding=(0, r))
+        return F.conv2d(x, g.view(1, 1, -1, 1), padding=(r, 0))[0, 0]
+    return conv(img * wf) / conv(wf).clamp(min=1e-6)
+
+
+@torch.no_grad()
+def sky_zero_refresh(model, exps, cfg, ts, log=print):
+    """--sky-zero masked: reference level of every training exposure = median of its DATA over the valid pixels where the current model's sky
+    signal S (rendered sky through the response, before the background), smoothed by a Gaussian of --sky-zero-smooth pixels to lower its
+    noise and widen the source masks, satisfies |S| < --sky-zero-snr x the pixel sigma (symmetric, so
+    that noise in S, which is correlated with the pixel's own noise, does not bias the median; sources are positive). These levels replace the
+    exposure medians in the pedestal gauge (model.bkg0), and the gauge is applied at once. The data, not the residual d - S, are used: a tie to
+    the residual is satisfied by any constant sky layer (it moves with the layer) and so does not fix the split; a tie to the data is not.
+    Convention: the sky is zero on the pixels the model calls source-free (its faint, unmodelled sources stay in the median). Single tile only.
+    Returns a record (per exposure: level, fraction of valid pixels used)."""
+    if getattr(cfg, "sky_zero", "median") == "median":
+        return None
+    if ts is not None and ts.multi:
+        raise SystemExit("--sky-zero masked is implemented for a single tile only")
+    P = {k: v.detach() for k, v in model.prepare().items()}
+    t = float(cfg.sky_zero_snr)
+    out = {}
+    for e in exps:
+        if e.split != "train":
+            continue
+        _, pv, S = predict_exposure(model, e, P, cfg)
+        v0 = e.valid & pv & torch.isfinite(S)
+        Ss = smooth_image(torch.where(v0, S, torch.zeros_like(S)), v0, float(cfg.sky_zero_smooth))
+        v = v0 & (Ss.abs() < t * e.sig)     # symmetric: a pixel whose S is pulled up OR down by its own noise is dropped alike (no selection bias)
+        n0, n = int(v0.sum()), int(v.sum())
+        if n < max(100, 0.05 * n0):
+            log(f"sky zero: exposure {e.name}: only {n} of {n0} pixels source-free; reference level kept")
+            continue
+        lvl = float(e.d[v].median())
+        model.bkg0[e.eid] = lvl
+        out[e.name] = [lvl, n / max(n0, 1)]
+    tr_by_f = {f: v.to(model.dev) for f, v in (ts.pedestal_groups.items() if ts is not None else {})}
+    if cfg.pedestal_gauge and tr_by_f:
+        model.project_gauges(tr_by_f)
+    fr = [v[1] for v in out.values()]
+    log(f"sky zero (masked): {len(out)} exposures re-referenced, source-free fraction {np.min(fr) if fr else float('nan'):.3f} to "
+        f"{np.max(fr) if fr else float('nan'):.3f}, mean level {np.mean([v[0] for v in out.values()]) if out else float('nan'):.5f}")
+    return out
+
+
 def fit(model, exps, cfg, log=print, history=None, ts=None):
     """Joint fit. Returns a record dict (losses, tau trajectory, gauges, timings). `exps` is the list of cuts; `ts` the TileSet (default: one
     tile, the model's sky). Several tiles: a visit of --visit-steps steps on one tile (drawn with probability p_k), the operator, the
@@ -495,6 +567,7 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     if not ts.multi:
         ts.opt_sky[ts.keys[0]] = opt_sky0          # identical to the single-box optimiser
     op, nuis, taus, _ = model.param_groups()
+    rows_nuis = row_steps(model, cfg, [nuis["bkg"], nuis["stripe_rows"], nuis["stripe_cols"]])
     # per-pixel gain (--pixel-gain, F43-F45): its own Adam (step --lr-gain in log G, same warm-up + cosine factor), not clipped, stepped from
     # progress --pixel-gain-start on, projected onto the gauge after every step
     gp = [model.pixgain.logg] if getattr(model, "pixgain", None) is not None else []
@@ -536,15 +609,20 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     nf_max = float(getattr(cfg, "noise_floor_max", 0.0) or 0.0)
     nf_raw_max = float(inv_softplus(torch.tensor(nf_max))) if nf_max > 0 else 0.0
     nf_warn_step = None
+    nf_first = torch.full((), -1, dtype=torch.long, device=dev)
     if nf_max > 0:
         with torch.no_grad():
             model.floor_raw.clamp_(max=nf_raw_max)
-    reloc_marks = [0.15, 0.3, 0.45, 0.6] if getattr(cfg, "item_relocate", 0) and hasattr(model.sky, "relocate") else []
-    reloc_gen = torch.Generator().manual_seed(cfg.seed + 202)
+    sz_marks = sorted(float(x) for x in str(getattr(cfg, "sky_zero_at", "")).split(",") if x.strip()) \
+        if getattr(cfg, "sky_zero", "median") != "median" else []
     while True:
         prog = max(step / max(cfg.steps, 1), (time.perf_counter() - t0) / max(budget, 1e-9))
         if prog >= 1.0:
             break
+        if sz_marks and prog >= sz_marks[0]:            # --sky-zero masked: re-reference the pedestal gauge on the current model's source-free pixels
+            while sz_marks and prog >= sz_marks[0]:
+                sz_marks.pop(0)
+            rec.setdefault("sky_zero", []).append([step, sky_zero_refresh(model, exps, cfg, ts, log)])
         if ts.multi and visit_left <= 0:
             k = ts.draw(trng)
             if ts.activate(k):
@@ -561,22 +639,23 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             log(f"step {step}: cross-fitting ends, sky views averaged")
         view_of = (lambda i: folds.get(i, 0)) if xfit_on else None
         skyp = list(model.sky.parameters())
+        gain_on = bool(gp) and prog >= cfg.pixel_gain_start
+        params = op + list(nuis.values()) + ([] if xfit_on else skyp) + (gp if gain_on else []) + ([model.fshift] if model.fs_on else [])
+        # the operator tables P do not depend on the sky: one evaluation per step serves the sky inner steps (detached copy) and the joint step
+        with only_grad(model, params):
+            P = model.prepare()
+        P_sky = {kk: (v.detach() if torch.is_tensor(v) else v) for kk, v in P.items()}
         # (a) sky inner steps: sky only, operator fixed
         for _ in range(cfg.inner_sky):
             with only_grad(model, skyp):
-                with torch.no_grad():
-                    P = model.prepare()
                 items = pool.draw(cfg.batch_patches, rng)
-                loss, _, _ = batch_loss(model, exps, items, P, cfg, pool.mean_valid, view_of=view_of, method=method, quad=quad)
+                loss, _, _ = batch_loss(model, exps, items, P_sky, cfg, pool.mean_valid, view_of=view_of, method=method, quad=quad)
                 loss = loss + sum(sky_regs(model, sig_b, cfg, view=v) for v in (range(cfg.xfit) if xfit_on else [None]))
                 opt_sky.zero_grad()
                 loss.backward()
                 opt_sky.step()
         # (b) joint step: operator + nuisances (+ sky unless cross-fitting, where the operator reads the other fold's sky, detached)
-        gain_on = bool(gp) and prog >= cfg.pixel_gain_start
-        params = op + list(nuis.values()) + ([] if xfit_on else skyp) + (gp if gain_on else []) + ([model.fshift] if model.fs_on else [])
         with only_grad(model, params):
-            P = model.prepare()
             items = pool.draw(cfg.batch_patches, rng)
             model._chi_in = 0.0
             vo = (lambda i: 1 - folds.get(i, 0)) if xfit_on and cfg.xfit == 2 else view_of
@@ -601,7 +680,7 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             if gain_on:
                 opt_gain.step()
                 model.pixgain.project()
-            step_rows(opt_nuis, list(nuis.values()), eids)
+            step_rows(opt_nuis, list(nuis.values()), eids, rows=rows_nuis)
             if opt_fs is not None:
                 step_rows(opt_fs, [model.fshift], model.e_pair[eids])      # only the pairs seen in this batch move (no momentum drift of the others)
             model.project_gauges(tr_by_f if cfg.pedestal_gauge else None, eids)
@@ -609,12 +688,6 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
                 (model.project_filter_shift if model.fs_on else model.project_shift)(g)
             if not xfit_on:
                 opt_sky.step()
-        # (b') item sky only (--item-relocate 1): faint items moved to where the back-projected residual is positive (active tile's sky)
-        if reloc_marks and prog >= reloc_marks[0]:
-            reloc_marks.pop(0)
-            nmv = model.sky.relocate(model.Phi_band, sig_b, opt_sky, reloc_gen)
-            rec.setdefault("relocated", []).append([step, nmv])
-            log(f"step {step}: relocated {nmv} faint items")
         # (c) variability scales by validation likelihood (half A: nuisances of the validation exposures; half B: tau)
         if learn_tau and prog >= cfg.tau_start and step % cfg.val_every == 0 and vpool is not None and vpool.N:
             with only_grad(model, [nuis[kk] for kk in ("bkg", "affine", "u", "z", "zD", "stripe_rows", "stripe_cols")]):
@@ -626,7 +699,7 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
                     ev = batch_eids(exps, items, dev)
                     opt_nuis.zero_grad()
                     (la + model.priors(ev) / cfg.prior_pixels).backward()
-                    step_rows(opt_nuis, list(nuis.values()), ev)
+                    step_rows(opt_nuis, list(nuis.values()), ev, rows=rows_nuis)
                     model.project_gauges(None, ev)
             with only_grad(model, taus):
                 P = model.prepare()
@@ -644,14 +717,15 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             rec["val"].append([step, float(lb)] + ([k] if ts.multi else []))
         if step % cfg.is_refresh == 0 and step > 0:
             pool.refresh(model)
-        if nf_warn_step is None:
-            nfv = noise_floor_values(model)
-            if max(nfv) > NOISE_FLOOR_WARN:
-                nf_warn_step = step
-                rec["noise_floor_first_above"] = step
-                log(f"WARNING: learned fractional noise floor {nfv} exceeds {NOISE_FLOOR_WARN} first at step {step}; bright pixels lose weight and the "
-                    f"model-noise chi2 hides misfit (compare chi2/px(input noise))")
+        if nf_warn_step is None:             # first step above the warning level, tracked on the device and read at logged steps only
+            with torch.no_grad():
+                above = F.softplus(model.floor_raw).max() > NOISE_FLOOR_WARN + 5e-7      # as round(x, 6) > level
+                nf_first = torch.where((nf_first < 0) & above, torch.full_like(nf_first, step), nf_first)
         if step % cfg.log_every == 0:
+            if nf_warn_step is None and int(nf_first) >= 0:
+                nf_warn_step = rec["noise_floor_first_above"] = int(nf_first)
+                log(f"WARNING: learned fractional noise floor {noise_floor_values(model)} exceeds {NOISE_FLOOR_WARN} first at step {nf_warn_step}; bright "
+                    f"pixels lose weight and the model-noise chi2 hides misfit (compare chi2/px(input noise))")
             el = time.perf_counter() - t0
             tt = {kk: round(v["value"], 5) for kk, v in model.tau.table().items()}
             npx, chi = float(npx), float(chi)
@@ -677,6 +751,9 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     if cfg.xfit > 1 and xfit_on:
         model.sky.average_views()
     rec["n_steps"] = step
+    if nf_warn_step is None and int(nf_first) >= 0:
+        nf_warn_step = rec["noise_floor_first_above"] = int(nf_first)
+        log(f"WARNING: learned fractional noise floor exceeds {NOISE_FLOOR_WARN} first at step {nf_warn_step}")
     rec["noise_floor_final"] = noise_floor_values(model)
     if max(rec["noise_floor_final"]) > NOISE_FLOOR_WARN:
         log(f"WARNING: final learned fractional noise floor {rec['noise_floor_final']} exceeds {NOISE_FLOOR_WARN}")
@@ -743,7 +820,7 @@ def fit_heldout(model, exps, eids, cfg, log=print, ts=None):
                         opt_r.zero_grad()
                         loss.backward()
                         model.affine.grad[:, :4] = 0
-                        opt_r.step()
+                        step_scaled(opt_r, [nuis["bkg"]], row_steps(model, cfg, [nuis["bkg"]]))
     with only_grad(model, list(nuis.values())):
         for g in opt.param_groups:
             g.setdefault("base", g["lr"])
@@ -761,7 +838,8 @@ def fit_heldout(model, exps, eids, cfg, log=print, ts=None):
                     ev = batch_eids(exps, items, dev)
                     opt.zero_grad()
                     (loss + model.priors(ev) / cfg.prior_pixels).backward()
-                    opt.step()
+                    step_scaled(opt, [nuis["bkg"], nuis["stripe_rows"], nuis["stripe_cols"]],
+                                row_steps(model, cfg, [nuis["bkg"], nuis["stripe_rows"], nuis["stripe_cols"]]))
     log(f"held-out nuisance fit: {len(eids)} cuts of {len({exps[c].eid for c in eids})} exposures, {cfg.held_steps} steps"
         + (f" (x cuts / {cfg.held_ref_cuts} per tile, {rounds} rounds over {len(pools)} tiles)" if ts.multi else "") + f" ({time.perf_counter() - t0:.1f} s)")
     return P
@@ -798,7 +876,90 @@ def predict_exposure(model, e, P, cfg, tile=None):
             rows = ((r - cols[None]) * iv).sum(1) / iv.sum(1).clamp(min=1e-30)
             cols = ((r - rows[:, None]) * iv).sum(0) / iv.sum(0).clamp(min=1e-30)
         m = m + rows[:, None] + cols[None]
+        # size of the closed-form stripes (they absorb any row / column structure of the residual, source misfit included): reported only
+        sbar = float(e.sig[v].median()) if bool(v.any()) else float("nan")
+        ur, uc = iv.sum(1) > 0, iv.sum(0) > 0
+        e.extra["closed_form_stripes"] = {"rows_rms_over_sigma": float(rows[ur].pow(2).mean().sqrt()) / sbar if bool(ur.any()) else 0.0,
+                                          "cols_rms_over_sigma": float(cols[uc].pow(2).mean().sqrt()) / sbar if bool(uc.any()) else 0.0}
     return m, pv, S
+
+
+@torch.no_grad()
+def nuisance_sizes(model, exps, P=None, radii=(0.5, 1.0, 2.5)):
+    """Size at the end of a fit of every learned term that can absorb a modelling error (audit 17 Nov 2026). Read-only: no parameter, buffer,
+    optimiser state or random stream is touched. Per-exposure terms are given separately for the training, validation and held-out
+    exposures, in units of each exposure's median pipeline sigma (sigbar) where they are additive."""
+    P = model.prepare() if P is None else P
+    det_names, fn = model.meta.get("det_names", []), model.fset.names
+    sb = model.e_sigbar.double()
+
+    def st(x):
+        x = x.double().flatten()
+        return None if x.numel() == 0 else {"rms": float(x.pow(2).mean().sqrt()), "max_abs": float(x.abs().max())}
+    out = {"noise_floor_fraction": noise_floor_values(model)}
+    h = 3 * torch.tanh(model.hs / 3)
+    used = sorted({(int(model.e_det[i]), int(model.e_filt[i])) for i in range(model.E)})
+    out["noise_scale_exp_h"] = {f"{det_names[d] if d < len(det_names) else d}/{fn[f]}": float(torch.exp(h[d, f])) for d, f in used}
+    for s in ("train", "val", "held"):
+        ids = sorted({e.eid for e in exps if e.split == s})
+        if not ids:
+            continue
+        i = torch.as_tensor(ids, device=model.dev)
+        r = {"n": len(ids),
+             "bkg_const_minus_median_over_sigma": st((model.bkg[i, 0] - model.bkg0[i]).double() / sb[i]),
+             "bkg_shape_terms_over_sigma": st(model.bkg[i, 1:].double() / sb[i, None]),
+             "affine_matrix": st(model.affine[i, :4] * model.aff_scale[:4]),
+             "translation_mas": st(model.affine[i, 4:6] * model.aff_scale[4:6] * 1e3),
+             "gain_u_raw": st(model.u[i]),
+             "gain_log_g_exp": st(model.u[i] * model.tau.value("g_exp")) if model.amp == "structured" else None,
+             "code_z": st(model.codes.z[i]), "distortion_zD": st(model.zD[i])}
+        if model.cfg.stripes and bool(model.e_stripes[i].any()):
+            rw = (model.stripe_rows[i] * model.row_mask[i]).double() / sb[i, None]
+            cl = (model.stripe_cols[i] * model.col_mask[i]).double() / sb[i, None]
+            r["stripes_rows_over_sigma"] = {"rms": float((rw.pow(2).sum() / model.row_mask[i].sum().clamp(min=1)).sqrt()), "max_abs": float(rw.abs().max())}
+            r["stripes_cols_over_sigma"] = {"rms": float((cl.pow(2).sum() / model.col_mask[i].sum().clamp(min=1)).sqrt()), "max_abs": float(cl.abs().max())}
+        out[s] = r
+    if model.pattern is not None:
+        pat = {}
+        for d in range(model.pattern.shape[0]):
+            on = (model.e_det == d)
+            if not bool(on.any()):
+                continue
+            p = model.pattern[d] - model.pattern[d].mean()
+            pat[det_names[d] if d < len(det_names) else str(d)] = float(p.pow(2).mean().sqrt()) / float(sb[on].median())
+        out["detector_pattern_rms_over_sigma"] = pat
+    if model.pixgain is not None:
+        pg = model.pixgain
+        out["pixel_gain_log"] = {lab: st(pg.logg[getattr(pg, f"pidx{k}")]) for k, lab in enumerate(pg.labels)}
+    if model.nonlin is not None:
+        nl = {}
+        for c in range(model.n_chan):
+            es = (model.e_chan == c).nonzero()
+            if es.numel() == 0:
+                continue
+            e = es[0, 0]
+            S = model.e_sigbar[e] * torch.logspace(0, 4, 9, device=model.dev)
+            nl[str(c)] = float(((model.apply_nonlin(e, S) - S) / S).abs().max())
+        out["nonlinearity_max_fraction"] = nl
+    caps = {"g_space": model.cfg.tau_g_max, "g_time": model.cfg.tau_g_max, "D_static": model.cfg.tau_d_max, "D_drift": model.cfg.tau_d_max}
+    caps.update({k: model.cfg.tau_code_max for k in ("k_space", "k_time", "k_lambda", "k_exp")})
+    out["tau_at_cap"] = {k: bool(model.tau.mode.get(k) == "learned" and model.tau.value(k) >= 0.999 * c) for k, c in caps.items() if k in model.tau.mode}
+    # far wings of the kernel: fraction of its integral beyond each radius, at the detector centre of one training exposure per filter (a flat
+    # far pedestal is degenerate with the background terms, F41)
+    wings = {}
+    for f in range(len(model.fset)):
+        es = [int(x) for x in model.ref_eids.tolist() if int(model.e_filt[x]) == f]
+        if not es:
+            continue
+        e = torch.as_tensor(es[0], device=model.dev)
+        Ks, _ = model.node_kernels(e, torch.zeros(1, 2, device=model.dev), P)
+        lv = model.levels_of(e)
+        tot = sum(float(K.sum()) for K in Ks)
+        wings[fn[f]] = {f"beyond_{r}_arcsec": sum(float((K[0] * (lv.u[l].norm(dim=-1) > r)).sum()) for l, K in enumerate(Ks)) / max(tot, 1e-30)
+                        for r in radii}
+        wings[fn[f]]["integral_mean_over_lambda_nodes"] = tot / model.fset.Q
+    out["kernel_wing_fraction"] = wings
+    return out
 
 
 def chi2_exposure(e, m, pv, sigma=None, snr_min=None, S=None):
@@ -838,7 +999,8 @@ def predict_merged(model, exps, held, P, cfg, ts, pred_dir=None, meta_fn=None, l
         for c in cs:
             e = exps[c]
             m, pv, S = predict_exposure(model, e, P, cfg)
-            recs[f"{e.name}@tile{k}"] = chi2_exposure(e, m, pv, S=S, snr_min=5.0) | {"tile": int(k), "exposure": e.name}
+            recs[f"{e.name}@tile{k}"] = chi2_exposure(e, m, pv, S=S, snr_min=5.0) | {"tile": int(k), "exposure": e.name} \
+                | ({"closed_form_stripes": e.extra["closed_form_stripes"]} if "closed_form_stripes" in e.extra else {})
             ny, nx = e.det_shape
             y0, x0 = e.cut0
             a, b = e.shape

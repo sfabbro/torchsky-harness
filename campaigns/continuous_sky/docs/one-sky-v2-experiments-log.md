@@ -2,6 +2,71 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 17 Nov 2026, 07:45 to 11:25 UTC: a round of debugging, performance and simplification while the GPU is blocked (Seb's request)
+
+Seb: "do a round of debugging, performance, simplifying, but always with the goal of multi-survey joint analysis for new science discovery, ultimately probing the deepest sky latent field." Five agents (Opus: audit, then two model changes; Sonnet: truth test, then performance and simplification). I re-ran the new tests on the final tree (25 pass in the seven files touched; the agents report 54 in all). All work is in `fieldop_tsky/`; reports: `AUDIT_2026-11-17.md`, `tests/truth/TRUTH_REPORT.md`, `PERF_SIMPLIFY_2026-11-17.md`.
+
+### 1. Audit by an agent that did not write the code (units, terms that hide errors, single-instrument assumptions)
+
+Two bugs fixed, default results unchanged: (a) every filter curve was looked up under the first instrument's name (an HST filter in a NIRCam field would have been fetched as a NIRCam filter); (b) the blur convention read a telescope-diameter key no loader sets and always used 6.5 m. End-of-fit reporting added for every learned term that can absorb an error (noise scale per detector and filter, backgrounds, detector pattern, stripes, affine terms, gain, codes, pixel gain, non-linearity, variability scales at their caps, kernel fraction beyond 0.5, 1 and 2.5 arcsec).
+
+Fifteen ranked findings; the ones that matter most for a joint deep fit:
+1. Count-rate input had no photometric conversion, so its sky was in different units per filter and detector (now optional, section 3).
+2. The sky's zero level is tied to the median of each exposure's data, which contains sky light (section 3).
+3. The learned noise scale can change the noise by a factor of 20 either way per detector and filter, and the noise floor is unbounded; either hides a units error. The factor "10.8" of the failed count-rate run was this noise scale. Proposed default bounds: floor at most 0.2, noise scale within a factor of 2. Not applied (changes every fit).
+4. The spectral range (0.70 to 5.30 micrometres) and the filter-curve grid (0.55 to 5.6) are constants: bluer HST filters, GALEX and Spitzer 5.8 and 8.0 micrometres would silently get wrong colours.
+5. With two instruments the absolute flux scale becomes an average weighted by exposure counts; an explicit reference instrument should be required.
+6. The loader is specific to JWST (extension names, first science extension only, detector names, a 2,000-pixel minimum, data-quality bits shared across instruments). The audit lists the short interface an instrument must supply, so that HST becomes a data-description task.
+7. Held-out scores are flattered by terms fitted on the held-out pixels themselves (closed-form stripes with no prior, background, affine, gain, codes). The official-pipeline baseline gets none of these. Proposed: fit them on one half of interleaved blocks and score the other half. This changes every score we have quoted; not yet measured how much.
+8. Kernel far wings trade with the background by default (known); proposed default normalisation radius of 2 arcsec for joint fits.
+Others: detector pattern shared across filters in calibrated units; time axes switching on for every instrument when one extends the time span; step sizes using one mean over all exposures; held-out optimiser not masked by row; random starting values for throughput and distortion fields.
+
+### 2. A small problem with known truth that converges, and what it shows about depth
+
+Until now no synthetic fit converged (held-out 1.4 to 3.3 against a noise value of 0.99), so nothing measured faint-end bias or depth. New: `tests/truth/` (one filter, 44 by 44 pixels, 36 sources, flat background, 8 or 32 exposures). It converges to within 1% to 3% of the noise value in 1 to 4 minutes **only with the response frozen at the truth**; with the response learned from the usual start the fit diverges after an initial descent (2.2 to 2.3; not diagnosed). So every number below is for a known response.
+
+With today's defaults, on that problem:
+- **The recovered sky in empty regions is biased high and the bias does not fall with more exposures**: +0.86 ideal-noise units at 8 exposures, +1.60 at 32 (grid and items alike). The scatter falls; the offset (+0.19 in surface brightness, 3.8% of the background) does not. Cause: the background is tied to the data median, which contains source light, and positivity stops the sky from compensating.
+- Sources at total signal-to-noise 3 to 10 lose about 1.1 to 1.2 noise units of flux (ratio 0.77 to 0.79 in an aperture matched to the response) which the ideal coadd does not lose.
+- Items recover point-source flux above signal-to-noise 10 without bias; the grid loses 20% to 30% in a strict true-profile aperture (3% to 7% in the matched one).
+- Without positivity the grid has no offset at 8 exposures but its error is 1.7 to 2.1 times the ideal coadd's. This is not the resolution element and not under-convergence (800 steps are worse than 400); the excess grows with scale. Candidates, not separated: the per-exposure quadratic backgrounds against the sky's large scales, and a node count comparable to the data.
+
+### 3. Two model changes, off by default (Opus)
+
+**Sky zero level, `--sky-zero masked` with `--sky-positivity-margin 3`.** Convention: for each filter the training backgrounds average to the median of each exposure's data over pixels where the model's own rendered sky is below 0.3 sigma (smoothed by 1.5 pixels), re-evaluated five times per fit; the sky may go negative down to three times the starting node noise before positivity acts. On the truth problem (2 noise realisations per row; errors on the new offsets 0.15 to 0.27):
+
+| Sky | Exposures | Empty-sky offset, before to after | Error over ideal, before to after | Flux ratio at signal-to-noise 3 to 10, before to after |
+|---|---|---|---|---|
+| grid | 8 | +0.86 to +0.12 | 0.93 to 1.92 | 0.77 to 0.95 |
+| grid | 32 | +1.60 to -0.54 | 1.60 to 1.58 | 0.68 to 0.95 |
+| items | 8 | +0.89 to +0.07 | 0.92 to 1.70 | 0.79 to 0.94 |
+| items | 32 | +1.68 to -0.19 | 1.68 to 1.25 | 0.67 to 0.93 |
+
+("Before" error ratios below 1 at 8 exposures were the offset, not noise.) The error now falls from 8 to 32 exposures by 0.41 (grid) and 0.37 (items) in flux units (0.5 expected; 0.86 and 0.92 before). Costs and limits: held-out score 5% to 7% above the noise value at 8 exposures (1% to 2% before); the error is still 1.25 to 1.9 times the ideal; item flux at signal-to-noise above 10 at 8 exposures is +0.70 noise units high (was +0.08); the mask threshold and smoothing were tuned on one of the seeds in the table; one margin value tried; no real-data fit; no two-instrument test. With the masked zero alone (no margin) positivity still biases empty sky by +0.2 to +0.6 noise units (rectified noise), so the margin is needed.
+**Verdict: the depth test is improved, not passed.** The zero level is no longer biased within the sampling error and faint fluxes are recovered to 5% to 7%, but the sky's error in empty regions is still above the ideal coadd's, for a reason not yet found.
+
+**Count-rate input in sky units, `--rate-units sky` (with `--nuisance-steps exposure`).** Count rate per pixel = surface brightness times (pixel area over nominal area) over the conversion, where the conversion (`PHOTMJSR`) is read from the matching calibrated file's header or from a table; it is an input and a starting value, and the learned throughput terms stay free. Starting values converted consistently. Checks: synthetic, five different conversions: fitted fluxes agree with the calibrated-style fit to 0.5% and held-out scores to 1.6% (both fits unconverged); on the 12 real exposure pairs, without fitting, count rate times conversion against calibrated data: median ratio 0.9998 to 1.0084 per detector and filter, pixel-to-pixel scatter 1.8% to 3.6% (the flat field the fit is meant to learn). Open doubt: on the long-wavelength detector dividing by the relative pixel area increases that scatter (3.4% to 3.6% against 2.5% to 3.2%), so the area may be counted twice there; to be settled on the first real fit (the per-detector throughput field would show it). The queued count-rate fits now use these options.
+
+### 4. Performance and simplification (Sonnet; CPU only, no GPU today)
+
+- Where a step goes (4 patches per step, CPU): grid sky 582 ms: backward pass 48%, forward rendering 29%, kernel field 15%, per-exposure terms and loss 3%. Item sky 816 ms: backward 53%, rendering 22%, kernel field 12%, item rasterisation 9%. Optimiser, projections, logging and parameter-independent recomputation together are under 3%.
+- Cost model: about 150 ms per patch on this CPU; step time is independent of the number of exposures in the field (618, 577, 559 ms at 18, 42, 90 exposures) and doubles with patches per step. So cost per unit of data is set by rendering, not by bookkeeping; larger areas scale by tiles and patches.
+- Applied without changing results: blocking device reads per step from 28 to 6 (grid) and 32 to 10 (items), host-to-device copies from 27 to 2; 3% to 5% faster on CPU (inside the 5% run-to-run scatter). The effect on a GPU is unmeasured; `tests/bench_step.py` is the benchmark to run there.
+- Removed: item relocation, the smooth grid under items, the `--render-impl` stub. 5,337 to 5,250 lines; 161 to 158 options. An inventory of all 158 options with their status is in the report; 20 are never exercised by any test or adopted launch line (candidates for removal; `--tau-prior` is read nowhere).
+- The item-sky state hash changed only because an all-zero buffer was removed (all other tensors bit-identical; old states still load). The grid hash is identical.
+- Largest remaining costs: the backward pass through the renderer (half the step); the kernel field evaluated twice per step; for the item sky, three rasterisations per step because of the sky-only inner step (dropping it would save about 30% of an item step and changes the fit). Each of these changes results and needs a GPU comparison.
+
+### 5. Decisions for Seb (each changes results, so none is applied)
+
+1. Make `--sky-zero masked` the default (and the positivity margin for the deep-sky product only).
+2. Default bounds on the learned noise terms (floor at most 0.2; noise scale within a factor of 2).
+3. Score held-out exposures on pixels not used to fit their per-exposure terms (changes every quoted score; makes the comparison with the official pipeline fair).
+4. Require an explicit reference instrument for the flux scale as soon as two instruments are loaded; make the 2 arcsec kernel normalisation the default for joint fits.
+5. Remove the 20 never-exercised options; drop the sky-only inner step if a GPU comparison shows no loss.
+6. Next model work for the second instrument: the instrument interface of audit section C (reader, units, data-quality policy, spectral range from the union of bandpasses), then HST WFC3/IR on SMACS.
+
+**GPU.** Still blocked at 11:22 UTC: 20 launches since 05:45 have landed on the node with the driver fault. Next retry about 14:25 UTC. Archive for the queued fits: `fieldop-tsky-67a98fa5.tar.gz`.
+
 ## 17 Nov 2026, 06:00 to 07:15 UTC: the count-rate failure was a fault in the fit's starting sky, not the gain map (corrects the 02:20 entry)
 
 Collection by a Haiku agent; diagnosis and fix by an Opus agent (`campaigns/continuous_sky/RATE_HELDOUT_DIAGNOSIS.md`); I re-ran the new tests (pass).

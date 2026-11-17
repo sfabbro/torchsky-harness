@@ -25,8 +25,7 @@ def test_items_two_tiles():
     cfg = default_config(sky_pitch=0.06, render_pitch=0.02, level_nh=10, kernel_extent=1.0, region_px=13, n_lambda=3, k_hidden=16,
                          warm_kernel_steps=20, pattern_grid=0, stripes=0, batch_patches=3, inner_sky=1, budget_min=1e6, steps=12,
                          tau_mode="fixed", held_steps=6, held_reg_steps=4, log_every=4, reg_prepass_steps=4, reg_prepass_iters=1,
-                         data_margin=0.3, sky_margin=0.6, sky_swap=1, visit_steps=3, sky_form="items", item_count=300, item_smooth_pitch=0.3,
-                         item_relocate=1)
+                         data_margin=0.3, sky_margin=0.6, sky_swap=1, visit_steps=3, sky_form="items", item_count=300)
     half = half_data - cfg.data_margin + cfg.sky_margin
     skies = {}
     for k in sorted(tiles):
@@ -55,14 +54,13 @@ def test_items_two_tiles():
     for k, s_ in skies.items():
         s_.to("cpu")
         A1 = s_.coeffs().detach().clone()
-        fresh = ItemSky(torch.zeros_like(A1), s_.pitch, s_.basis, s_.n_items, n_levels=s_.n_levels, smooth_pitch=s_.smooth_pitch)
+        fresh = ItemSky(torch.zeros_like(A1), s_.pitch, s_.basis, s_.n_items, n_levels=s_.n_levels)
         fresh.register_buffer("sig_b", torch.zeros_like(s_.sig_b))
         fresh.load_state_dict(st2[k])
         A2 = fresh.coeffs().detach()
         err = float((A1 - A2).abs().max())
         print(f"tile {k}: {s_.n_items} items, {s_.n_fitted()} fitted numbers; reload max |dA| = {err:.2e}; visits {ts.stats[k]}")
         assert err == 0.0
-    print("relocations:", rec.get("relocated"))
 
 
 if __name__ == "__main__":

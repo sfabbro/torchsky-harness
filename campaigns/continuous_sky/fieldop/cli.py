@@ -87,8 +87,6 @@ def build_parser():
     g.add_argument("--item-patch", choices=["square", "sheared"], default="square", help="pyramid only: patch of each item, square "
                    "(+-4 larger widths) or sheared (+-4 widths in the item's decorrelated coordinates, used where it has 1.5x fewer nodes; "
                    "cost ~ item area instead of larger width squared, for elongated items; also applied on the fine level; F40)")
-    g.add_argument("--item-smooth-pitch", type=float, default=0.0, help="coarse smooth grid for diffuse light at this pitch [arcsec] (0 = none)")
-    g.add_argument("--item-relocate", type=int, default=0, help="move faint items to the positive back-projected residual at 15/30/45/60 per cent")
     g.add_argument("--item-lr-pos", type=float, default=0.05, help="Adam step of item positions [sky pitches]")
     g.add_argument("--item-lr-width", type=float, default=0.03, help="Adam step of item log widths")
     g.add_argument("--item-lr-angle", type=float, default=0.05, help="Adam step of item angles [rad]")
@@ -106,8 +104,6 @@ def build_parser():
     g.add_argument("--region-px", type=int, default=256)
     g.add_argument("--n-lambda", type=int, default=5)
     g.add_argument("--render", choices=["fft", "quad"], default="fft")
-    g.add_argument("--render-impl", choices=["prototype", "torchsky"], default="prototype", help="render code: the prototype's (default). 'torchsky' "
-                   "(NestedKernelPSF) is NOT wired in: it is refused with a message; see TORCHSKY_INTEGRATION_REPORT.md for the measured difference and the reasons")
     g.add_argument("--quad-nrad", type=int, default=12)
     g.add_argument("--quad-naz", type=int, default=48)
     g.add_argument("--k-hidden", type=int, default=64)
@@ -149,6 +145,19 @@ def build_parser():
     g.add_argument("--gauge-shift", type=float, default=0.0, help="extra penalty on the common learned shift (the exact projection is always on)")
     g.add_argument("--blur-floor", type=float, default=1.0, help="blur gauge: core m2 of the sharpest kernel class >= this x (sky pitch)^2 / 3 (0 = off)")
     g.add_argument("--pedestal-gauge", type=int, default=1, help="per filter, training background constants (relative to the exposure medians) sum to zero")
+    g.add_argument("--sky-zero", choices=["median", "masked"], default="median",
+                   help="reference level of each training exposure for the pedestal gauge (the split between a constant sky and the backgrounds, "
+                   "which the data cannot fix): 'median' = median of the exposure's data (sources included; the sky in empty regions then sits "
+                   "below zero by the median source light, and positivity turns that into a positive total offset); 'masked' = median of the "
+                   "DATA (not the residual) over the pixels where the current model's sky signal S satisfies |S| < --sky-zero-snr x the pixel sigma, "
+                   "re-evaluated at --sky-zero-at fractions of the fit: the sky is zero, by convention, where the model sees no source")
+    g.add_argument("--sky-zero-snr", type=float, default=0.3, help="--sky-zero masked: a pixel counts as source-free when |S| < this x its sigma")
+    g.add_argument("--sky-zero-smooth", type=float, default=1.5, help="--sky-zero masked: Gaussian width [detector pixels] of the smoothing of S before the threshold")
+    g.add_argument("--sky-zero-at", default="0,0.1,0.25,0.5,0.75", help="--sky-zero masked: fit progress fractions at which the levels are re-evaluated")
+    g.add_argument("--sky-positivity-margin", type=float, default=0.0,
+                   help="positivity (grid penalty, item exponentials) applies to sky + p instead of the sky, p = this x the noise of the warm-start "
+                   "coadd at one sky node (per band, median over covered nodes): the sky may go down to -p, so that a noise estimate of an empty "
+                   "region is not rectified (0 = today)")
     g.add_argument("--distortion", type=int, default=1)
     g.add_argument("--affine-prior", type=float, default=0.01)
     g.add_argument("--input-level", choices=["cal", "rate"], default="cal")
@@ -157,6 +166,16 @@ def build_parser():
                    "from the _rate file itself (linear TAN from the pointing, no distortion: up to 0.24 arcsec off at the detector corners), or "
                    "'telescope': the _rate file's own pointing keywords plus the SIAF polynomial of its aperture through torchsky's "
                    "TelescopeFrameDetectorToSky (needs pysiaf; 3 to 60 mas rms from the _cal solution on the 12-exposure sample: see TORCHSKY_INTEGRATION_REPORT.md)")
+    g.add_argument("--rate-units", choices=["dn", "sky"], default="dn",
+                   help="--input-level rate: units of the sky. 'dn' = count rate per arcsec^2 (today; differs per filter and detector). 'sky' = "
+                   "surface brightness (MJy/sr, as the calibrated fit): count rate per pixel = sky x (pixel area / nominal pixel area) / "
+                   "conversion, the conversion (MJy/sr per DN/s) a per-exposure constant read at load time: PHOTMJSR of the matching _cal "
+                   "file with --rate-wcs cal, else from --rate-photom; the learned throughput terms stay free to correct it")
+    g.add_argument("--rate-photom", default="", help="--rate-units sky: JSON table {\"DETECTOR/FILTER\": MJy/sr per DN/s} (and optionally "
+                   "{\"DETECTOR/FILTER/area\": nominal pixel area in arcsec^2}); used when the _cal header is not read (--rate-wcs rate or telescope)")
+    g.add_argument("--nuisance-steps", choices=["mean", "exposure"], default="mean",
+                   help="Adam step of the data-unit nuisances (background, stripes): lr x mean pipeline sigma over all exposures ('mean', today) "
+                   "or x each exposure's own median sigma ('exposure'; makes the fit independent of a per-exposure unit constant, e.g. --rate-units sky)")
     g.add_argument("--loader", choices=["astropy", "torchfits"], default="astropy",
                    help="exposure files read by the prototype's astropy code (default) or by torchsky's field_observation_from_exposure_file "
                    "(torchfits); if that cannot be imported the run falls back to astropy and says so")
@@ -246,14 +265,25 @@ def make_sky(exps, fset, cfg, half, dev, basis=None):
     if cfg.sky_precond > 0:
         snr = (img.abs() / sb[:, None, None]).amax(0).clamp(max=cfg.sky_precond_cap)
         pre = 1.0 + cfg.sky_precond * torch.nn.functional.max_pool2d(snr[None, None], 5, 1, 2)[0, 0]
+    ped = None
+    if getattr(cfg, "sky_positivity_margin", 0.0) > 0:     # positivity margin p per band (sky units) -> constant spectral coefficients
+        pb = []
+        for b in range(img.shape[0]):
+            w_ = wt[b][wt[b] > 0]
+            pb.append(cfg.sky_positivity_margin * (1.0 / w_.sqrt()).median() if w_.numel() else torch.zeros((), device=img.device))
+        ped = spectral_init(torch.stack(pb).to(img.dtype)[:, None, None], Phi_band)[:, 0, 0]
     if getattr(cfg, "sky_form", "grid") == "items":
         from .sky import ItemSky
         sky = ItemSky(A0, cfg.sky_pitch, basis, cfg.item_count, floor=cfg.item_floor, max_width=cfg.item_max_width, n_levels=cfg.item_levels,
-                      smooth_pitch=cfg.item_smooth_pitch, n_views=max(1, cfg.xfit), relocate=cfg.item_relocate, seed=cfg.seed,
+                      n_views=max(1, cfg.xfit), seed=cfg.seed,
                       raster=getattr(cfg, "item_raster", "direct"), impl=getattr(cfg, "item_impl", "prototype"),
                       patch=getattr(cfg, "item_patch", "square") if getattr(cfg, "item_raster", "direct") == "pyramid" else "square")
     else:
         sky = SkyGrid(A0, cfg.sky_pitch, basis, n_views=max(1, cfg.xfit), precond=pre)
+    if ped is not None:
+        sky.ped = ped                     # plain attribute (not a buffer: the default state is unchanged)
+        if getattr(cfg, "sky_form", "grid") == "items":
+            sky.reset_from_coeffs(A0)     # re-seed with the items carrying the layer p
     sky.register_buffer("sig_b", sb)
     return sky, N
 
@@ -275,15 +305,11 @@ def main(argv=None):
     from . import data as _data
     from .data import load_field, make_patches
     from .model import FieldOperator
-    from .train import noise_floor_values, chi2_exposure, fit, fit_heldout, predict_exposure, predict_merged, register_prepass, warm_kernel, write_prediction
+    from .train import noise_floor_values, nuisance_sizes, chi2_exposure, fit, fit_heldout, predict_exposure, predict_merged, register_prepass, warm_kernel, write_prediction
     cfg = build_parser().parse_args(argv)
     _data.DQ_IGNORE_BITS = int(cfg.dq_ignore_bits)
     _data.RATE_WCS = cfg.rate_wcs
     _data.LOADER = getattr(cfg, "loader", "astropy")
-    if getattr(cfg, "render_impl", "prototype") != "prototype":
-        raise SystemExit("--render-impl torchsky is not wired in: NestedKernelPSF agrees with the prototype's render to 1.8e-4 of the image maximum "
-                         "on a sky of stars and galaxies and 1.2e-3 on white noise in an idealised case (unrotated, pixel pitch = render pitch), but it "
-                         "cannot replace render_fft_batch in the model (see TORCHSKY_INTEGRATION_REPORT.md, block D). Use --render-impl prototype.")
     from . import sky as _sky
     if cfg.item_chunk > 0:
         _sky.ITEM_CHUNK = int(cfg.item_chunk)
@@ -332,8 +358,8 @@ def main(argv=None):
             torch.cuda.empty_cache()
     sky = skies[info["tiles"][0]]
     if cfg.sky_form == "items":
-        log(f"item sky: {sky.n_items} items ({sky.n_levels} seeding lattices), floor {sky.floor:.4f}\", max width {sky.max_width:.3f}\", smooth "
-            f"grid {sky.Ns} x {sky.Ns} at {cfg.item_smooth_pitch}\"; rasterised on {N} x {N} at {cfg.sky_pitch}\" ({sky.raster_mode}"
+        log(f"item sky: {sky.n_items} items ({sky.n_levels} seeding lattices), floor {sky.floor:.4f}\", max width {sky.max_width:.3f}\"; "
+            f"rasterised on {N} x {N} at {cfg.sky_pitch}\" ({sky.raster_mode}"
             f"{', %d coarse levels, %s patches' % (sky.plan().L, sky.patch_shape) if sky.raster_mode == 'pyramid' else ''}); "
             f"{sky.n_fitted() / 1e6:.3f} M fitted numbers per tile and view, {sky.n_views} view(s)) x {len(skies)} tile(s)")
     else:
@@ -381,6 +407,7 @@ def main(argv=None):
                                       "NIRCam row/column stripes"], "method": cfg.method_name, "affine": (model.affine[i] * model.aff_scale).tolist(),
                 "u": float(model.u[i]), "bkg": model.bkg[i].tolist(),
                 "units": "rate" if cfg.input_level == "rate" else "cal",
+                "sky_units": "MJy/sr" if cfg.input_level != "rate" or getattr(cfg, "rate_units", "dn") == "sky" else "DN/s per arcsec^2 (per filter and detector)",
                 "units_note": "rate: DN/s of the _rate file (count rate, no flat, no photometric conversion)" if cfg.input_level == "rate"
                 else "cal: MJy/sr, as SCI of the _cal file", "pixel_gain": cfg.pixel_gain}
     scores = {}
@@ -391,6 +418,8 @@ def main(argv=None):
             e = exps[i]
             m, pv, S = predict_exposure(model, e, P, cfg)
             scores[e.name] = chi2_exposure(e, m, pv, S=S, snr_min=5.0)
+            if "closed_form_stripes" in e.extra:
+                scores[e.name]["closed_form_stripes"] = e.extra["closed_form_stripes"]
             if cfg.write_pred:
                 write_prediction(pred_dir / f"{e.name}.npz", e, m, pv, meta_of(e))
             log(f"held-out {e.name}: chi2/N (pipeline ERR, own mask, no offset) {scores[e.name]['chi2']:.3f} on {scores[e.name]['n']} px; "
@@ -398,7 +427,9 @@ def main(argv=None):
     with torch.no_grad():
         effv = model.effective_variability(P)
         gauges = model.gauge_report(P=P)
+        nsz = nuisance_sizes(model, exps, P=P)
     log(f"effective variability (output space): {({k: round(v, 5) for k, v in effv.items()})}")
+    log(f"sizes of the learned terms that can absorb a modelling error (audit 17 Nov 2026): {json.dumps(nsz, default=str)}")
     log(f"gauges: {gauges}")
     nf = noise_floor_values(model)
     ho_n = sum(v["n"] for v in scores.values())
@@ -407,7 +438,7 @@ def main(argv=None):
     log(f"final learned noise floor {nf} (bound {getattr(cfg, 'noise_floor_max', 0.0)}); held-out chi2/px (input noise) {ho_in['chi2_input_noise']}")
     metrics = {"config": vars(cfg), "info": info, "noise_floor_final": nf, "noise_floor_first_above_0.2_step": rec.get("noise_floor_first_above"),
                "heldout_input_noise": ho_in, "fit": rec, "warm_kernel": winfo, "registration_prepass": reg, "tau": model.tau.table(), "heldout_own": scores,
-               "effective_variability": effv, "gauges": gauges, "tiles": ts.summary() if ts.multi else None,
+               "effective_variability": effv, "gauges": gauges, "nuisance_sizes": nsz, "tiles": ts.summary() if ts.multi else None,
                "approximations": APPROXIMATIONS, "sources_sha256_16": shas, "pred_dir": str(pred_dir), "seconds": time.perf_counter() - T0}
     if model.fs_on:
         metrics["filter_shift"] = {"unit": "detector pixels (x = column, y = row); position of pixel p is W(p + s)", "pairs": model.filter_shift_table(),

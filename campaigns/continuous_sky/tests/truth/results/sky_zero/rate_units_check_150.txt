@@ -1,0 +1,12 @@
+warm_flux_cal [12646.58398 10063.69727  8977.40918]
+warm_flux_rate [12646.58301 10063.69531  8977.40918]
+pre_flux_cal [12695.77246 10118.71289  8973.78027]
+pre_flux_rate [12698.44141 10118.33887  8975.50195]
+max_rel_pred_dev_after_prepass 0.132049
+fit_flux_cal [16462.64844 13200.89258 12011.22754]
+heldout_cal 1.970837
+fit_flux_rate [16376.65039 13189.51758 11951.86719]
+heldout_rate 1.939831
+fitted band flux ratio rate/cal [0.9948 0.9991 0.9951] held-out ratio rate/cal 0.9843
+contrast --rate-units dn: warm-start band flux ratio rate/cal [ 27.9172  44.4701 160.3809]
+165.9 s

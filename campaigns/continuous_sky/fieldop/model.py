@@ -21,7 +21,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .kernel import Codes, KernelNet, LogPolarEncoding, Tau, centred_normalised, inv_softplus, lam_feats, mlp, t_feats, xi_feats
-from .render import Levels, kernel_level_values, kernel_level_values_grouped, pooled_level, quad_points, render_fft, render_fft_batch, render_quad
+from .render import Levels, kernel_level_values, kernel_level_values_grouped, pooled_level, render_fft, render_fft_batch, render_quad
 
 LATTICE = torch.tensor([[x, y] for y in (-0.8, 0.0, 0.8) for x in (-0.8, 0.0, 0.8)], dtype=torch.float32)
 
@@ -255,6 +255,8 @@ class FieldOperator(nn.Module):
         self.stripe_rows = nn.Parameter(torch.zeros(E, 2048, device=dev))
         self.stripe_cols = nn.Parameter(torch.zeros(E, 2048, device=dev))
         self.register_buffer("e_stripes", t(meta["stripes"], torch.bool))
+        self.e_stripes_host = [bool(x) for x in np.asarray(meta["stripes"]).reshape(-1)]     # host copy: the branch below needs no device read
+        self._et = {}
         self.hs = nn.Parameter(torch.zeros(n_det, len(fset), device=dev))
         self.floor_raw = nn.Parameter(inv_softplus(torch.full((n_chan,), cfg.floor0)).to(dev))
         self.nonlin = mlp(2 + 4, 32, 1, 2, zero_last=True) if cfg.nonlin else None
@@ -303,6 +305,12 @@ class FieldOperator(nn.Module):
         self.register_buffer("T_ref", torch.as_tensor(Tt, dtype=torch.float32, device=dev))
         self.amp = cfg.amplitude
         self.input_level = cfg.input_level
+        # --rate-units sky: per-exposure 1 / (nominal pixel area x conversion) (plain attribute, not a buffer: default state unchanged)
+        self.rate_kappa = None
+        if cfg.input_level == "rate" and getattr(cfg, "rate_units", "dn") == "sky":
+            if meta.get("rate_kappa") is None:
+                raise SystemExit("--rate-units sky: the exposures carry no conversion (data.set_rate_to_sky)")
+            self.rate_kappa = torch.as_tensor(np.asarray(meta["rate_kappa"], np.float32), device=dev)
         # ---- pedestal / stripe gauges (F18): per-exposure reference levels and the detector rows / columns each exposure uses
         self.register_buffer("bkg0", t(meta["bkg0"], torch.float32))
         rm = torch.zeros(E, 2048, dtype=torch.bool, device=dev)
@@ -315,11 +323,13 @@ class FieldOperator(nn.Module):
         self.register_buffer("row_mask", rm)
         self.register_buffer("col_mask", cm)
         # ---- blur gauge (F18): the sharpest kernel class (smallest generic width) may not be sharper than one sky tent
-        fpix = {}
+        fpix, fdiam = {}, {}
+        dm = meta.get("diameter_m_e")
         for i in range(E):
             fpix.setdefault(int(meta["filt"][i]), meta["chan_pix"][int(meta["chan"][i])])
-        diam = meta.get("diameter_m", 6.5)
-        sig2 = {f: (0.42 * float(self.piv[f]) * 1e-6 / diam * 206264.8) ** 2 + p_ ** 2 / 12 for f, p_ in fpix.items()}
+            fdiam.setdefault(int(meta["filt"][i]), float(dm[i]) if dm is not None else meta.get("diameter_m", 6.5))
+        sig2 = {f: (0.42 * float(self.piv[f]) * 1e-6 / fdiam[f] * 206264.8) ** 2 + p_ ** 2 / 12 for f, p_ in fpix.items()}
+        self.blur_sig2 = sig2
         self.blur_ref = min(sig2, key=sig2.get)
         self.blur_floor = float(cfg.blur_floor) * sky.pitch ** 2 / 3.0          # m2 of one sky tent (2 x pitch^2 / 6)
         Rw = 2.0 * math.sqrt(max(self.blur_floor, 1e-8))
@@ -581,7 +591,16 @@ class FieldOperator(nn.Module):
         JA = torch.einsum("ij,qmjk->qmik", A, J)
         return (JA[..., 0, 0] * JA[..., 1, 1] - JA[..., 0, 1] * JA[..., 1, 0]).abs()
 
-    def background(self, e, xi, row, col, G=None):
+    def et(self, e):
+        """Device scalar index tensor of exposure e (an int), made once: no host-to-device copy per patch and step."""
+        if not isinstance(e, (int, np.integer)):
+            return torch.as_tensor(e, device=self.dev)
+        t = self._et.get(int(e))
+        if t is None:
+            t = self._et[int(e)] = torch.as_tensor(int(e), device=self.dev)
+        return t
+
+    def background(self, e, xi, row, col, G=None, e_host=None):
         """Quadratic per-exposure background (sky / zodiacal light: passes through the per-pixel gain G when it is on) + per-detector
         pattern and NIRCam stripes (additive detector terms: NOT multiplied by G, F43)."""
         B = (legendre6(xi) * self.bkg[e]).sum(-1)
@@ -591,7 +610,7 @@ class FieldOperator(nn.Module):
             pat = self.pattern[self.e_det[e]]
             pat = pat - pat.mean()
             B = B + F.grid_sample(pat[None, None], xi[None, None], mode="bilinear", padding_mode="border", align_corners=True)[0, 0, 0]
-        if bool(self.e_stripes[e]) and self.cfg.stripes:
+        if self.cfg.stripes and (self.e_stripes_host[e_host] if e_host is not None else bool(self.e_stripes[e])):
             B = B + self.stripe_rows[e, row] + self.stripe_cols[e, col]
         return B
 
@@ -651,6 +670,8 @@ class FieldOperator(nn.Module):
         amp = torch.exp(gam)
         if self.input_level == "rate":
             amp = amp * self.pixel_area(e_t, pix["Jpix"], pix["xi"], P)
+            if self.rate_kappa is not None:
+                amp = amp * self.rate_kappa[e_t]
         S = (self.wq[f][:, None] * amp * c).sum(0)
         G = self.gain_of(e, pix)
         if G is not None:                     # per-pixel gain: light on the pixel (signal S and sky background) x G (F43)
@@ -664,11 +685,13 @@ class FieldOperator(nn.Module):
         amp = torch.exp(gam)
         if self.input_level == "rate":
             amp = amp * self.pixel_area(e_t, pix["Jpix"], pix["xi"], P)
+            if self.rate_kappa is not None:
+                amp = amp * self.rate_kappa[e_t]
         S = (self.wq[f][:, None] * amp * c).sum(0)
         G = self.gain_of(e_t if e_host is None else e_host, pix)
         if G is not None:                     # per-pixel gain (F43)
             S = S * G
-        m = self.apply_nonlin(e_t, S) + self.background(e_t, pix["xi"], pix["row"], pix["col"], G)
+        m = self.apply_nonlin(e_t, S) + self.background(e_t, pix["xi"], pix["row"], pix["col"], G, e_host=e_host)
         return {"S": S, "m": m}
 
     def render_batch(self, items, P, view=None, detach_sky=False, jitter=False, region_px=None):
@@ -689,7 +712,7 @@ class FieldOperator(nn.Module):
             poss, wts, codes, Rs, Phis, nps = [], [], [], [], [], []
             for k in ks:
                 e, pix = items[k]
-                e_t = torch.as_tensor(e, device=self.dev)
+                e_t = self.et(e)
                 pos = self.positions(e_t, pix["X"], pix["Y"], pix["xi"], P, c0=pix.get("c0"))
                 ny, nx = self.l_shape[e]
                 nodes, w = region_nodes(pix["xi_px"], (ny, nx), region, bounds=pix.get("bounds"))
@@ -713,7 +736,7 @@ class FieldOperator(nn.Module):
             c = render_fft_batch(self.sky, A, torch.stack(Phis), lv, Ks, Wb, Pb, shift0=sh, interp=self.cfg.interp, Rs=Rb, det_frame=det_frame)
             for b, k in enumerate(ks):
                 e, pix = items[k]
-                outs[k] = self.finish(torch.as_tensor(e, device=self.dev), pix, P, c[b, :, :nps[b]], f=self.l_filt[e], e_host=e)
+                outs[k] = self.finish(self.et(e), pix, P, c[b, :, :nps[b]], f=self.l_filt[e], e_host=e)
         return outs
 
     # ------------------------------------------------------------------ learned shift per (detector, filter) pair

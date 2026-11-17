@@ -96,6 +96,7 @@ def test_gain_enters_signal_and_sky_background_only():
         model.stripe_rows[e.eid].normal_(0, 0.3)
         model.stripe_cols[e.eid].normal_(0, 0.3)
         model.e_stripes[e.eid] = True
+        model.e_stripes_host[e.eid] = True              # the host copy read by background() (a model edited after construction must update both)
         P = model.prepare()
         out1 = model.render_batch([(e.eid, pix)], P)[0]
         pg.logg.normal_(0, 0.05)

@@ -5,7 +5,7 @@
      (error of the point-sampled Gaussian sum, what the renormalisation removes), (c) per-node error against the exact cell mean (erf box
      integral; axis-aligned items only, where it is available in closed form), as a fraction of the peak, (d) centroid error of the grid
      (sub-node placement) in units of the pitch, (e) the same centroid read through the tent interpolant on a fine grid.
-  2. gradients with respect to positions, log widths, angles, log coefficients and the smooth grid against central finite differences
+  2. gradients with respect to positions, log widths, angles, and log coefficients against central finite differences
      (float64).
   3. a sky made of known Gaussians (exact cell integrals, incl. point-like items between nodes) is reproduced by fitting items seeded on
      the lattices from it (Adam, 600 steps).
@@ -39,9 +39,9 @@ def exact_cell_mean(x, y, a, b, N, p):
     return fy[:, None] * fx[None, :] / (p * p)
 
 
-def one_item_sky(N, x, y, a, b, th, K=3, dtype=torch.float64, smooth=0.0):
+def one_item_sky(N, x, y, a, b, th, K=3, dtype=torch.float64):
     A0 = torch.zeros(K, N, N, dtype=dtype)
-    s = ItemSky(A0, P, RBFBasis(K), 1, n_levels=1, smooth_pitch=smooth)
+    s = ItemSky(A0, P, RBFBasis(K), 1, n_levels=1)
     with torch.no_grad():
         s.pos.data[0, 0] = torch.tensor([x, y], dtype=dtype)
         fl = s.floor
@@ -113,13 +113,12 @@ def test_gradients():
     torch.manual_seed(0)
     N, K = 41, 3
     A0 = torch.rand(K, N, N, dtype=torch.float64)
-    s = ItemSky(A0, P, RBFBasis(K), 7, n_levels=2, smooth_pitch=0.2)
+    s = ItemSky(A0, P, RBFBasis(K), 7, n_levels=2)
     with torch.no_grad():
         s.pos.data += 0.013 * torch.randn_like(s.pos)
         s.lw.data = torch.log(torch.tensor(0.03, dtype=torch.float64)) + 0.5 * torch.randn_like(s.lw)
         s.ang.data += torch.randn_like(s.ang)
         s.lc.data += 0.3 * torch.randn_like(s.lc)
-        s.S.data += torch.randn_like(s.S)
     W = torch.randn(K, N, N, dtype=torch.float64)
 
     def f():
@@ -127,7 +126,7 @@ def test_gradients():
     L = f()
     L.backward()
     out = {}
-    for name in ("pos", "lw", "ang", "lc", "S"):
+    for name in ("pos", "lw", "ang", "lc"):
         t = getattr(s, name)
         g = t.grad.clone().flatten()
         idx = torch.randperm(g.numel())[:12]
@@ -164,7 +163,7 @@ def test_known_gaussians():
         s = ItemSky(A0.float(), P, RBFBasis(2), n_items, n_levels=3)
         from types import SimpleNamespace
         cfg = SimpleNamespace(item_lr_pos=0.05, item_lr_width=0.03, item_lr_angle=0.05, item_lr_coef=0.05)
-        opt = torch.optim.Adam(s.opt_groups(0.0, cfg))
+        opt = torch.optim.Adam(s.opt_groups(cfg))
         Tt = T.float()
         e0 = float(((s.coeffs() - Tt) ** 2).sum().sqrt() / (Tt ** 2).sum().sqrt())
         nst = 600
