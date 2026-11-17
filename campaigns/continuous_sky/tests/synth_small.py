@@ -36,6 +36,7 @@ def parse():
     ap.add_argument("--item-smooth-pitch", type=float, default=0.0)
     ap.add_argument("--item-raster", default="", help="direct / pyramid (empty = not passed, for packages without the flag)")
     ap.add_argument("--item-patch", default="square")
+    ap.add_argument("--item-impl", default="", help="prototype / torchsky (empty = not passed, for packages without the flag)")
     ap.add_argument("--sky-pitch", type=float, default=0.06)
     ap.add_argument("--truth-eval", type=int, default=1)
     ap.add_argument("--out", required=True)
@@ -65,6 +66,8 @@ def main():
         kw.update(sky_form=a.sky_form, item_count=a.item_count, item_relocate=a.item_relocate, item_smooth_pitch=a.item_smooth_pitch)
         if a.item_raster:
             kw.update(item_raster=a.item_raster, item_patch=a.item_patch)
+        if a.item_impl:
+            kw.update(item_impl=a.item_impl)
     cfg = default_config(**kw)
     sky, N = make_sky(exps, fset, cfg, 2.8, "cpu")
     model = FieldOperator(cfg, fset, meta, sky, torch.device("cpu"))

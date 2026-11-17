@@ -416,8 +416,10 @@ class ItemSky(nn.Module):
     half_extent = SkyGrid.half_extent
 
     def __init__(self, A0, pitch, basis, n_items, floor=0.0, max_width=0.0, n_levels=3, smooth_pitch=0.0, n_views=1, coef_min=None,
-                 relocate=0, seed=0, raster="direct", patch="square"):
+                 relocate=0, seed=0, raster="direct", patch="square", impl="prototype"):
         super().__init__()
+        assert impl in ("prototype", "torchsky"), impl
+        self.item_impl = impl            # --item-impl: "torchsky" rasterises through torchsky's GaussianItemScene (tsky_backends.py)
         assert raster in ("direct", "pyramid"), raster
         assert patch in ("square", "sheared") and (patch == "square" or raster == "pyramid"), (raster, patch)
         self.raster_mode = raster
@@ -597,6 +599,9 @@ class ItemSky(nn.Module):
         """Items of view v rasterised on the coefficient grid: (K, N, N). Same values and gradients as a plain autograd scatter; the
         backward pass recomputes the patches chunk by chunk (see _raster_vjp) instead of storing them."""
         N, K = self.N, self.K
+        if self.item_impl == "torchsky":
+            from .tsky_backends import item_raster_torchsky
+            return item_raster_torchsky(self, self.pos[v], self.lw[v], self.ang[v], self.lc[v])
         if self.raster_mode == "pyramid":
             return self._raster_pyramid(v)
         out = _ItemRaster.apply(self.pos[v], self.widths(v), self.ang[v], torch.exp(self.lc[v]), self)

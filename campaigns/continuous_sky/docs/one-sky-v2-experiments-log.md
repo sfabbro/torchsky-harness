@@ -2,6 +2,22 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 17 Nov 2026, 03:30 UTC: the prototype can now run on three of the four torchsky pieces; two are adopted
+
+Build by a Sonnet agent in `fieldop_tsky/` (a copy of the current package; every default keeps the old code path, and the small synthetic fit gives the identical state hash). I re-ran its 10 new tests (pass); the existing 25 pass unchanged. Report: `campaigns/continuous_sky/TORCHSKY_INTEGRATION_REPORT.md`.
+
+| Piece | Switch | Adopted | Number |
+|---|---|---|---|
+| Item sky by `GaussianItemScene` | `--item-impl torchsky` | yes | raster agrees to 2.2e-7 of the image maximum, gradients to 1e-5; synthetic held-out score 3.33121 against 3.33148; same speed |
+| Exposure files by `field_observation_from_exposure_file` (torchfits) | `--loader torchfits` | yes | identical to the astropy loader on the local sample (38 comparisons, none differ); only 1 of the 12 calibrated sample files is complete, the other 11 were compared on header and science plane |
+| Count-rate positions by `TelescopeFrameDetectorToSky` | `--rate-wcs telescope` | built, not by my 5 mas rule | rms against the pipeline's solution 3 to 13 mas, 60 mas for F200W; 0.7 to 2.7 mas after one constant shift per exposure |
+| Rendering by `NestedKernelPSF` | `--render-impl torchsky` | no | agrees to 6e-5 to 1.2e-3 of the maximum, but has no read at exposure positions, no kernel rotation, and forces unit sum |
+
+- The position result is better than the rule's verdict suggests: the polynomial distortion from the aperture file is right to 1 to 3 mas, and what is missing is one constant shift per filter (the pipeline applies a filter offset the aperture file does not hold). Next small build: a learned shift per (detector, filter) with one reference filter fixed, started at zero or at the reference value. Then count-rate input needs no calibrated file at all. Until then `--rate-wcs cal` stays (shortcut).
+- Shortcuts and limits: velocity aberration neglected (about 0.4 mas); `--item-impl torchsky` does not support the sheared patches used with the pyramid rasteriser in the fast configuration; no real-data fit has run with any switch (needs a new torchsky source archive on CANFAR and torchfits in the job image, both unchecked).
+- Findings and three new questions for the library: `claude/torchsky-upstream-notes.md`, section D.
+- The package used for CANFAR fits is unchanged (`fieldop_gain`, archive `322a22f9`) until one real-data smoke run with the switches on.
+
 ## 17 Nov 2026, 02:20 to 02:50 UTC: relocation dropped; first rate-level fit with learned gain fails on held-out exposures
 
 Collection by a Haiku agent; diagnosis by me.

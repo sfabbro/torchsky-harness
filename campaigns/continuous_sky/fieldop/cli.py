@@ -81,6 +81,9 @@ def build_parser():
     g.add_argument("--item-raster", choices=["direct", "pyramid"], default="direct", help="item rasteriser: direct (patch of +-4 widths at "
                    "the sky pitch, cost per item ~ (width / pitch)^2) or pyramid (Gaussian-semigroup pyramid, cost per item independent of "
                    "its size; F40)")
+    g.add_argument("--item-impl", choices=["prototype", "torchsky"], default="prototype", help="item rasteriser code: the prototype's own (ItemSky, "
+                   "default) or torchsky's GaussianItemScene (same parameters, floor and positivity; --item-raster maps to its mode; "
+                   "--item-patch sheared is not available with it, --item-buckets is ignored)")
     g.add_argument("--item-patch", choices=["square", "sheared"], default="square", help="pyramid only: patch of each item, square "
                    "(+-4 larger widths) or sheared (+-4 widths in the item's decorrelated coordinates, used where it has 1.5x fewer nodes; "
                    "cost ~ item area instead of larger width squared, for elongated items; also applied on the fine level; F40)")
@@ -103,6 +106,8 @@ def build_parser():
     g.add_argument("--region-px", type=int, default=256)
     g.add_argument("--n-lambda", type=int, default=5)
     g.add_argument("--render", choices=["fft", "quad"], default="fft")
+    g.add_argument("--render-impl", choices=["prototype", "torchsky"], default="prototype", help="render code: the prototype's (default). 'torchsky' "
+                   "(NestedKernelPSF) is NOT wired in: it is refused with a message; see TORCHSKY_INTEGRATION_REPORT.md for the measured difference and the reasons")
     g.add_argument("--quad-nrad", type=int, default=12)
     g.add_argument("--quad-naz", type=int, default=48)
     g.add_argument("--k-hidden", type=int, default=64)
@@ -147,9 +152,14 @@ def build_parser():
     g.add_argument("--distortion", type=int, default=1)
     g.add_argument("--affine-prior", type=float, default=0.01)
     g.add_argument("--input-level", choices=["cal", "rate"], default="cal")
-    g.add_argument("--rate-wcs", choices=["cal", "rate"], default="cal",
-                   help="--input-level rate: header WCS (pixel positions) from the matching _cal file (distortion-corrected SIP, default) or "
-                   "from the _rate file itself (linear TAN from the pointing, no distortion: up to 0.24 arcsec off at the detector corners)")
+    g.add_argument("--rate-wcs", choices=["cal", "rate", "telescope"], default="cal",
+                   help="--input-level rate: header WCS (pixel positions) from the matching _cal file (distortion-corrected SIP, default), "
+                   "from the _rate file itself (linear TAN from the pointing, no distortion: up to 0.24 arcsec off at the detector corners), or "
+                   "'telescope': the _rate file's own pointing keywords plus the SIAF polynomial of its aperture through torchsky's "
+                   "TelescopeFrameDetectorToSky (needs pysiaf; 3 to 60 mas rms from the _cal solution on the 12-exposure sample: see TORCHSKY_INTEGRATION_REPORT.md)")
+    g.add_argument("--loader", choices=["astropy", "torchfits"], default="astropy",
+                   help="exposure files read by the prototype's astropy code (default) or by torchsky's field_observation_from_exposure_file "
+                   "(torchfits); if that cannot be imported the run falls back to astropy and says so")
     g.add_argument("--pixel-gain", choices=["off", "detector", "detector-filter"], default="off",
                    help="per-pixel log-gain map (flat field) learned from the exposures: one per detector, or per detector and filter (F43)")
     g.add_argument("--pixel-gain-poly", type=int, default=2, help="gauge of the gain map: monomials of total degree <= this are projected out "
@@ -230,7 +240,7 @@ def make_sky(exps, fset, cfg, half, dev, basis=None):
         from .sky import ItemSky
         sky = ItemSky(A0, cfg.sky_pitch, basis, cfg.item_count, floor=cfg.item_floor, max_width=cfg.item_max_width, n_levels=cfg.item_levels,
                       smooth_pitch=cfg.item_smooth_pitch, n_views=max(1, cfg.xfit), relocate=cfg.item_relocate, seed=cfg.seed,
-                      raster=getattr(cfg, "item_raster", "direct"),
+                      raster=getattr(cfg, "item_raster", "direct"), impl=getattr(cfg, "item_impl", "prototype"),
                       patch=getattr(cfg, "item_patch", "square") if getattr(cfg, "item_raster", "direct") == "pyramid" else "square")
     else:
         sky = SkyGrid(A0, cfg.sky_pitch, basis, n_views=max(1, cfg.xfit), precond=pre)
@@ -259,6 +269,11 @@ def main(argv=None):
     cfg = build_parser().parse_args(argv)
     _data.DQ_IGNORE_BITS = int(cfg.dq_ignore_bits)
     _data.RATE_WCS = cfg.rate_wcs
+    _data.LOADER = getattr(cfg, "loader", "astropy")
+    if getattr(cfg, "render_impl", "prototype") != "prototype":
+        raise SystemExit("--render-impl torchsky is not wired in: NestedKernelPSF agrees with the prototype's render to 1.8e-4 of the image maximum "
+                         "on a sky of stars and galaxies and 1.2e-3 on white noise in an idealised case (unrotated, pixel pitch = render pitch), but it "
+                         "cannot replace render_fft_batch in the model (see TORCHSKY_INTEGRATION_REPORT.md, block D). Use --render-impl prototype.")
     from . import sky as _sky
     if cfg.item_chunk > 0:
         _sky.ITEM_CHUNK = int(cfg.item_chunk)

@@ -152,10 +152,33 @@ def tangent_positions(wcs_det, wcs_t, cols, rows, scale, size):
     return ((tp[:, 0] - c) * scale).reshape(cols.shape), ((tp[:, 1] - c) * scale).reshape(cols.shape)
 
 
-RATE_WCS = "cal"     # --rate-wcs: with _rate input, the header WCS comes from the matching _cal file ("cal") or the _rate file ("rate")
+RATE_WCS = "cal"     # --rate-wcs: with _rate input, the header WCS comes from the matching _cal file ("cal"), the _rate file ("rate"), or the telescope frame
+LOADER = "astropy"   # --loader: "astropy" (the prototype's reader) or "torchfits" (torchsky's field_observation_from_exposure_file; falls back to astropy with a message)
+_LOADER_NOTE = []
 
 
 def read_exposure_file(path, rate_path=None):
+    """Dispatcher: the prototype's astropy reader (default), or torchsky's reader (--loader torchfits), and with --rate-wcs telescope the
+    count-rate positions from torchsky's telescope-frame transform. Every default value leaves the astropy path below unchanged."""
+    if LOADER == "astropy" and RATE_WCS != "telescope":
+        return _read_exposure_file_astropy(path, rate_path)
+    from . import tsky_backends as tb
+    raw = None
+    if LOADER == "torchfits":
+        if tb.torchfits_reader_available():
+            raw = tb.read_exposure_file_torchfits(path, rate_path, DQ_IGNORE_BITS, RATE_WCS)
+        elif not _LOADER_NOTE:
+            _LOADER_NOTE.append(tb.LOADER_FALLBACK_MESSAGE.format(err=tb._LOADER_STATE["err"]))
+            print(_LOADER_NOTE[0], flush=True)
+    if raw is None:
+        raw = _read_exposure_file_astropy(path, rate_path)
+    if rate_path and RATE_WCS == "telescope":
+        raw["w"] = tb.TelescopeRateWCS(rate_path)
+        raw["pixar_a2"] = raw["w"].pixar_a2
+    return raw
+
+
+def _read_exposure_file_astropy(path, rate_path=None):
     """SCI / ERR / DQ / AREA and the header WCS of one _cal (or _rate) file. With rate_path, SCI / ERR / DQ come from the _rate file and,
     unless RATE_WCS == "rate", the header WCS (and PIXAR_A2) from the SCI header of the _cal file `path`: the _rate header carries only the
     linear TAN WCS of the pointing (no distortion; 0.07 arcsec median, 0.24 arcsec maximum from the _cal SIP WCS over NRCB1), and the WCS is a
@@ -212,8 +235,11 @@ def load_exposure_file(path, box, half_data, scale=0.01, want_jac=False, rate_pa
     X, Y, inside = X[sl], Y[sl], inside[sl]
     y0, x0 = y0 + a0, x0 + b0
     y1, x1 = y0 + (a1 - a0), x0 + (b1 - b0)
-    d, e, q = sci[y0:y1, x0:x1], err[y0:y1, x0:x1], dq[y0:y1, x0:x1]
-    valid = inside & np.isfinite(d) & np.isfinite(e) & (e > 0) & ((q.astype(np.int64) & ~int(DQ_IGNORE_BITS)) == 0)
+    d, e, q = sci[y0:y1, x0:x1], err[y0:y1, x0:x1], None if dq is None else dq[y0:y1, x0:x1]
+    if raw.get("usable") is not None:   # --loader torchfits: the reader returns the usability mask (finite, error > 0, DQ policy), not the DQ plane
+        valid = inside & raw["usable"][y0:y1, x0:x1]
+    else:
+        valid = inside & np.isfinite(d) & np.isfinite(e) & (e > 0) & ((q.astype(np.int64) & ~int(DQ_IGNORE_BITS)) == 0)
     if valid.sum() < 2000:
         return None
     out = dict(d=np.nan_to_num(d), sig=np.where(np.isfinite(e) & (e > 0), e, 1.0).astype(np.float32), valid=valid, X=X.astype(np.float32),

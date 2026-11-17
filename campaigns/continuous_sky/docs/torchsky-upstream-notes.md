@@ -51,3 +51,23 @@ tree as integrated. Delete this file once triaged.
 12. Are the defaults `core_half_width = 16` and `extent = 128` acceptable, or should the constructor require both?
 13. Open the stationary-inverse adapter check to any model with `effective_kernels` and `kernel_size` (see A16)?
 14. Track `torchsky.map.operators.nested_kernel` in the API manifest and registry (add to `NAMESPACES` in `scripts/api_manifest.py` plus a registry page), or wait as for the other learned PSF classes?
+
+## D. From the first use of the four pieces in the harness prototype (17 Nov 2026)
+
+Source: `campaigns/continuous_sky/TORCHSKY_INTEGRATION_REPORT.md` in torchsky-harness (a Sonnet agent's build; I re-ran its tests).
+
+1. `GaussianItemScene` reproduces the prototype's rasteriser (2.2e-7 of the image maximum; gradients to 1e-5 relative; same speed: 11.6 s against 12.4 s for 60,000 items on a 601 x 601 grid of 12 planes on one CPU core). Adopted behind `--item-impl torchsky`.
+2. `GaussianItemScene` copies its inputs into `nn.Parameter`s. A fit that computes item parameters from its own parameters (positivity, width floor) loses the graph and has to go through `torch.func.functional_call`. A functional entry point taking tensors would remove the workaround.
+3. The scene takes longitude and latitude and returns flux per pixel. A caller that works in a tangent plane has to round-trip through a header and rescale by the pixel area, and float32 longitudes limit positions to about 0.05 arcsec. A pixel-grid entry point would avoid both.
+4. Direct mode has no cap on the patch size (an item 300 pixels wide builds a 2401 x 2401 patch); memory is unbounded in the item width. The prototype capped at 128 nodes.
+5. `TelescopeFrameDetectorToSky` against the pipeline's solution on 12 SMACS exposures: rms 3 to 13 mas for five filters and 60 mas for F200W, almost all a constant shift per filter; 0.7 to 2.7 mas rms once one offset per exposure is removed. So the distortion polynomial is good and the missing piece is the filter offset (section B3, question C7). Velocity aberration (about 0.4 mas at the corners here) is also missing.
+6. `TelescopeFrameDetectorToSky` has `pixel_to_world(x, y)` but not the `pixel_to_world_differentiable(pixels, origin)` method of `WCS`, and no constructor from a header plus an aperture name; every caller writes that plumbing.
+7. `field_observation_from_exposure_file` returns the usable mask but not the data-quality plane, zero-fills unusable science pixels, and does not expose `DETECTOR`, `INSTRUME` or `AREA`; a caller wanting them reads the file a second time. In float32 the mask also drops pixels whose 1/err^2 overflows. On the sample it is identical to the astropy loader (38 comparisons, no difference). Adopted behind `--loader torchfits`.
+8. `NestedKernelPSF` cannot replace the prototype's renderer as it stands: no read at arbitrary exposure positions, no rotation of the kernel with the exposure, always unit-sum (the fit's free amplitude and its normalisation radius cannot be expressed), and region kernels blended by source position where the prototype blends by output pixel. Its numerical agreement with the prototype on the same problem is 6e-5 (smooth scene), 1.8e-4 (stars and galaxies) and 1.2e-3 (white noise) of the image maximum. Not wired in.
+
+New questions:
+
+15. Filter offset: a constant per (detector, filter) shift learned in the fit (one filter fixed as the reference, since absolute position is a free choice without a catalogue), or read from the reference file as a starting value? I lean to learned, with the reference value as an optional start.
+16. Should `GaussianItemScene` and `NestedKernelPSF` get functional forms (tensors in, tensors out) next to the module forms? The fit needs them; the module forms suit users.
+17. Should `NestedKernelPSF` grow a positional read and a kernel rotation, or should the harness renderer move into torchsky as a second operator once it is stable?
+
