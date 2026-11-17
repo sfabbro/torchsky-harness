@@ -2,6 +2,49 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 17 Nov 2026, 02:20 to 02:50 UTC: relocation dropped; first rate-level fit with learned gain fails on held-out exposures
+
+Collection by a Haiku agent; diagnosis by me.
+
+**Items with relocation (`onesky_items004wr`, 3,382 steps, four relocations of 3,000 faint items each): worse than without.** Paired against the same fit without relocation (`onesky_items004w`), no scorer offset: headline +0.286 [+0.087, +0.474]; 20 to 50: +0.044 [+0.019, +0.067]; 50 to 200: +1.66 [+0.32, +3.20]; above 200: +56 [+15, +110]. Against the grid: headline +0.263 [+0.054, +0.485]. Relocation as implemented (faint items moved to where the back-projected residual is positive) is dropped.
+
+**Rate input with a learned per-pixel gain, grid sky (`fieldop_rate_gain_grid`, 8,385 steps): training looks fine (batch score about 0.95) but held-out exposures are predicted very badly.** At rate level, paired against its calibrated twin (`onesky_grid004_dq2`): headline 69.6 against 1.95; by bin 3.1 / 9.4 / 36 / 520 / 7,050 against 1.11 / 1.28 / 1.35 / 3.5 / 182. The fit's own held-out numbers agree (7 to 165 per exposure), so this is the fit, not the scorer.
+- On one held-out F277W exposure the prediction is nearly featureless: its 99th percentile is 0.73 DN/s where the data's is 3.7, its correlation with the data over the bright region is 0.24, and the per-exposure gain fitted for it is exp(0.83), where training exposures have 1% scatter.
+- The learned gain map is far from the official flat's size: rms of log gain 0.08 per detector, 3% to 6% of it on scales above 16 pixels (official flat after the same polynomial removal: 0.5% to 1.6% on 32-pixel scales), extremes of 3.2 and 0.27.
+- The fitted sky does contain the sources (in DN/s per square arcsecond), so the sky was not absorbed wholesale by the gain.
+- Reading, not yet established: with one pointing and nine dithers, a free gain per pixel can trade against the scene on every scale above the dither pattern, and a held-out exposure at a new dither position then meets a gain map that encodes part of the scene. The agent's synthetic test had shown the symptom (spurious structure at 1.7 times the noise limit with no injected flat). Whether the failure is the gain map or rate input as such is decided by the control without gain (`fieldop_rate_grid`, running since 02:21 UTC, ends about 05:45).
+- By the drop rule (rate fit worse than its calibrated twin by more than 0.05 at signal-to-noise 5 to 50) the learned gain is dropped **for SMACS**. The planned form of the test is on LMC programme 1476, where each detector pixel sees many different pieces of sky, which is what breaks this trade.
+- Queue change: the rate fit with items and gain is not run on SMACS. One healthy GPU slice was free at 02:25 (four launches of a second job died on the node with the driver fault).
+
+**Re-fetch at 02:25 UTC.** HST SMACS: complete (116 files, 4.6 GB). Spitzer (10,458 files, 2.56 GB) and GALEX (60): complete. SPHEREx cut-outs: 28 of 718 failed with HTTP 422 (listed in `smacs0723_union/spherex/fetch_failed.csv`; not yet looked at). LMC calibrated: 321 of 680 for programme 1476, programme 4447 not started. LMC count-rate: 279 of 680. JWST union: second programme in progress. No failures in the MAST jobs.
+
+## 17 Nov 2026, 00:30 UTC: four pieces promoted to torchsky; back to the plan; delegation
+
+**Seb, 16 Nov:** keep to the initial plan; delegate trivial tasks to cheap models; why is nothing committed to torchsky? Answer: the work was a prototype in the harness that used torchsky only for the header WCS and the bandpasses and read FITS with astropy. Seb chose all four candidate pieces for promotion, and the LMC count-rate download for the planned form of the flat-field test.
+
+**torchsky, commit `3df2abe5` on main of the local clone `~/src/astroai/torchsky` (1 ahead of upstream, not pushed):** 23 files, 4 new modules with tests, guides, changelog, manifest and reference pages. Built by Sonnet agents from one specification each, integrated by a fifth; checks re-run by me.
+- `torchsky.scene.GaussianItemScene`: batched Gaussian items through a WCS, chunked backward pass, pyramid mode. Worst error 2.2e-4 of an item's peak; agrees with the existing `SourceCatalogScene` to 4e-5; 10,000 mixed-width items on 512 x 512: 71 s direct against 2.8 s pyramid (forward and backward, one CPU thread).
+- `torchsky.wcs.PolynomialDetectorDistortion`, `TelescopeAttitude`, `TelescopeFrameDetectorToSky`: positions for exposures whose header has no distortion. **Correction to what I told Seb:** a count-rate file carries no distortion model at all, not even in its ASDF extension; the pipeline adds it later from reference files. The new code takes the standard aperture polynomial as tensors (torchsky ships no calibration data). Against the calibrated files' WCS on 12 real NIRCam pairs: 3 to 15 mas median (the plain count-rate header: 87 to 340 mas), except F200W at about 60 mas; almost all of the remainder is one constant pixel offset per filter and detector (0.5 to 2.5 mas median after removing it).
+- `torchsky.field.field_observation_from_exposure_file`: one exposure file into a `FieldObservation` through torchfits with an explicit data-quality policy and a sky-box cut that reads only the needed region (a full NIRCam detector in 0.4 s).
+- `torchsky.map.operators.NestedKernelPSF`: wide, spatially varying kernels by nested shells and FFT, exact adjoint, PSF conventions respected. Error against direct convolution 4e-5 (point, smooth) and 2e-4 (white noise) of the peak; 0.03 s for a 512-pixel extent on 512 x 512 where a dense convolution takes about 80 s.
+- Checks: the four new test files (158 tests), API manifest, docstring ratchet, lazy and cold import, torchfits boundary, device-conversion and docs tests pass with plain pytest on CPU. Lint and format clean with the pinned ruff 0.15.20 (five lint errors that the newer ruff in the workspace had missed were fixed by me). Committed with `--no-verify` because the sandbox has no pre-commit tool. Not run: type check, strict docs build, CUDA, MPS, the C++ extension.
+- Open questions and library oddities found on the way: `claude/torchsky-upstream-notes.md` (14 questions, 19 findings).
+- Next for this track: make the harness prototype call these four pieces, so that the campaign validates the library code rather than its own copies.
+
+**Plan status (13 Nov plan):** test 1 (any-scale sky form) and test 2 (rendering) done; test 3 (flat field from count-rate images) running on SMACS, to be run as planned on LMC programme 1476 once the count-rate files are in (download started 23:25 UTC, 87 GB); tests 4 (ramps), 5 (predictor across scales) and 6 (depth, surprise map) not started; telescopes: JWST only so far, HST next.
+
+**Delegation from here on:** Haiku for log reading, file counts, job launches and scoring runs; Sonnet for specified builds, integration and figures; Opus for new model code and independent checks only.
+
+## 16 Nov 2026, 23:15 UTC: re-fetch of the deleted data folder started
+
+Seb, 16 Nov: `/arc/projects/ots/torchsky-data` was deleted by mistake by the cleaning team; re-fetch. The manifests and fetch scripts had survived in `adass2026/scripts/`. Four CPU jobs started at 23:14 UTC, all idempotent:
+- `refetchlmc` (`scripts/onesky/run_fetch_lmc.sh`): the 1,032 LMC NIRCam `_cal` files of protocol v1 (programmes 1476: 680, 4447: 352; about 121 GB) to `aggregate/{1476,4447}_nircam/`. Manifests rebuilt from `splits_LMC.json`, so exactly the protocol's files.
+- `refetchhst` (`run_fetch_hst.sh`): the 116 unique HST exposures of SMACS (`scripts/hst_imaging_unique.csv`) to `hst_smacs0723/raw/`.
+- `refetchunionm` (`scripts/union/fetch_union_mast.sh`): JWST `_cal` of all programmes on the SMACS 8-arcminute union (344 files, 37 GB) and 4 extra HST files, to `smacs0723_union/`.
+- `refetchunioni` (`scripts/union/fetch_union_irsa.sh`): GALEX (60 files), SPHEREx cut-outs (718), Spitzer IRAC (10,458 files), to `smacs0723_union/`.
+- Not re-fetched: the pixel store (derived; `scripts/run_pixelstore.sh` rebuilds it).
+- Expect the LMC files, like the SMACS ones, to be a newer calibration than the protocol masks: fits use `--dq-ignore-bits 2`.
+
 ## 16 Nov 2026, 22:30 to 23:00 UTC: two crashes fixed, raw-input fits started, where the bright-pixel deficit sits, sharpness
 
 **Two code crashes found by the first runs on real data, both fixed (package `fieldop-gain-322a22f9.tar.gz`):**
