@@ -307,7 +307,8 @@ def register_prepass(model, exps, cfg, log=print, ts=None):
                     continue
                 if ts.multi:
                     ts.activate(k)
-                img, wt = splat_coadd(tr, len(model.fset), ts.skies[k].N, ts.skies[k].pitch, model.dev, extra_shift=shifts)
+                img, wt = splat_coadd(tr, len(model.fset), ts.skies[k].N, ts.skies[k].pitch, model.dev, extra_shift=shifts,
+                                      per_area=model.input_level == "rate")
                 A0 = spectral_init(img, model.Phi_band)
                 ts.skies[k].reset_from_coeffs(A0)
         rms = float(t.pow(2).sum(1).mean().sqrt() * 1e3)

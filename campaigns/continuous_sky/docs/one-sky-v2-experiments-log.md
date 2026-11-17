@@ -2,6 +2,30 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 17 Nov 2026, 06:00 to 07:15 UTC: the count-rate failure was a fault in the fit's starting sky, not the gain map (corrects the 02:20 entry)
+
+Collection by a Haiku agent; diagnosis and fix by an Opus agent (`campaigns/continuous_sky/RATE_HELDOUT_DIAGNOSIS.md`); I re-ran the new tests (pass).
+
+**The control without a gain map (`fieldop_rate_grid`, 8,099 steps) fails on held-out exposures in the same way as the fit with the gain map:** 1.7 to 160 per exposure, growing with the amount of source signal (long-wavelength detector 70 to 160). So the 02:20 failure was not caused by the gain map, and my reading there (gain trading against the scene with small dithers) is withdrawn: it was never tested, because both fits were broken.
+
+**Cause.** With count-rate input the model treats the sky as DN/s per square arcsecond and multiplies by the pixel area, but the sky's starting estimate (the inverse-variance coadd of the training pixels) was built in DN/s per pixel. Every source started 250 to 1,000 times too faint. The fit did not recover; instead the learned fractional noise floor rose from 0.01 to about 10 (1,000%), which removed bright pixels from the loss. The training score in the log is computed with the model's own noise, which is why training looked fine (0.93 to 1.03).
+- Evidence (control state rebuilt on CPU; reproduces the logged held-out scores exactly): model over data summed over pixels above 20 sigma is 0.15 on a held-out F277W exposure and 0.07 to 0.08 on two short-wavelength ones; on bright long-wavelength pixels the model's noise is 27 times the pipeline's; per-exposure gain factors of training exposures are 0.99 to 1.03, so no per-exposure term carries the missing factor: the frozen sky is too faint for training exposures as well.
+- A mistake of mine in the 02:20 entry: "per-exposure gain exp(0.83)" was a misreading. The stored value is multiplied by a scale of 0.0104; the gain factor is 1.009.
+- The saved states cannot be rescued by re-running the held-out stage (a free amplitude per exposure still leaves 35.7 on the F277W exposure).
+
+**Fix** (in `fieldop_tsky`; count-rate input only; calibrated path unchanged to the state hash): the starting coadd divides data and noise by the header pixel area. Approximation: the header's pixel area, not the learned one (they differ by less than 0.7%). Synthetic count-rate fit, 60 steps: held-out score 158.3 before, 5.53 after, against 5.57 for the calibrated control; model over truth amplitude 0.022 before, 0.955 after. Two new tests fail on the old package and pass on the new one; 41 tests pass.
+
+**Reported, not fixed (design weaknesses this exposed).**
+- The learned noise floor has no upper bound, so a fit can hide a gross misfit by inflating its own noise.
+- The training log reports the score only against the model's own noise. It should also print it against the pipeline's noise, and warn when the floor exceeds a few per cent. Until that is added, check the floor at the end of every fit (calibrated fits: 0.016 to 0.043).
+- The DN/s conversion differs between short-wavelength detectors by 1.5% to 3.5%; only the per-detector throughput field can carry it, and the evidence rule pruned that field in both failed runs. If it is pruned again, expect residuals of up to 3.5% on bright short-wavelength sources.
+
+**Status of the raw-input test (test 3).** Open again. Both count-rate fits need re-running with the fixed package (archive `fieldop-tsky-36903b98.tar.gz`, uploaded; `/home/claude/work/CURRENT_SCRIPT`). The drop rule has not been applied to a sound fit yet.
+
+**GPU.** No healthy slice since the control ended at 05:45: eight launches (four of the LMC item fit at 06:20, four of the gain re-run at 07:10) all landed on the node with the driver fault ("failed to initialize NVML: Driver/library version mismatch") and failed at container start. Queue, in order, when a slice frees: `fieldop_rate_gain_grid2` (arguments of `fieldop_rate_gain_grid`), `fieldop_rate_grid2` (control), LMC item sky (`onesky_lmc_items002w_s0`: the tile arguments of the reference run plus items, 60,000 per tile, pitch 0.02 arcsec, 285 minutes, `--dq-ignore-bits 2`, `FIELD=LMC`).
+
+**Re-fetch: complete.** LMC calibrated 680 + 352 and count-rate 680 + 352; HST SMACS 122 files in the folder (116 expected by the manifest: 6 extra, not yet looked at); JWST union 587 files in seven programme folders (the 344 I had written down was wrong or counted another product level: to be checked against the manifest); Spitzer and GALEX complete; SPHEREx: 24 cut-outs fail with HTTP 422 (same request form as the ones that work; left). All five fetch jobs ended with exit 0. Scores of the control at count-rate level were written but not read (they are void).
+
 ## 17 Nov 2026, 04:00 UTC: one learned shift per detector and filter closes the position gap on files; learning it in a fit is not yet shown
 
 Build by a Sonnet agent in `fieldop_tsky/` (`--filter-shift {off,learned}`, default off, default synthetic fit unchanged to the state hash). I re-ran its tests with the neighbouring ones (21 pass). Report: section E of `TORCHSKY_INTEGRATION_REPORT.md`.
@@ -32,6 +56,8 @@ Build by a Sonnet agent in `fieldop_tsky/` (a copy of the current package; every
 - The package used for CANFAR fits is unchanged (`fieldop_gain`, archive `322a22f9`) until one real-data smoke run with the switches on.
 
 ## 17 Nov 2026, 02:20 to 02:50 UTC: relocation dropped; first rate-level fit with learned gain fails on held-out exposures
+
+> **Correction, 07:15 UTC:** the count-rate part of this entry is superseded. The failure was a fault in the fit's starting sky (see the entry of 06:00 to 07:15); the reading about the gain map below was not tested by these fits, and "exp(0.83)" was a misreading. The relocation result stands.
 
 Collection by a Haiku agent; diagnosis by me.
 

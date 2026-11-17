@@ -472,9 +472,21 @@ def build_meta(exps, dets, chans, insts, cuts_by_eid=None):
 
 
 # ----------------------------------------------------------------------------- sky warm start
-def splat_coadd(exps, nf, N, pitch, dev, extra_shift=None):
+def pixel_area_of(e):
+    """Header pixel area [arcsec^2] per pixel of a cut, (ny, nx): |det Jpix| when the per-pixel Jacobian is loaded, else |det J| of the mean
+    header Jacobian (the same factor the rate-level model applies at zero learned geometry, F15)."""
+    if e.Jpix is not None:
+        J = e.Jpix
+        return (J[..., 0, 0] * J[..., 1, 1] - J[..., 0, 1] * J[..., 1, 0]).abs()
+    return torch.full(e.d.shape, float(abs(np.linalg.det(np.asarray(e.extra["J"], np.float64)))), device=e.d.device)
+
+
+def splat_coadd(exps, nf, N, pitch, dev, extra_shift=None, per_area=False):
     """Inverse-variance bilinear splat of (d - bkg0) of the given exposures at their header positions (+ shift0) onto the sky nodes,
-    per filter: (nf, N, N) and the weight maps. Used only for the warm start of the sky and the bright-patch strata."""
+    per filter: (nf, N, N) and the weight maps. Used only for the warm start of the sky and the bright-patch strata.
+    per_area (--input-level rate): data and sigma are divided by the header pixel area first, so that the warm start is in the units the
+    rate-level model gives the sky (count rate per arcsec^2; the model multiplies by the pixel area, F15). Without it the warm start of a
+    rate-level fit is low by the pixel area (0.001 to 0.004 arcsec^2 on NIRCam), see RATE_HELDOUT_DIAGNOSIS.md."""
     num = torch.zeros(nf, N * N, device=dev)
     den = torch.zeros(nf, N * N, device=dev)
     x0 = -(N - 1) / 2 * pitch
@@ -483,8 +495,13 @@ def splat_coadd(exps, nf, N, pitch, dev, extra_shift=None):
         es = (0.0, 0.0) if extra_shift is None else extra_shift.get(e.eid, (0.0, 0.0))
         X = (e.X[v] + e.shift0[0] + es[0] - x0) / pitch
         Y = (e.Y[v] + e.shift0[1] + es[1] - x0) / pitch
-        w = 1.0 / e.sig[v] ** 2
-        val = (e.d[v] - e.bkg0) * w
+        if per_area:
+            a = pixel_area_of(e)[v]
+            w = (a / e.sig[v]) ** 2
+            val = (e.d[v] - e.bkg0) / a * w
+        else:
+            w = 1.0 / e.sig[v] ** 2
+            val = (e.d[v] - e.bkg0) * w
         ix, iy = X.floor().long(), Y.floor().long()
         fx, fy = X - ix, Y - iy
         for dy in (0, 1):

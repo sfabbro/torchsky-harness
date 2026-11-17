@@ -229,7 +229,8 @@ def make_sky(exps, fset, cfg, half, dev, basis=None):
     basis = basis or RBFBasis(cfg.spec_k).to(dev)
     lam, w, _, _ = fset.tensors(dev)
     Phi_band = (basis(lam.flatten()).view(len(fset), fset.Q, -1) * w[..., None]).sum(1)
-    img, wt = splat_coadd([e for e in exps if e.split == "train"], len(fset), N, cfg.sky_pitch, dev)
+    img, wt = splat_coadd([e for e in exps if e.split == "train"], len(fset), N, cfg.sky_pitch, dev,
+                          per_area=getattr(cfg, "input_level", "cal") == "rate")
     A0 = spectral_init(img, Phi_band)
     sb = []
     for b in range(img.shape[0]):   # band noise: MAD over the covered nodes only, floored
