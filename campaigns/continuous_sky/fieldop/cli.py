@@ -167,6 +167,12 @@ def build_parser():
     g.add_argument("--lr-gain", type=float, default=3e-3, help="Adam step of the log-gain map (F45; chosen on the synthetic field among "
                    "3e-4, 1e-3, 3e-3, 1e-2)")
     g.add_argument("--pixel-gain-start", type=float, default=0.1, help="the gain map is stepped from this fraction of the fit on")
+    g.add_argument("--filter-shift", choices=["off", "learned"], default="off",
+                   help="learned position shift (2 numbers, detector pixels, applied to the pixel coordinates before the pixel-to-sky map) shared by all "
+                   "exposures of one (detector, filter) pair; held-out exposures use their pair's fitted shift, fixed. Not available with several "
+                   "disconnected shift components (tiles)")
+    g.add_argument("--filter-shift-init", default="", help="JSON file {\"DETECTOR/FILTER\": [dx, dy]} (detector pixels) giving the starting shifts")
+    g.add_argument("--lr-filter-shift", type=float, default=0.03, help="Adam step of the pair shift, detector pixels (same warm-up and cosine factor as the others)")
     g.add_argument("--dq-ignore-bits", type=int, default=0,
                    help="data-quality bits that do not exclude a pixel (F42); 0 = strict DQ == 0; 2 = keep pixels flagged SATURATED only")
     g.add_argument("--nonlin", type=int, default=0)
@@ -337,7 +343,13 @@ def main(argv=None):
             log(f"pixel gain map {lab}: box {pg.boxes[k]} (r0, c0, rows, cols), {int(ob_.sum())} observed pixels, training cuts per pixel "
                 f"median {np.median(cn_[ob_]):.0f} (min {cn_[ob_].min():.0f}, max {cn_[ob_].max():.0f}), information limit of log G per pixel "
                 f"(1 / sqrt(sum (d / sig)^2 - 1), F44) median {np.median(nl):.4f}, 10-90 % {np.percentile(nl, 10):.4f}-{np.percentile(nl, 90):.4f}")
+    fs_labels = model.attach_filter_shift(exps, cfg, fset_names=fset.names, det_names=info["dets"])
     ts = TileSet(model, exps, skies, cfg, log=log)
+    if fs_labels is not None:
+        if len(ts.shift_groups) != 1:
+            raise SystemExit(f"--filter-shift learned needs one common-shift component; this run has {len(ts.shift_groups)}")
+        log(f"filter shift: {len(fs_labels)} (detector, filter) pairs {fs_labels}, training exposures per pair {model.fs_ntrain}, "
+            f"start {model.filter_shift_table()}, lr {cfg.lr_filter_shift} px")
     if ts.multi:
         log(f"tiles: p {dict(zip(ts.keys, np.round(ts.p, 3).tolist()))}; data GB {({k: round(v / 2 ** 30, 2) for k, v in ts.nbytes.items()})}; "
             f"resident budget {cfg.gpu_resident_gb} GB; {len(ts.shift_groups)} common-shift component(s), {len(ts.pedestal_groups)} pedestal group(s)")
@@ -387,6 +399,9 @@ def main(argv=None):
     metrics = {"config": vars(cfg), "info": info, "fit": rec, "warm_kernel": winfo, "registration_prepass": reg, "tau": model.tau.table(), "heldout_own": scores,
                "effective_variability": effv, "gauges": gauges, "tiles": ts.summary() if ts.multi else None,
                "approximations": APPROXIMATIONS, "sources_sha256_16": shas, "pred_dir": str(pred_dir), "seconds": time.perf_counter() - T0}
+    if model.fs_on:
+        metrics["filter_shift"] = {"unit": "detector pixels (x = column, y = row); position of pixel p is W(p + s)", "pairs": model.filter_shift_table(),
+                                   "training_exposures_per_pair": dict(zip(model.fs_labels, model.fs_ntrain))}
     json.dump(metrics, open(out / "metrics.json", "w"), indent=1, default=str)
     st = {k: v.detach().cpu() for k, v in model.state_dict().items() if not k.startswith("sky.")}
     st["skies"] = {k: {kk: vv.detach().cpu() for kk, vv in s_.state_dict().items()} for k, s_ in skies.items()}

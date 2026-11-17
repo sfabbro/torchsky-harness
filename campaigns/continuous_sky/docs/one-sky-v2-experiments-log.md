@@ -2,6 +2,19 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 17 Nov 2026, 04:00 UTC: one learned shift per detector and filter closes the position gap on files; learning it in a fit is not yet shown
+
+Build by a Sonnet agent in `fieldop_tsky/` (`--filter-shift {off,learned}`, default off, default synthetic fit unchanged to the state hash). I re-ran its tests with the neighbouring ones (21 pass). Report: section E of `TORCHSKY_INTEGRATION_REPORT.md`.
+
+**On files (12 SMACS exposures): one constant shift per (detector, filter) pair brings the telescope-frame positions to 0.6 to 2.6 mas rms of the pipeline's solution (maximum 3.5 to 7.8 mas).** Shifts in detector pixels: F200W (1.05, 1.62) on both short-wavelength detectors; all other filters below 0.2 pixel. The two exposures of each long-wavelength pair want the same shift to 1e-7 pixel. So the positions of count-rate files need the aperture polynomial plus nine pairs of numbers, and no calibrated file.
+
+**Learned inside a fit (synthetic, item sky, 1,500 items, 180 steps, one seed, injected shifts of 0.5 to 2 pixels): not validated.** Held-out score 1.426 without injected shifts; 1.751 with them and the switch off; 1.248 and 1.379 with the switch on (two step sizes). The shifts move a quarter to a third of the way (largest remaining error 1.0 to 1.2 pixels against 1.57 for no correction); the target of 0.05 pixel is missed. The fits are far from converged (1.4 against a noise floor of 0.99) and with one seed and three held-out exposures the score differences are inside run-to-run scatter, so the lower scores with the switch on are not a result.
+
+- With a grid sky the shifts between filters are not identifiable: with 12 spectral coefficients per pixel each filter can hold its own shifted image. Only a sky whose sources have one position at all wavelengths (the item sky) can pin them. This is one more argument for the item form, and a warning for the grid twin of any count-rate fit.
+- Free origin: the common sky translation of all shifts is removed by projection after each step; within a pair the per-exposure translations are made zero-mean and the excess is moved into the pair's shift (the model function is unchanged).
+- Approximations and limits: the shift is applied to first order with one Jacobian per exposure (a few per cent of the shift at most, the agent's estimate, not measured); several disconnected tiles are refused; the first sky coadd ignores a starting table; no run on calibrated input (where the shifts should come out near zero); no real-data fit.
+- What I take from it: start the shifts from a table (`--filter-shift-init`, values above, or the pipeline's reference file) and let the fit refine them, in line with physics as a starting value only. Learning from zero needs a longer or staged fit and is a GPU test, queued behind the count-rate control.
+
 ## 17 Nov 2026, 03:30 UTC: the prototype can now run on three of the four torchsky pieces; two are adopted
 
 Build by a Sonnet agent in `fieldop_tsky/` (a copy of the current package; every default keeps the old code path, and the small synthetic fit gives the identical state hash). I re-ran its 10 new tests (pass); the existing 25 pass unchanged. Report: `campaigns/continuous_sky/TORCHSKY_INTEGRATION_REPORT.md`.

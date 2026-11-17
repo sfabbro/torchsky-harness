@@ -3,7 +3,7 @@
   d_e(xi) = N_e[ (1/Q) sum_q alpha_e(xi) exp(gamma_e(xi, lambda_q)) c_q(xi) ] + B_e(xi) + n_e(xi)
   c_q(xi) = int d^2u k_e(u; xi, lambda_q) s(Omega_e(xi, lambda_q) + u, lambda_q)          (render.py)
   Omega_e(xi, lambda) = x'(xi) + M_e x'(xi) + t_e,
-      x' = X_wcs(xi) + shift0_e + tau_Ds Dst^(det, xi, lambda) + tau_Dd Ddr^(det, xi, t) + tau_De sum_j zD_ej B_j(xi)
+      x' = X_wcs(xi) + shift0_e + [--filter-shift learned: J_e s_pair(e)] + tau_Ds Dst^(det, xi, lambda) + tau_Dd Ddr^(det, xi, t) + tau_De sum_j zD_ej B_j(xi)
   gamma_e(xi, lambda) = gbar(lambda, filter input, instrument) + tau_gd gdet^(det, xi, lambda) + tau_ge gep^(t, lambda, instrument)
                         + tau_gx u_e  -  m(lambda)                                     (m = gauge projection, F17)
   alpha = 1 (_cal / _flt) or |det dOmega/dxi| (_rate)
@@ -240,6 +240,8 @@ class FieldOperator(nn.Module):
         # ---- geometry
         self.affine = nn.Parameter(torch.zeros(E, 6, device=dev))   # raw; physical = raw * aff_scale (matrix 1e-3, shift 0.01 arcsec per unit)
         self.register_buffer("aff_scale", torch.tensor([1e-3, 1e-3, 1e-3, 1e-3, 1e-2, 1e-2], device=dev))
+        self.fs_on = False      # --filter-shift learned: set by attach_filter_shift (no parameter or buffer exists before, so the default state is unchanged)
+        self.fshift = None
         self.zD = nn.Parameter(torch.zeros(E, 6, device=dev))
         self.D_det = nn.Embedding(n_det, 8)
         self.Dst = mlp(8 + 10 + 9, 32, 2, 2)
@@ -548,6 +550,8 @@ class FieldOperator(nn.Module):
         is the exposure's own extent. One tile (no r_e, c0 = None or (0, 0)): about the box centre."""
         Q = self.fset.Q
         x = torch.stack([X, Y], -1)[None].expand(Q, -1, -1) + self.shift0[e]
+        if self.fs_on:           # shared detector-pixel shift of the (detector, filter) pair: sky displacement J_e s
+            x = x + self.filter_shift_sky(e)
         D = self.distortion(e, xi, P)
         if D is not None:
             x = x + D
@@ -712,6 +716,87 @@ class FieldOperator(nn.Module):
                 outs[k] = self.finish(torch.as_tensor(e, device=self.dev), pix, P, c[b, :, :nps[b]], f=self.l_filt[e], e_host=e)
         return outs
 
+    # ------------------------------------------------------------------ learned shift per (detector, filter) pair
+    def attach_filter_shift(self, cuts, cfg, fset_names=None, det_names=None):
+        """--filter-shift learned: one learned 2-vector s_p (detector pixels, x = column, y = row) per (detector, filter) pair p, shared by all
+        exposures of the pair. Convention: the position of pixel (col, row) is W(col + s_x, row + s_y), W the header map; to first order
+        the sky displacement is J_e s (J_e = the exposure's mean header Jacobian d(X, Y)/d(col, row), arcsec per pixel, same frame as X, Y),
+        added to the header position before the distortion and the per-exposure affine. Start: zero, or the JSON file --filter-shift-init
+        ({"DETECTOR/FILTER": [dx, dy]}). No-op when off. Creates the parameter and buffers only when on."""
+        if getattr(cfg, "filter_shift", "off") == "off":
+            return None
+        J = np.zeros((self.E, 2, 2))
+        seen = set()
+        for c in cuts:
+            if c.eid not in seen:
+                seen.add(c.eid)
+                J[c.eid] = np.asarray(c.extra["J"], np.float64)
+        if len(seen) != self.E:
+            raise ValueError("--filter-shift learned: some exposures have no mean Jacobian (extra['J'])")
+        dn = det_names if det_names is not None else self.meta["det_names"]
+        fn = fset_names if fset_names is not None else self.fset.names
+        short = lambda n: str(n).rsplit(".", 1)[-1]          # "JWST/NIRCam.F090W" -> "F090W"
+        lab_e = [f"{dn[int(d)]}/{short(fn[int(f)])}" for d, f in zip(self.meta["det"], self.meta["filt"])]
+        labels = sorted(set(lab_e))
+        self.fs_labels = labels
+        self.register_buffer("e_pair", torch.as_tensor([labels.index(l) for l in lab_e], dtype=torch.long, device=self.dev))
+        self.register_buffer("e_J", torch.as_tensor(J, dtype=torch.float32, device=self.dev))
+        s0 = torch.zeros(len(labels), 2)
+        init = getattr(cfg, "filter_shift_init", "")
+        if init:
+            import json
+            d = json.load(open(init))
+            bad = [k for k in d if k not in labels]
+            if bad:
+                raise ValueError(f"--filter-shift-init: unknown pairs {bad}; the pairs of this run are {labels}")
+            for k, v in d.items():
+                s0[labels.index(k)] = torch.tensor([float(v[0]), float(v[1])])
+        self.fshift = nn.Parameter(s0.to(self.dev))
+        self.fs_on = True
+        tr = self.train_mask
+        self.fs_ntrain = [int(sum(1 for i in range(self.E) if tr[i] and lab_e[i] == l)) for l in labels]
+        return labels
+
+    def filter_shift_sky(self, e):
+        """Sky displacement J_e s_pair(e), (2,) [arcsec], in the frame of X, Y."""
+        return self.e_J[e] @ self.fshift[self.e_pair[e]]
+
+    def filter_shift_table(self):
+        """{pair: [dx, dy] pixels} and {pair: [east-ish, north-ish] sky displacement of the pair, arcsec, with the pair's mean Jacobian}."""
+        out = {}
+        with torch.no_grad():
+            for p, l in enumerate(self.fs_labels):
+                out[l] = [float(v) for v in self.fshift[p]]
+        return out
+
+    @torch.no_grad()
+    def project_filter_shift(self, train_ids):
+        """Gauges with the learned pair shift (exact: the model function, J_e s_p + t_e for every exposure, changes only by the common
+        translation of the first step). train_ids: training exposures of ONE shift component.
+        1. Free origin: the mean over the training exposures of the learned displacement d_e = J_e s_pair(e) + t_e (sky tangent plane, arcsec; t_e =
+           learned affine translation) is removed: t_e -= mean d. This is the existing common-shift gauge, with the pair shifts included.
+        2. Redundancy of s_p with the per-exposure translations: per pair, over its training exposures, t_e is made J-orthogonal,
+           sum_e J_e^T t_e = 0, by moving ds = (sum J_e^T J_e)^-1 sum J_e^T t_e into s_p and subtracting J_e ds from t_e (d_e unchanged). When
+           the exposures of a pair share one Jacobian this is 'the mean of t_e is zero and s_p = J^-1 mean(d)'; with different rolls it is the
+           least-squares split, in which the translations are the smallest residuals.
+        The pair shift is thus expressed in the common sky tangent plane through each exposure's own Jacobian."""
+        ids = train_ids
+        sc = self.aff_scale[4:6]
+        t = self.affine[ids, 4:6] * sc                                        # (n, 2) arcsec
+        pr = self.e_pair[ids]
+        J = self.e_J[ids].to(t.dtype)
+        d = torch.einsum("nij,nj->ni", J, self.fshift[pr]) + t
+        t = t - d.mean(0)
+        for p in torch.unique(pr).tolist():
+            m = pr == p
+            Jp, tp = J[m], t[m]
+            A = torch.einsum("nij,nik->jk", Jp, Jp)
+            b = torch.einsum("nij,ni->j", Jp, tp)
+            ds = torch.linalg.solve(A.double(), b.double()).to(t.dtype)
+            self.fshift.data[p] += ds
+            t[m] = tp - torch.einsum("nij,j->ni", Jp, ds)
+        self.affine.data[ids, 4:6] = t / sc
+
     @torch.no_grad()
     def project_shift(self, train_ids):
         """Common-shift gauge (exact, F18): the LEARNED translations of the training exposures have zero mean (the initial registration
@@ -824,7 +909,9 @@ class FieldOperator(nn.Module):
         nuis_ids = {id(p) for p in nuis.values()}
         tau_ids = {id(p) for p in self.tau.parameters()}
         sky_ids = {id(p) for p in self.sky.parameters()}
-        gain_ids = {id(self.pixgain.logg)} if self.pixgain is not None else set()     # the gain map has its own Adam (train.fit)
+        gain_ids = {id(self.pixgain.logg)} if self.pixgain is not None else set()
+        if self.fs_on:
+            gain_ids = gain_ids | {id(self.fshift)}      # the pair shift has its own Adam (train.fit), not the operator's     # the gain map has its own Adam (train.fit)
         op = [p for p in self.parameters() if id(p) not in nuis_ids | tau_ids | sky_ids | gain_ids]
         return op, nuis, list(self.tau.parameters()), list(self.sky.parameters())
 

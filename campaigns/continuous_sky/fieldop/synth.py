@@ -85,12 +85,16 @@ def render_truth(truth, inst, filt, X, Y, xi, n_dense=24, epoch_effect=0.0):
 
 def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="cpu", insts=None, epochs=(0.0, 1.0),
                shift_rms=0.03, rot_choices=(0, 1), epoch_effect=0.0, centre_range=0.35, patch_px=64, truth_half=1.5,
-               pix_gain_rms=0.0, bkg_mean=5.0):
+               pix_gain_rms=0.0, bkg_mean=5.0, pair_shift_px=None):
     """Exposures (header WCS without the true offsets), FilterSet, meta, truth and per-exposure true offsets.
 
     pix_gain_rms > 0 injects a per-pixel gain (flat field) per detector: G = exp(g), g white Gaussian of rms pix_gain_rms (from its own random
     stream, so the rest of the field is unchanged), and d = G (clean + background) + noise. The true maps are in truth.gain {det: (n, n)}
-    and each exposure's extra["gain_true"]. Defaults (0, 5.0) reproduce the original field exactly."""
+    and each exposure's extra["gain_true"]. Defaults (0, 5.0) reproduce the original field exactly.
+
+    pair_shift_px (optional) {(instrument name, filter name): (dx, dy)}: a position shift in DETECTOR PIXELS shared by every exposure of that pair
+    (training, validation and held out): the sky is sampled at W(p + s) = header position + J_e s (J_e = R_e x pixel), the header positions
+    handed to the model are unchanged. None (default) leaves the field exactly as before."""
     rng = np.random.default_rng(seed)
     grng = np.random.default_rng(10007 + seed)
     if insts is None:
@@ -129,7 +133,10 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
                 xi = torch.stack([torch.tensor(cc.ravel() / (n - 1) * 2 - 1), torch.tensor(rr.ravel() / (n - 1) * 2 - 1)], -1).float()
                 t = epochs[j % len(epochs)]
                 eff = epoch_effect * (1 if t > 0 else -1)
-                clean = render_truth(truth, ins, fset.filters[f], Xh.reshape(-1) + float(true_shift[0]), Yh.reshape(-1) + float(true_shift[1]), xi,
+                sky_shift = true_shift
+                if pair_shift_px:
+                    sky_shift = true_shift + (Rm * ins.pixel) @ np.asarray(pair_shift_px.get((ins.name, name), (0.0, 0.0)), np.float64)
+                clean = render_truth(truth, ins, fset.filters[f], Xh.reshape(-1) + float(sky_shift[0]), Yh.reshape(-1) + float(sky_shift[1]), xi,
                                      epoch_effect=eff).view(n, n)
                 bk = float(rng.normal(bkg_mean, 1.0))
                 if gmap is None:
