@@ -11,6 +11,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from .kernel import inv_softplus
 from .model import LATTICE
 from .render import quad_points
 
@@ -103,7 +104,25 @@ def patch_loss(model, exps, eid, sl, P, cfg, view=None, detach_sky=False, method
     rho = huber_rho(z2, cfg.huber_delta) if cfg.loss == "huber" else z2
     nll = 0.5 * rho + torch.log(sig / pix["sig"])
     vf = v.float()
+    acc_input_chi(model, pix, out, v)
     return (nll * vf).sum(), vf.sum().detach(), (z2.detach() * vf).sum()
+
+
+NOISE_FLOOR_WARN = 0.2
+
+
+def noise_floor_values(model):
+    """Learned fractional noise floor(s), softplus(floor_raw), one per channel."""
+    with torch.no_grad():
+        return [round(float(x), 6) for x in F.softplus(model.floor_raw).detach().cpu()]
+
+
+def acc_input_chi(model, pix, out, v):
+    """Add the batch's sum of (data - model)^2 / input sigma^2 over valid pixels to model._chi_in. Diagnostics only: no_grad, nothing read back
+    by the optimisation. pix['sig'] is the file sigma (times any load-time factor); no learned floor or noise scale enters."""
+    with torch.no_grad():
+        r2 = ((pix["d"] - out["m"]).detach() / pix["sig"]) ** 2
+        model._chi_in = getattr(model, "_chi_in", 0.0) + (r2 * v.float()).sum()
 
 
 def pix_loss(model, e, pix, out, cfg, half=None):
@@ -116,6 +135,7 @@ def pix_loss(model, e, pix, out, cfg, half=None):
     rho = huber_rho(z2, cfg.huber_delta) if cfg.loss == "huber" else z2
     nll = 0.5 * rho + torch.log(sig / pix["sig"])
     vf = v.float()
+    acc_input_chi(model, pix, out, v)
     return (nll * vf).sum(), vf.sum().detach(), (z2.detach() * vf).sum()
 
 
@@ -513,6 +533,12 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     budget = cfg.budget_min * 60.0
     step = 0
     visit_left = cfg.visit_steps
+    nf_max = float(getattr(cfg, "noise_floor_max", 0.0) or 0.0)
+    nf_raw_max = float(inv_softplus(torch.tensor(nf_max))) if nf_max > 0 else 0.0
+    nf_warn_step = None
+    if nf_max > 0:
+        with torch.no_grad():
+            model.floor_raw.clamp_(max=nf_raw_max)
     reloc_marks = [0.15, 0.3, 0.45, 0.6] if getattr(cfg, "item_relocate", 0) and hasattr(model.sky, "relocate") else []
     reloc_gen = torch.Generator().manual_seed(cfg.seed + 202)
     while True:
@@ -552,6 +578,7 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
         with only_grad(model, params):
             P = model.prepare()
             items = pool.draw(cfg.batch_patches, rng)
+            model._chi_in = 0.0
             vo = (lambda i: 1 - folds.get(i, 0)) if xfit_on and cfg.xfit == 2 else view_of
             loss, npx, chi = batch_loss(model, exps, items, P, cfg, pool.mean_valid, view_of=vo, detach_sky=xfit_on, method=method, quad=quad)
             eids = batch_eids(exps, items, dev)
@@ -568,6 +595,9 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             tot.backward()
             torch.nn.utils.clip_grad_norm_(op, cfg.clip)
             opt_op.step()
+            if nf_max > 0:                      # projection onto softplus(floor_raw) <= nf_max; Adam moments untouched (as the gauge projections)
+                with torch.no_grad():
+                    model.floor_raw.clamp_(max=nf_raw_max)
             if gain_on:
                 opt_gain.step()
                 model.pixgain.project()
@@ -614,6 +644,13 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             rec["val"].append([step, float(lb)] + ([k] if ts.multi else []))
         if step % cfg.is_refresh == 0 and step > 0:
             pool.refresh(model)
+        if nf_warn_step is None:
+            nfv = noise_floor_values(model)
+            if max(nfv) > NOISE_FLOOR_WARN:
+                nf_warn_step = step
+                rec["noise_floor_first_above"] = step
+                log(f"WARNING: learned fractional noise floor {nfv} exceeds {NOISE_FLOOR_WARN} first at step {step}; bright pixels lose weight and the "
+                    f"model-noise chi2 hides misfit (compare chi2/px(input noise))")
         if step % cfg.log_every == 0:
             el = time.perf_counter() - t0
             tt = {kk: round(v["value"], 5) for kk, v in model.tau.table().items()}
@@ -630,7 +667,9 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             abz = {kk: round(v.get("z", float("nan")), 1) for kk, v in ev_stats.get("ab", {}).items()}
             if abz:
                 rec.setdefault("ablation_z", []).append([step, abz])
+            chi_in = float(model._chi_in) / max(npx, 1)
             log(f"step {step:6d} t {el:7.1f}s prog {prog:.3f} ablation-z {abz} loss {float(loss):.4f} chi2/px(batch) {chi / max(npx, 1):.3f} "
+                f"chi2/px(input noise) {chi_in:.3f} noise-floor {noise_floor_values(model)} "
                 f"gauge-shift [{float(gsh[0]) * 1e3:.2f}, {float(gsh[1]) * 1e3:.2f}] mas{mem} tau {tt}")
         if history is not None:
             history(step, model)
@@ -638,6 +677,9 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     if cfg.xfit > 1 and xfit_on:
         model.sky.average_views()
     rec["n_steps"] = step
+    rec["noise_floor_final"] = noise_floor_values(model)
+    if max(rec["noise_floor_final"]) > NOISE_FLOOR_WARN:
+        log(f"WARNING: final learned fractional noise floor {rec['noise_floor_final']} exceeds {NOISE_FLOOR_WARN}")
     if gp:
         rec["pixel_gain_gauge"] = model.pixgain.gauge_residual()
     rec["seconds"] = time.perf_counter() - t0

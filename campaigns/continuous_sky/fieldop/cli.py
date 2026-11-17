@@ -180,6 +180,9 @@ def build_parser():
     g.add_argument("--stripes", type=int, default=1)
     g.add_argument("--stripe-l2", type=float, default=1e-3)
     g.add_argument("--floor0", type=float, default=0.01)
+    g.add_argument("--noise-floor-max", type=float, default=0.0,
+                   help="upper bound of the learned fractional noise floor (softplus(floor_raw)), enforced by clamping floor_raw after every operator "
+                        "step; 0 = no bound (default, the previous behaviour)")
     g.add_argument("--loss", choices=["gauss", "huber"], default="huber")
     g.add_argument("--huber-delta", type=float, default=3.0)
     g = ap.add_argument_group("training")
@@ -272,7 +275,7 @@ def main(argv=None):
     from . import data as _data
     from .data import load_field, make_patches
     from .model import FieldOperator
-    from .train import chi2_exposure, fit, fit_heldout, predict_exposure, predict_merged, register_prepass, warm_kernel, write_prediction
+    from .train import noise_floor_values, chi2_exposure, fit, fit_heldout, predict_exposure, predict_merged, register_prepass, warm_kernel, write_prediction
     cfg = build_parser().parse_args(argv)
     _data.DQ_IGNORE_BITS = int(cfg.dq_ignore_bits)
     _data.RATE_WCS = cfg.rate_wcs
@@ -397,7 +400,13 @@ def main(argv=None):
         gauges = model.gauge_report(P=P)
     log(f"effective variability (output space): {({k: round(v, 5) for k, v in effv.items()})}")
     log(f"gauges: {gauges}")
-    metrics = {"config": vars(cfg), "info": info, "fit": rec, "warm_kernel": winfo, "registration_prepass": reg, "tau": model.tau.table(), "heldout_own": scores,
+    nf = noise_floor_values(model)
+    ho_n = sum(v["n"] for v in scores.values())
+    ho_in = {"chi2_input_noise": (sum(v["chi2"] * v["n"] for v in scores.values()) / ho_n) if ho_n else None, "n_px": ho_n,
+             "note": "mean squared residual / input sigma^2 (file sigma x load-time factors; no learned floor or noise scale), own mask, held-out exposures"}
+    log(f"final learned noise floor {nf} (bound {getattr(cfg, 'noise_floor_max', 0.0)}); held-out chi2/px (input noise) {ho_in['chi2_input_noise']}")
+    metrics = {"config": vars(cfg), "info": info, "noise_floor_final": nf, "noise_floor_first_above_0.2_step": rec.get("noise_floor_first_above"),
+               "heldout_input_noise": ho_in, "fit": rec, "warm_kernel": winfo, "registration_prepass": reg, "tau": model.tau.table(), "heldout_own": scores,
                "effective_variability": effv, "gauges": gauges, "tiles": ts.summary() if ts.multi else None,
                "approximations": APPROXIMATIONS, "sources_sha256_16": shas, "pred_dir": str(pred_dir), "seconds": time.perf_counter() - T0}
     if model.fs_on:
