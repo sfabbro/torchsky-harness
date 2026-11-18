@@ -1,0 +1,52 @@
+{
+ "field": "two",
+ "mode": "unseen",
+ "steps": 60,
+ "unseen_filters_in_model": [
+  "A2"
+ ],
+ "loss_first_last": [
+  3.4325735569000244,
+  0.7829909920692444
+ ],
+ "per_filter": {
+  "A1": {
+   "chi2": 14.003763198852539,
+   "zero_sky_chi2": 306.0899658203125,
+   "n_px": 3200,
+   "chi2_bright": 165.77611654490113,
+   "zero_sky_chi2_bright": 3863.2254179054908
+  },
+  "A2": {
+   "chi2": 4.351566553115845,
+   "zero_sky_chi2": 75.35879898071289,
+   "n_px": 3200,
+   "chi2_bright": 30.89246902702758,
+   "zero_sky_chi2_bright": 689.4191595041974
+  },
+  "A3": {
+   "chi2": 1.8898271322250366,
+   "zero_sky_chi2": 48.52956771850586,
+   "n_px": 3200,
+   "chi2_bright": 5.411447075605392,
+   "zero_sky_chi2_bright": 340.3405256652832
+  },
+  "B1": {
+   "chi2": 2.6720049381256104,
+   "zero_sky_chi2": 71.29581069946289,
+   "n_px": 2312,
+   "chi2_bright": 15.709682779797053,
+   "zero_sky_chi2_bright": 644.2598421775689
+  }
+ },
+ "noise_scale_unseen": null,
+ "middle_filter": "A2",
+ "held_chi2_middle": 4.351566553115845,
+ "zero_sky_chi2_middle": 75.35879898071289,
+ "noise_scale_exp_h_middle_filter": [
+  1.0,
+  1.0
+ ],
+ "warnings": [],
+ "total_seconds": 120.35938065999994
+}

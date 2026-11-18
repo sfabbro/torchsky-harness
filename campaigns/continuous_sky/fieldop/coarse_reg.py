@@ -312,7 +312,7 @@ def coarse_register(model, exps, cfg, log=print, ts=None, inst_names=None):
         t = model.affine[torch.as_tensor(gids, device=model.dev), 4:6] * sc
         shifts = {g: (float(t[i, 0]), float(t[i, 1])) for i, g in enumerate(gids)}
         img, wt = splat_coadd(tr, nf, ts.skies[k].N, ts.skies[k].pitch, model.dev, extra_shift=shifts, per_area=model.input_level == "rate")
-        ts.skies[k].reset_from_coeffs(spectral_init(img, model.Phi_band))
+        ts.skies[k].reset_from_coeffs(spectral_init(img, model.Phi_band, bands=[b for b in range(len(model.fset)) if b not in model.unseen] if model.unseen else None))
     if nref:
         log("WARNING: coarse registration refused " + str(nref) + " exposure(s), translation left at its starting value (weak or ambiguous correlation peak: peak < "
             f"{cfg.coarse_reg_min_peak} or peak / second peak < {cfg.coarse_reg_min_ratio}, or peak at the search boundary): "

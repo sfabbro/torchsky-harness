@@ -349,6 +349,8 @@ class FieldOperator(nn.Module):
         # ---- reference sets (training exposures)
         tr = np.nonzero(self.train_mask)[0]
         self.ref_eids = torch.as_tensor(tr, device=dev, dtype=torch.long)
+        # filters of the filter set with no training exposure (--train-exclude-filters, unseen-band test): plain host list, [] in every ordinary field
+        self.unseen = sorted(set(range(len(fset))) - {int(meta["filt"][i]) for i in tr})
         dets = sorted({int(meta["det"][i]) for i in tr})
         L = LATTICE.to(dev)
         # reference lattice per detector (F37): with --ref-footprint and the training footprint of each detector in meta ("det_xi_box":
@@ -411,7 +413,8 @@ class FieldOperator(nn.Module):
         for i in range(E):
             fpix.setdefault(int(meta["filt"][i]), meta["chan_pix"][int(meta["chan"][i])])
             fdiam.setdefault(int(meta["filt"][i]), float(dm[i]) if dm is not None else meta.get("diameter_m", 6.5))
-        sig2 = {f: (0.42 * float(self.piv[f]) * 1e-6 / fdiam[f] * 206264.8) ** 2 + p_ ** 2 / 12 for f, p_ in fpix.items()}
+        # the sharpest class is chosen among the filters that have training exposures: a filter without any has a kernel set by the warm start only
+        sig2 = {f: (0.42 * float(self.piv[f]) * 1e-6 / fdiam[f] * 206264.8) ** 2 + p_ ** 2 / 12 for f, p_ in fpix.items() if f not in self.unseen}
         self.blur_sig2 = sig2
         self.blur_ref = min(sig2, key=sig2.get)
         self.blur_floor = float(cfg.blur_floor) * sky.pitch ** 2 / 3.0          # m2 of one sky tent (2 x pitch^2 / 6)
@@ -582,7 +585,22 @@ class FieldOperator(nn.Module):
         Tw = self.T_ref[self.e_filt[self.gref]]                      # (n_ref, nL)
         den = Tw.sum(0)
         m = torch.where(den > 0, (Tw * g).sum(0) / den.clamp(min=1e-12), torch.zeros_like(den))
-        return m.view(len(self.fset), self.fset.Q)
+        m = m.view(len(self.fset), self.fset.Q)
+        if self.unseen:
+            # Nodes of a filter with no training exposure: the reference set barely covers them (den small or zero, m then 0 or noise), but the
+            # held-out exposures of that filter are predicted there. Use the m of the nearest node (in wavelength) of the filters that have training
+            # data, so that the convention stays continuous in wavelength. Nodes of the other filters are untouched.
+            lamf = self.lam.flatten()
+            seen = torch.as_tensor([f for f in range(len(self.fset)) if f not in self.unseen], device=m.device)
+            seen_nodes = (seen[:, None] * self.fset.Q + torch.arange(self.fset.Q, device=m.device)[None]).flatten()
+            mf = m.flatten().clone()
+            for f in self.unseen:
+                for q in range(self.fset.Q):
+                    n = f * self.fset.Q + q
+                    j = seen_nodes[(lamf[seen_nodes] - lamf[n]).abs().argmin()]
+                    mf[n] = m.flatten()[j]
+            m = mf.view(len(self.fset), self.fset.Q)
+        return m
 
     # ------------------------------------------------------------------ components at points of one exposure
     def codes_at(self, e, xi, P, lam=None):
@@ -987,6 +1005,10 @@ class FieldOperator(nn.Module):
             Tw = self.T_ref[self.e_filt[self.gref]]
             den = Tw.sum(0)
             mean_g = torch.where(den > 0, (Tw * g).sum(0) / den.clamp(min=1e-12), torch.zeros_like(den))
+            if self.unseen:      # nodes of filters without training exposures take the gauge shift of the nearest covered node: not part of the check
+                Qn = self.fset.Q
+                keep = torch.as_tensor([n for n in range(mean_g.numel()) if n // Qn not in self.unseen], device=mean_g.device)
+                mean_g = mean_g[keep]
             out["throughput_gauge_max_abs_mean_log_g"] = float(mean_g.abs().max())
         out["common_shift_mas"] = (self.shift_gauge(P) * 1e3).tolist()
         m2 = []
@@ -1001,6 +1023,8 @@ class FieldOperator(nn.Module):
         out["background_mean_per_filter"] = {self.fset.names[f]: float(self.bkg[self.ref_eids][self.e_filt[self.ref_eids] == f, 0].mean())
                                              for f in range(len(self.fset)) if bool((self.e_filt[self.ref_eids] == f).any())}
         S = self.sky.band_images(self.Phi_band)
+        if self.unseen:
+            out["filters_without_training_exposures"] = [self.fset.names[f] for f in self.unseen]
         out["sky_band_p05"] = {self.fset.names[f]: float(torch.quantile(S[f].flatten()[:: max(1, S[f].numel() // 100000)], 0.05)) for f in range(len(self.fset))}
         return out
 

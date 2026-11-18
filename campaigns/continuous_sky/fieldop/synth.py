@@ -85,7 +85,7 @@ def render_truth(truth, inst, filt, X, Y, xi, n_dense=24, epoch_effect=0.0):
 
 def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="cpu", insts=None, epochs=(0.0, 1.0),
                shift_rms=0.03, rot_choices=(0, 1), epoch_effect=0.0, centre_range=0.35, patch_px=64, truth_half=1.5,
-               pix_gain_rms=0.0, bkg_mean=5.0, pair_shift_px=None, inst_shift=None, n_pts=14):
+               pix_gain_rms=0.0, bkg_mean=5.0, pair_shift_px=None, inst_shift=None, n_pts=14, train_exclude=()):
     """Exposures (header WCS without the true offsets), FilterSet, meta, truth and per-exposure true offsets.
 
     pix_gain_rms > 0 injects a per-pixel gain (flat field) per detector: G = exp(g), g white Gaussian of rms pix_gain_rms (from its own random
@@ -93,7 +93,7 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
     and each exposure's extra["gain_true"]. Defaults (0, 5.0) reproduce the original field exactly.
 
     pair_shift_px (optional) {(instrument name, filter name): (dx, dy)}: a position shift in DETECTOR PIXELS shared by every exposure of that pair
-    (training, validation and held out): the sky is sampled at W(p + s) = header position + J_e s (J_e = R_e x pixel), the header positions
+    (training, validation and held out; train_exclude = filter names whose training and validation exposures are generated and then dropped): the sky is sampled at W(p + s) = header position + J_e s (J_e = R_e x pixel), the header positions
     handed to the model are unchanged. None (default) leaves the field exactly as before.
 
     inst_shift (optional) {instrument name: (lo, hi)}: every exposure of that instrument gets an extra translation of random direction and a length
@@ -156,13 +156,16 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
                     d = gmap * (clean + bk) + noise * torch.randn(n, n, generator=torch.Generator().manual_seed(1000 + k))
                 split = "held" if j < n_held else ("val" if j < n_held + n_val else "train")
                 ins_name = ins.name
+                if name in train_exclude and split != "held":      # unseen-band test: the exposure is generated (same random stream) and then dropped
+                    k += 1
+                    continue
                 e = Exposure(name=f"{name}_{j}", filt=f, inst=ii, chan=ii, det=ii, t=float(t), mjd=float(t), det_shape=(n, n), cut0=(0, 0),
                              d=d.to(dev), sig=torch.full((n, n), noise, device=dev), valid=torch.ones(n, n, dtype=torch.bool, device=dev),
                              X=Xh.to(dev), Y=Yh.to(dev), R=Rm, split=split, group=f"{name}_{j}", stripes=False, bkg0=float(d.median()),
                              Jpix=torch.tensor(np.broadcast_to(Rm * ins.pixel, (n, n, 2, 2)).copy(), dtype=torch.float32, device=dev),
                              extra={"J": (Rm * ins.pixel).tolist(), "true_shift": true_shift.tolist(), "inj_shift": inj.tolist(), "clean": clean.to(dev), "bkg_true": bk,
                                     "diameter_m": ins.diameter_m, **({} if gmap is None else {"gain_true": gmap.to(dev)})})
-                e.eid = k
+                e.eid = len(exps)
                 exps.append(e)
                 k += 1
     for e in exps:

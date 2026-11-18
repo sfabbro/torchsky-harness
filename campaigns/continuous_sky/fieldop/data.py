@@ -377,6 +377,20 @@ def load_field(cfg, dev, log=print):
     ex = [e for e in sp["exposures"] if e["rootname"] in held | train and (bool(tset & {str(k) for k in e.get("boxes", {})}) or cfg.all_box_files)]
     if cfg.filters:
         ex = [e for e in ex if e["filter"] in cfg.filters.split(",")]
+    excl = [f for f in str(getattr(cfg, "train_exclude_filters", "") or "").split(",") if f.strip()]
+    if excl:       # --train-exclude-filters: no training or validation exposure of these filters; their held-out exposures stay
+        names = {e["filter"] for e in ex}
+        bad = [f for f in excl if f not in names]
+        if bad:
+            raise SystemExit(f"--train-exclude-filters: {bad} not among the filters of the selected exposures {sorted(names)}")
+        drop = [e for e in ex if e["filter"] in excl and e["rootname"] in train and e["rootname"] not in held]
+        ex = [e for e in ex if not (e["filter"] in excl and e["rootname"] in train and e["rootname"] not in held)]
+        left = {f: sum(1 for e in ex if e["filter"] == f) for f in excl}
+        log(f"--train-exclude-filters {excl}: dropped {len(drop)} training exposures; held-out exposures left per excluded filter {left}")
+        if not all(left.values()):
+            raise SystemExit(f"--train-exclude-filters: {[f for f, n in left.items() if not n]} would have no exposure at all (no held-out exposure): nothing to predict")
+        if not any(e["filter"] not in excl for e in ex):
+            raise SystemExit("--train-exclude-filters excludes every filter")
     if cfg.max_exposures > 0:
         ex = ex[: cfg.max_exposures]
     shifts = {}
@@ -483,7 +497,7 @@ def load_field(cfg, dev, log=print):
         cuts_by_eid[e.eid].append(e)
     info = {"box": box, "boxes": [boxes[k] for k in tiles], "tiles": tiles, "tile_c0": {k: list(c0s[k]) for k in tiles}, "half_data": half_data,
             "dets": dets, "chans": chans, "insts": insts, "filters": filters,
-            "n_by_split": {s: sum(1 for e in rep_list if e.split == s) for s in ("train", "val", "held")}, "val_groups": sorted(val_groups),
+            "train_excluded_filters": excl, "n_by_split": {s: sum(1 for e in rep_list if e.split == s) for s in ("train", "val", "held")}, "val_groups": sorted(val_groups),
             "epoch_span_days": span, "shifts_applied": sum(1 for e in rep_list if e.shift0 != (0.0, 0.0)), "n_exposures": len(rep_list),
             "n_cuts": len(cuts), "cuts_per_tile": {k: {s: sum(1 for e in cuts if e.tile == k and e.split == s) for s in ("train", "val", "held")} for k in tiles},
             "host_gb": sum(e.nbytes() for e in cuts) / 2 ** 30, "multi_tile": multi}
@@ -586,6 +600,12 @@ def pixel_area_of(e):
         J = e.Jpix
         return (J[..., 0, 0] * J[..., 1, 1] - J[..., 0, 1] * J[..., 1, 0]).abs()
     return torch.full(e.d.shape, float(abs(np.linalg.det(np.asarray(e.extra["J"], np.float64)))), device=e.d.device)
+
+
+def untrained_filters(exps, nf):
+    """Sorted filter indices (of nf) with no training exposure (split 'train'); [] when every filter has training data."""
+    have = {e.filt for e in exps if e.split == "train"}
+    return [f for f in range(nf) if f not in have]
 
 
 def splat_coadd(exps, nf, N, pitch, dev, extra_shift=None, per_area=False):

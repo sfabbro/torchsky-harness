@@ -62,7 +62,7 @@ def state_hash(model):
 # ----------------------------------------------------------------------------- 1. defaults
 def test_new_defaults_and_legacy_flag():
     a = parse_config([])
-    assert (a.sky_zero, a.sky_positivity_margin, a.noise_floor_max, a.noise_scale_max, a.nuisance_steps) == ("masked", 0.0, 0.2, 2.0, "exposure")
+    assert (a.sky_zero, a.sky_positivity_margin, a.noise_floor_max, a.noise_scale_max, a.nuisance_steps) == ("median", 0.0, 0.2, 2.0, "exposure")
     assert (a.held_xfit, a.held_step_rows, a.epoch_per_instrument, a.field_init, a.gauge_ref_inst, a.kernel_norm_radius) == (1, 1, 1, "random", None, None)
     b = parse_config(["--legacy-defaults"])
     assert (b.sky_zero, b.noise_floor_max, b.noise_scale_max, b.nuisance_steps, b.held_xfit, b.held_step_rows, b.epoch_per_instrument,

@@ -49,6 +49,10 @@ def build_parser():
     g.add_argument("--svo-cache", default="")
     g.add_argument("--shifts-from", default="", help="register_xcorr.json (LMC): initial per-exposure registration shifts")
     g.add_argument("--filters", default="")
+    g.add_argument("--train-exclude-filters", default="",
+                   help="comma-separated filter names whose training and validation exposures are dropped at load time; their held-out exposures are kept "
+                   "(the unseen-band test: the fit sees no exposure of these filters and the held-out stage predicts them from the other filters). "
+                   "Default empty = nothing dropped. Use with --filter-input curve (the default)")
     g.add_argument("--max-exposures", type=int, default=0)
     g.add_argument("--n-val-groups", type=int, default=1, help="dither groups per filter carved from training for the tau validation likelihood")
     g.add_argument("--epoch-min-days", type=float, default=1.0, help="epoch axes need a training time span at least this long")
@@ -59,7 +63,7 @@ def build_parser():
                    help="start of the throughput and distortion fields: 'random' (old) or 'zero' = last layers at zero output (audit finding 15; the rms "
                    "normalisation is singular there: gradients about 1e4 times larger on step 0; not tested on real data)")
     g.add_argument("--legacy-defaults", action="store_true",
-                   help="set every default changed on 18 Nov 2026 back to its old value: --sky-zero median, --noise-floor-max 0, --noise-scale-max 0, "
+                   help="set every default changed on 18 Nov 2026 back to its old value: --sky-zero median (already the default since 19 Nov), --noise-floor-max 0, --noise-scale-max 0, "
                    "--nuisance-steps mean, --held-xfit 0, --held-step-rows 0, --epoch-per-instrument 0. Options given explicitly win. "
                    "(The several-instrument rules of audit findings 5 and 9 are not touched: give --gauge-ref-inst -1 --kernel-norm-radius 0 to get the old values.)")
     g.add_argument("--write-pred", type=int, default=1)
@@ -163,8 +167,9 @@ def build_parser():
                    "WARNING lines are logged at 2 and 10 regardless)")
     g.add_argument("--blur-floor", type=float, default=1.0, help="blur gauge: core m2 of the sharpest kernel class >= this x (sky pitch)^2 / 3 (0 = off)")
     g.add_argument("--pedestal-gauge", type=int, default=1, help="per filter, training background constants (relative to the exposure medians) sum to zero")
-    g.add_argument("--sky-zero", choices=["median", "masked"], default="masked",
-                   help="reference level of each training exposure for the pedestal gauge (the split between a constant sky and the backgrounds, "
+    g.add_argument("--sky-zero", choices=["median", "masked"], default="median",
+                   help="(default median again since 19 Nov 2026: masked biased the long-wavelength fluxes of the item sky by 8 to 17 per cent on real data) "
+                   "reference level of each training exposure for the pedestal gauge (the split between a constant sky and the backgrounds, "
                    "which the data cannot fix): 'median' = median of the exposure's data (sources included; the sky in empty regions then sits "
                    "below zero by the median source light, and positivity turns that into a positive total offset); 'masked' = median of the "
                    "DATA (not the residual) over the pixels where the current model's sky signal S satisfies |S| < --sky-zero-snr x the pixel sigma, "
@@ -321,7 +326,7 @@ def default_config(**kw):
 
 
 def make_sky(exps, fset, cfg, half, dev, basis=None):
-    from .data import splat_coadd
+    from .data import splat_coadd, untrained_filters
     from .sky import RBFBasis, SkyGrid, spectral_init
     N = int(math.ceil(2 * half / cfg.sky_pitch)) + 1
     basis = basis or RBFBasis(cfg.spec_k).to(dev)
@@ -329,7 +334,9 @@ def make_sky(exps, fset, cfg, half, dev, basis=None):
     Phi_band = (basis(lam.flatten()).view(len(fset), fset.Q, -1) * w[..., None]).sum(1)
     img, wt = splat_coadd([e for e in exps if e.split == "train"], len(fset), N, cfg.sky_pitch, dev,
                           per_area=getattr(cfg, "input_level", "cal") == "rate")
-    A0 = spectral_init(img, Phi_band)
+    unseen = untrained_filters(exps, len(fset))            # filters with no training exposure: their coadd band is empty (zeros), not a measurement
+    bands = [b for b in range(len(fset)) if b not in unseen] if unseen else None
+    A0 = spectral_init(img, Phi_band, bands=bands)
     sb = []
     for b in range(img.shape[0]):   # band noise: MAD over the covered nodes only, floored
         v = img[b][wt[b] > 0]
@@ -337,6 +344,8 @@ def make_sky(exps, fset, cfg, half, dev, basis=None):
         s_ = 1.4826 * (v - v.median()).abs().median()
         sb.append(torch.maximum(s_, 1e-4 * v.abs().max().clamp(min=1e-12)))
     sb = torch.stack(sb)
+    if unseen:                       # an empty band has no noise estimate: use the median of the bands that have data
+        sb[unseen] = sb[[b for b in range(len(fset)) if b not in unseen]].median()
     pre = None
     if cfg.sky_precond > 0:
         snr = (img.abs() / sb[:, None, None]).amax(0).clamp(max=cfg.sky_precond_cap)
@@ -347,7 +356,7 @@ def make_sky(exps, fset, cfg, half, dev, basis=None):
         for b in range(img.shape[0]):
             w_ = wt[b][wt[b] > 0]
             pb.append(cfg.sky_positivity_margin * (1.0 / w_.sqrt()).median() if w_.numel() else torch.zeros((), device=img.device))
-        ped = spectral_init(torch.stack(pb).to(img.dtype)[:, None, None], Phi_band)[:, 0, 0]
+        ped = spectral_init(torch.stack(pb).to(img.dtype)[:, None, None], Phi_band, bands=bands)[:, 0, 0]
     if getattr(cfg, "sky_form", "grid") == "items":
         from .sky import ItemSky
         sky = ItemSky(A0, cfg.sky_pitch, basis, cfg.item_count, floor=cfg.item_floor, max_width=cfg.item_max_width, n_levels=cfg.item_levels,

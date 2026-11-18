@@ -45,7 +45,7 @@ def train_ids(exps):
 
 
 def test_median_default_is_untouched():
-    model, exps, cfg = small(sky_zero="median")      # (the default became "masked" on 18 Nov 2026; the option still works)
+    model, exps, cfg = small(sky_zero="median")      # (the default was "masked" on 18 Nov 2026 only; "median" again from 19 Nov)
     ref = model.bkg0.clone()
     assert cfg.sky_zero == "median"
     assert sky_zero_refresh(model, exps, cfg, TileSet.single(model, exps, cfg, QUIET), QUIET) is None

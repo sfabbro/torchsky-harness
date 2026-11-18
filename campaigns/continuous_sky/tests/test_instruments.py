@@ -226,7 +226,8 @@ def test_two_instruments_command_line_equal_to_before_and_reference_needed():
     import synth_two_instrument_cli as S
     rec = json.load(open(os.path.join(HERE, "tsky_results", "two_instrument_cli_before_interface.json")))
     with tempfile.TemporaryDirectory() as d:
-        r = S.run(os.path.dirname(HERE), d)
+        # the record was made when the default was --sky-zero masked (18 Nov); the default is median again (19 Nov), so the option is given
+        r = S.run(os.path.dirname(HERE), d, extra=["--sky-zero", "masked"])
         assert r["heldout_summary"] == rec["heldout_summary"]
         assert r["heldout_own"] == rec["heldout_own"]
         assert r["state_sha256"] == rec["state_sha256"]

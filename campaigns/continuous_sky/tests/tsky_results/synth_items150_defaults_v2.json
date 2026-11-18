@@ -3,113 +3,113 @@
  "sky_form": "items",
  "seed": 0,
  "steps": 150,
- "fit_seconds": 196.58751504500015,
- "s_per_step": 1.3105834336333344,
- "setup_seconds": 11.954312070000015,
- "heldout_seconds": 68.50579509999989,
+ "fit_seconds": 153.81738270899996,
+ "s_per_step": 1.0254492180599997,
+ "setup_seconds": 11.498954496000124,
+ "heldout_seconds": 68.00883118599995,
  "train_loss_log": [
   [
    0,
-   9.345658221000122,
-   6.661792755126953,
-   115.6709765625
+   1.048293627000021,
+   6.955445289611816,
+   115.8144140625
   ],
   [
    10,
-   18.227198904000034,
-   2.540897846221924,
-   24.857461049426934
+   10.095769173999997,
+   2.705510139465332,
+   25.07598719555874
   ],
   [
    20,
-   36.88914918900082,
-   1.223886489868164,
-   3.190307922363281
+   19.789100224999856,
+   1.28346848487854,
+   3.298228759765625
   ],
   [
    30,
-   46.95908668800075,
-   0.9464302062988281,
-   2.278161980124081
+   28.999519929999906,
+   1.0266984701156616,
+   2.469529634363511
   ],
   [
    40,
-   66.48439954300011,
-   0.8894495964050293,
-   1.8646726866026182
+   38.53810030699992,
+   0.9355222582817078,
+   1.9356191274282095
   ],
   [
    50,
-   76.76250964800056,
-   1.6820465326309204,
-   4.395386657714844
+   48.45731475899993,
+   1.7232837677001953,
+   4.4374560546875
   ],
   [
    60,
-   87.02756817200043,
-   0.8473422527313232,
-   2.6794728871938345
+   58.39183346899995,
+   0.9180021286010742,
+   2.852984784100507
   ],
   [
    70,
-   97.40105051900082,
-   0.9650661945343018,
-   2.3486839500633447
+   68.76442109499999,
+   1.0118248462677002,
+   2.4450564822635137
   ],
   [
    80,
-   115.51817318900066,
-   0.9487881660461426,
-   2.329847625470093
+   79.08495677499991,
+   0.9666227102279663,
+   2.312519936985136
   ],
   [
    90,
-   126.08414130500023,
-   0.8903964757919312,
-   1.815400831337303
+   89.73175721099983,
+   0.9480085372924805,
+   1.919674061772475
   ],
   [
    100,
-   136.3403821010006,
-   1.1584218740463257,
-   3.3626840952280403
+   101.1714116149999,
+   1.181339144706726,
+   3.3591988228462837
   ],
   [
    110,
-   146.72903264200067,
-   1.3482327461242676,
-   3.135801243137669
+   111.95151275800004,
+   1.36386239528656,
+   3.099708350929054
   ],
   [
    120,
-   166.35058500600007,
-   0.9016478061676025,
-   0.9589306640625
+   122.60691487500003,
+   1.0207871198654175,
+   1.0935028839111327
   ],
   [
    130,
-   176.59608042200034,
-   1.28676176071167,
-   3.3220419311523437
+   133.3319414739999,
+   1.3071880340576172,
+   3.26567626953125
   ],
   [
    140,
-   187.26510293800038,
-   0.742649495601654,
-   1.550390984030331
+   144.32501285199987,
+   0.7528985738754272,
+   1.5335354075712315
   ]
  ],
- "heldout_chi2": 3.413583226768767,
- "heldout_chi2_snr5": 24.07633908019472,
+ "heldout_chi2": 3.342234032432129,
+ "heldout_chi2_snr5": 24.110007474383913,
  "heldout_summary": {
   "written": {
-   "chi2_input_noise": 3.413583226768767,
-   "chi2_model_noise": 1.0609982511228766,
+   "chi2_input_noise": 3.342234032432129,
+   "chi2_model_noise": 1.0393543291573573,
    "n_px": 4356
   },
   "all_pixel_old": {
-   "chi2_input_noise": 3.4851790009779706,
-   "chi2_model_noise": 0.98651824591902,
+   "chi2_input_noise": 3.3858508024881258,
+   "chi2_model_noise": 0.9553198449320482,
    "n_px": 4356
   }
  },
@@ -118,20 +118,20 @@
  "kernel_norm_radius": 2.0,
  "held_xfit": 1,
  "heldout_n_px": 4356,
- "heldout_n_px_snr5": 446,
+ "heldout_n_px_snr5": 433,
  "heldout_per_exposure": {
   "A1_0": {
-   "chi2": 6.803582668304443,
+   "chi2": 6.600856304168701,
    "n": 1600,
-   "chi2_bright": 70.30150604248047,
-   "n_bright": 133,
-   "chi2_model_noise": 1.4900943040847778,
+   "chi2_bright": 69.48540496826172,
+   "n_bright": 130,
+   "chi2_model_noise": 1.4863595962524414,
    "all_pixel_old": {
-    "chi2": 7.053505897521973,
+    "chi2": 6.776931285858154,
     "n": 1600,
-    "chi2_bright": 74.51160430908203,
+    "chi2_bright": 71.50654602050781,
     "n_bright": 131,
-    "chi2_model_noise": 1.3287829160690308
+    "chi2_model_noise": 1.2985821962356567
    },
    "closed_form_stripes_half_fits": {
     "fit_half0": {},
@@ -139,17 +139,17 @@
    }
   },
   "A2_0": {
-   "chi2": 1.5778509378433228,
+   "chi2": 1.5758438110351562,
    "n": 1600,
-   "chi2_bright": 5.4965410232543945,
-   "n_bright": 179,
-   "chi2_model_noise": 0.8250553011894226,
+   "chi2_bright": 5.702220439910889,
+   "n_bright": 174,
+   "chi2_model_noise": 0.7933910489082336,
    "all_pixel_old": {
-    "chi2": 1.5597572326660156,
+    "chi2": 1.5575878620147705,
     "n": 1600,
-    "chi2_bright": 5.4271416664123535,
-    "n_bright": 178,
-    "chi2_model_noise": 0.8072410821914673
+    "chi2_bright": 5.540942192077637,
+    "n_bright": 174,
+    "chi2_model_noise": 0.7761069536209106
    },
    "closed_form_stripes_half_fits": {
     "fit_half0": {},
@@ -157,17 +157,17 @@
    }
   },
   "B1_0": {
-   "chi2": 1.2623484134674072,
+   "chi2": 1.2768609523773193,
    "n": 1156,
-   "chi2_bright": 3.015418529510498,
-   "n_bright": 134,
-   "chi2_model_noise": 0.7936583161354065,
+   "chi2_bright": 3.211970806121826,
+   "n_bright": 129,
+   "chi2_model_noise": 0.7610955238342285,
    "all_pixel_old": {
-    "chi2": 1.2112618684768677,
+    "chi2": 1.2227815389633179,
     "n": 1156,
-    "chi2_bright": 2.7514498233795166,
-    "n_bright": 135,
-    "chi2_model_noise": 0.7609300017356873
+    "chi2_bright": 2.8861804008483887,
+    "n_bright": 128,
+    "chi2_model_noise": 0.7282617688179016
    },
    "closed_form_stripes_half_fits": {
     "fit_half0": {},
@@ -178,38 +178,38 @@
  "heldout_truth_noise_chi2": 0.9892498652140299,
  "sky_fitted_numbers": 25500,
  "sky_grid_N": 95,
- "state_sha256": "ba5f9c80a78e5e7f0f9a4dd313a04639dd895f7c8569c89f48d89026522d228c",
- "state_sha256_with_legacy_resid": "0101e55ebc9a3032f83aa33832468b2d1c7744e26dc7abf0ccfb49ba5b68c1ec",
+ "state_sha256": "d20ae945fe90d16bad9fc4efe451c75285d037ac17fa08796face53a51c1d398",
+ "state_sha256_with_legacy_resid": "a09f7843dc9d9a10677529121497d698bbc091a2188f82ed01c083fd5e6ee487",
  "registration": {
   "iters": [
    {
     "iter": 0,
     "rms_translation_mas": 12.789908409118652,
-    "seconds": 6.310564596000404
+    "seconds": 5.991119072999936
    }
   ]
  },
- "total_seconds": 279.01958258000013,
+ "total_seconds": 235.22703079400003,
  "sky_error": {
   "summary": {
    "raw": {
-    "all": 0.48643534208787576,
-    "near_point_sources": 0.47564520704172025,
-    "elsewhere": 0.7077518179060227
+    "all": 0.48476563177463383,
+    "near_point_sources": 0.4755791427395081,
+    "elsewhere": 0.677941965505171
    },
    "gauge_adjusted": {
-    "all": 0.17714433322509993,
-    "near_point_sources": 0.17723193722891406,
-    "elsewhere": 0.17675782038947593
+    "all": 0.17696808063020708,
+    "near_point_sources": 0.1787452291733727,
+    "elsewhere": 0.1689144753735639
    },
    "gauge_adjusted_blur": [
     "truth",
     0.08
    ],
    "gauge_adjusted_and_flux_scaled": {
-    "all": 0.1362274703508955,
-    "near_point_sources": 0.09822690616219981,
-    "elsewhere": 0.1638821329372036
+    "all": 0.13370693606696996,
+    "near_point_sources": 0.10018897330953837,
+    "elsewhere": 0.15197393034096007
    },
    "n_nodes": {
     "all": 19321,
@@ -229,5 +229,48 @@
   "state_sha256_with_legacy_resid": "0101e55ebc9a3032f83aa33832468b2d1c7744e26dc7abf0ccfb49ba5b68c1ec",
   "heldout_chi2": 3.413583226768767
  },
- "sky_zero_px_note": "18 Nov build B: default --sky-zero-px 20000; every exposure of this synthetic field has fewer pixels, so all are rendered and the hash is unchanged (re-run, identical)"
+ "sky_zero_px_note": "18 Nov build B: default --sky-zero-px 20000; every exposure of this synthetic field has fewer pixels, so all are rendered and the hash is unchanged (re-run, identical)",
+ "before_sky_zero_median_default": {
+  "state_sha256": "ba5f9c80a78e5e7f0f9a4dd313a04639dd895f7c8569c89f48d89026522d228c",
+  "state_sha256_with_legacy_resid": "0101e55ebc9a3032f83aa33832468b2d1c7744e26dc7abf0ccfb49ba5b68c1ec",
+  "heldout_chi2": 3.413583226768767,
+  "heldout_chi2_snr5": 24.07633908019472,
+  "heldout_truth_noise_chi2": 0.9892498652140299,
+  "sky_error": {
+   "summary": {
+    "raw": {
+     "all": 0.48643534208787576,
+     "near_point_sources": 0.47564520704172025,
+     "elsewhere": 0.7077518179060227
+    },
+    "gauge_adjusted": {
+     "all": 0.17714433322509993,
+     "near_point_sources": 0.17723193722891406,
+     "elsewhere": 0.17675782038947593
+    },
+    "gauge_adjusted_blur": [
+     "truth",
+     0.08
+    ],
+    "gauge_adjusted_and_flux_scaled": {
+     "all": 0.1362274703508955,
+     "near_point_sources": 0.09822690616219981,
+     "elsewhere": 0.1638821329372036
+    },
+    "n_nodes": {
+     "all": 19321,
+     "near_point_sources": 1830,
+     "elsewhere": 17491
+    },
+    "sig_c": 0.06,
+    "r_near": 0.15,
+    "mean_true_shift_mas": [
+     -3.931712984357196,
+     6.970127767138842
+    ]
+   }
+  },
+  "total_seconds": 279.01958258000013
+ },
+ "sky_zero_median_note": "19 Nov 2026: re-recorded after --sky-zero default went back to median (unseen-band changes do not touch this field). Command: tests/synth_small.py --sky-form items --seed 0 --steps 150 --gauge-ref-inst 0 --kernel-norm-radius 2.0; took 235 s of fit plus setup (limit 240 s guide: one run)"
 }

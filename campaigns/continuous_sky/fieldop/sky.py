@@ -44,10 +44,15 @@ class RBFBasis(nn.Module):
         return g / g.sum(1, keepdim=True)
 
 
-def spectral_init(S_band, Phi_band, mu=1e-5):
+def spectral_init(S_band, Phi_band, mu=1e-5, bands=None):
     """Coefficients per pixel from band images (nb, H, W) and band-integrated basis Phi_band (nb, K): ridge least squares with a second
-    difference prior across k (v40 spectral_init). Returns (K, H, W)."""
+    difference prior across k (v40 spectral_init). Returns (K, H, W).
+    bands: list of the band indices that have data (default None = all). A band without any training exposure has an all-zero image, which
+    is no measurement: with bands given, only those rows enter the fit (the prior and the other bands set the spectrum at the empty band)."""
     with torch.no_grad():
+        if bands is not None:
+            idx = torch.as_tensor(list(bands), dtype=torch.long, device=S_band.device)
+            S_band, Phi_band = S_band[idx], Phi_band[idx.to(Phi_band.device)]
         k = Phi_band.shape[1]
         D = torch.zeros(k - 2, k, dtype=torch.float64)
         for i in range(k - 2):

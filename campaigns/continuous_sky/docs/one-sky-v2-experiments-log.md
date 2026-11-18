@@ -2,11 +2,42 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 18 Nov 2026, 17:25 UTC: seed scatter measured; my 13:00 claim about the zero rule was too strong; catalogue-free registration works on a real fit
+
+Collection by a Haiku agent. Item sky on SMACS, 200 minutes each, cross-fitted, no scorer offset; pipeline 1.822.
+
+| Fit | Zero rule | Headline | 50 to 200 | Above 200 | Long-wavelength flux over mosaic |
+|---|---|---|---|---|---|
+| old defaults, new run | median | 1.587 | 5.66 | 60 | 1.00 to 1.01 |
+| new defaults, seed 0 | median | 1.607 | 5.86 | 64 | 0.98 to 1.00 |
+| new defaults, seed 1 | median | 1.773 | 7.47 | 84 | 0.99 to 1.00 |
+| new defaults + 2 arcsec kernel normalisation | median | 1.744 | 7.33 | 75 | 1.00 to 1.01 |
+| saved old fit, re-scored | median | 1.733 | 6.87 | 83 | 0.98 to 1.00 |
+| new defaults without noise bounds | masked | 1.768 | 7.16 | 89 | 1.08 to 1.10 |
+| new defaults | masked | 2.026 | 8.90 | 138 | 1.15 to 1.17 |
+| JWST + HST, archive positions | masked | 2.063 | 10.2 | 108 | 0.99 to 1.00 |
+| JWST + HST, catalogue-free registration | masked | 2.212 | 12.2 | 114 | 1.00 to 1.01 |
+
+- **Seed scatter:** the same configuration with seeds 0 and 1 gives 1.607 and 1.773: +0.165 [+0.074, +0.271] by the bootstrap, which therefore understates the real uncertainty. Five median-rule fits span 1.59 to 1.77 in the headline, 5.7 to 7.5 at 50 to 200 and 60 to 84 above 200. Below signal-to-noise 50 all nine fits agree to 0.01 to 0.02 per bin (1 to 5: 0.973 to 0.979; 5 to 20: 1.088 to 1.095; 20 to 50: 1.14 to 1.17, the joint fits 1.29 to 1.30).
+- **Correction to 13:00:** I wrote that the masked zero rule "is the cause" of a loss of 0.42. With the scatter now measured, that size is not established: one masked fit (no noise bounds) scores 1.768, inside the range of the median fits. What does stand: (a) the masked rule biases the long-wavelength flux of JWST-only item fits by 8% to 17% in both fits that used it, and none of the five median fits shows it; (b) the four masked fits are on average worse on bright pixels (50 to 200: 7.2 to 12.2 against 5.7 to 7.5). So the decision to go back to the median rule stands, on the flux bias; the bright-pixel penalty is probable, not measured.
+- The headline is dominated by bright pixels: 7% of the pixels above signal-to-noise 5 (those above 50) carry about 40% of the pipeline's headline of 1.82, and essentially all of the fit-to-fit scatter. **Proposal for Seb:** keep the protocol's headline, but report next to it a "5 to 50" score (93% of the pixels), which repeats to 0.01, and always quote bright bins from at least three seeds.
+- On the robust part every item fit, old or new defaults, beats the official pipeline by the same amount: -0.12 at 1 to 5, -0.08 at 5 to 20, -0.07 to -0.09 at 20 to 50.
+- 2 arcsec kernel normalisation with the median rule: no gain (within scatter), same fluxes; the blur dilation rose to 2.38 (the new guard warned), so it is not adopted for single-instrument fits. Item fits keep little kernel light beyond 2.5 arcsec anyway (0.03% to 0.4%), unlike the grid sky (about 50%).
+- Noise bounds: no measurable effect.
+
+**Catalogue-free registration on a real joint fit.** `--coarse-reg xcorr` with HST's own pointing: 74 of 74 HST exposures registered, none refused, in 1.7 s; within a visit the shifts scatter by 2.5 mas (x) and 8 mas (y); after the usual pre-pass the translations are 276 mas rms (the HST pointing errors). Against the joint fit started from the archive's Gaia-aligned positions: headline +0.150 [+0.090, +0.216], all of it at 50 to 200, which is inside the seed scatter; learned WFC3/IR throughput -4.3% (archive start: -5.1%); fluxes 0.99 to 1.01 in all six JWST bands. So the catalogue-free registration replaces the archive shortcut.
+
+**Package (Sonnet builds, I re-ran 23 tests; the agent reports 90):** the default zero rule is `median` again; a filter with no training exposure is now handled (`--train-exclude-filters`): the starting sky ignores the empty band, the throughput at the unseen filter takes the nearest trained wavelength, noise scales stay neutral. On the synthetic two-instrument field the held-out score in an unseen middle filter is 4.35 with the second instrument against 9.09 without it (3.94 to 1.85 when the filter is trained; zero sky 75; unconverged fits, ordering only). Archive `fieldop-tsky-4a4c0e39.tar.gz`.
+
+**Running (g0123, until about 20:10):** two more seeds of the reference item fit (seeds 2 and 3) and the joint JWST + HST fit with the median rule and catalogue-free registration. **Next, when slots free:** the unseen-band test on real data, F150W never in training, JWST only against JWST + HST (does HST's F140W and F160W help predict a JWST band the fit never saw?). A launch at 17:22 landed on a slow node and was removed.
+
 ## 18 Nov 2026, 13:00 UTC: the new zero-level rule is what hurt the item sky; on one LMC tile both forms beat the official pipeline in every bin
 
 Collection by a Haiku agent. All scores cross-fitted, no scorer offset.
 
 ### SMACS item-sky ablations (200 minutes each, same package)
+
+> **Correction, 17:25 UTC:** the size of the masked rule's effect on the headline given below (-0.418) is not established; the seed-to-seed scatter measured later is 0.17. See the entry of 17:25.
 
 | Signal-to-noise | Pipeline | Saved old fit, re-scored | Old defaults, new run | New defaults, old zero rule | New defaults (masked zero) |
 |---|---|---|---|---|---|

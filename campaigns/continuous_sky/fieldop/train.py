@@ -136,7 +136,7 @@ def bound_report(model, cfg, rel=1e-4):
     hmax = noise_scale_raw_max(float(getattr(cfg, "noise_scale_max", 0.0) or 0.0))
     if hmax is not None:
         det_names, fn = model.meta.get("det_names", []), model.fset.names
-        used = sorted({(int(model.e_det[i]), int(model.e_filt[i])) for i in range(model.E)})
+        used = sorted({(int(model.e_det[i]), int(model.e_filt[i])) for i in range(model.E) if int(model.e_filt[i]) not in model.unseen})   # a pair with no training exposure is not fitted: neutral 1, never "at bound"
         with torch.no_grad():
             hs = model.hs.detach().cpu()
         for d, f in used:
@@ -297,7 +297,7 @@ def register_prepass(model, exps, cfg, log=print, ts=None):
     the translations are re-centred on their mean (common-shift gauge, per connected component of tiles). Plays the role of the v31
     coarse-shift code (F19). Several tiles: per iteration, --reg-prepass-steps on each tile in turn (translations are shared), then every
     tile's sky is rebuilt."""
-    from .data import splat_coadd
+    from .data import splat_coadd, untrained_filters
     from .sky import spectral_init
     from .tiles import TileSet
     if cfg.reg_prepass_iters <= 0 or cfg.reg_prepass_steps <= 0:
@@ -352,7 +352,7 @@ def register_prepass(model, exps, cfg, log=print, ts=None):
                     ts.activate(k)
                 img, wt = splat_coadd(tr, len(model.fset), ts.skies[k].N, ts.skies[k].pitch, model.dev, extra_shift=shifts,
                                       per_area=model.input_level == "rate")
-                A0 = spectral_init(img, model.Phi_band)
+                A0 = spectral_init(img, model.Phi_band, bands=[b for b in range(len(model.fset)) if b not in model.unseen] if model.unseen else None)
                 ts.skies[k].reset_from_coeffs(A0)
         rms = float(t.pow(2).sum(1).mean().sqrt() * 1e3)
         out.append({"iter": it, "rms_translation_mas": rms, "seconds": time.perf_counter() - t0})
@@ -1151,6 +1151,9 @@ def nuisance_sizes(model, exps, P=None, radii=(0.5, 1.0, 2.5)):
     h = 3 * torch.tanh(model.hs / 3)
     used = sorted({(int(model.e_det[i]), int(model.e_filt[i])) for i in range(model.E)})
     out["noise_scale_exp_h"] = {f"{det_names[d] if d < len(det_names) else d}/{fn[f]}": float(torch.exp(h[d, f])) for d, f in used}
+    if model.unseen:     # these pairs were never fitted: exp(h) = 1 by construction (neutral), not a measurement
+        out["noise_scale_not_fitted_no_training_exposure"] = [k for k, (d, f) in zip(out["noise_scale_exp_h"], used) if f in model.unseen]
+        out["filters_without_training_exposures"] = [fn[f] for f in model.unseen]
     for s in ("train", "val", "held"):
         ids = sorted({e.eid for e in exps if e.split == s})
         if not ids:
