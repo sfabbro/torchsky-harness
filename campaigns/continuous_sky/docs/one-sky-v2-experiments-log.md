@@ -2,6 +2,32 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 18 Nov 2026, 10:10 UTC: first joint JWST + HST fit: one sky fits both, fluxes right in all six JWST bands, held-out JWST prediction unchanged
+
+Fit `onesky_smacs_jwsthst_items_s0`: item sky, 85 JWST and 60 HST WFC3/IR training exposures (plus 28 validation), 200 minutes, 3,133 steps, new defaults, kernel normalised within 2 arcsec, HST positions started from the archive solution (shortcut, see 06:15). Collection by a Haiku agent; flux check by me.
+
+**Held-out JWST exposures (cross-fitted, no scorer offset), against the JWST-only item fit with the same defaults (`onesky_items004w_v2`):**
+
+| Signal-to-noise | JWST only | JWST + HST | Difference |
+|---|---|---|---|
+| headline (5 and above) | 2.026 | 2.063 | +0.037 [-0.060, +0.137] |
+| 1 to 5 | 0.977 | 0.974 | -0.003 [-0.006, +0.001] |
+| 5 to 20 | 1.089 | 1.094 | +0.006 [+0.002, +0.011] |
+| 20 to 50 | 1.161 | 1.291 | +0.130 [+0.096, +0.161] |
+| 50 to 200 | 8.90 | 10.23 | +1.33 [+0.64, +2.08] |
+| above 200 | 138 | 108 | -30 [-67, -4] |
+
+- Adding 74 coarser HST exposures leaves the prediction of held-out JWST exposures unchanged in the headline: slightly worse at 20 to 200, better above 200. This is the expected first result: HST adds wavelength coverage between F090W and F150W, which JWST held-out exposures cannot reward. The test that can is to hold out HST exposures (or a JWST filter) and predict them; not yet set up (the protocol's masks and scorer are JWST only).
+- **The two instruments agree on one sky to 5%:** the learned mean log-throughput of WFC3/IR relative to NIRCam is -0.051 (the reference instrument is fixed at 0). The files-only check had given F160W over F150W of 0.92 to 0.94.
+- WFC3/IR learned noise scales 0.81 to 0.91, matching the files-only finding that its error planes are 10% to 20% too large. Its noise floor ended at 8% (it sat at the 20% bound early in the fit). NIRCam noise scales 0.96 to 1.09.
+- Translations learned on top of the archive positions: 5.3 mas rms, 23 mas at most.
+- **Sky flux against the official mosaic at 1 arcsec: 0.98 to 1.00 in all six JWST bands** (the JWST-only fit with the same defaults: 0.98 to 1.00 short-wavelength, 1.15 to 1.17 long-wavelength). The difference between the two fits is the 2 arcsec kernel normalisation, which the joint fit gets by default: less than 0.1% of each kernel lies beyond 2.5 arcsec, where the JWST-only fits put 46% to 56%. So that normalisation pins the flux scale for the item sky, and should be tried as the default for single-instrument fits too (it was only a partial fix for the grid sky on 14 Nov).
+- The zero-level rule was active for 130 to 132 of 145 training exposures.
+- A fault in my flux tool, caught before reporting: it took the first six filters of the state as the six JWST filters; with ten filters ordered by wavelength that compared the model's F105W with the mosaic's F150W and so on (ratios 0.55 to 1.53). It now selects filters by pivot wavelength.
+- Caveat: the JWST-only reference is itself worse on bright pixels than the old defaults (ablations running); read the comparison per bin.
+
+**Also at 09:50:** the third ablation had landed on node g0125 at 9.3 s per step (2.7 times slow); deleted and relaunched on g0123 (`onesky_smacs_items004w_v2_nobound_s1`), so it ends about 13:25.
+
 ## 18 Nov 2026, 09:20 UTC: the new defaults on real data: better for the grid sky, worse for the item sky on bright pixels; three ablations launched
 
 Collection by a Haiku agent; flux checks by me. Both fits: SMACS, 200 minutes, package `fieldop-tsky-90ff3b37`, cross-fitted held-out scoring, no scorer offset. The comparison at equal scoring is with the re-scored old fits.
