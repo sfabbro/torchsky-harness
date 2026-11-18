@@ -15,11 +15,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-LAM_LO, LAM_HI = 0.70, 5.30  # um: spectral domain of the sky field (as v40)
+LAM_LO, LAM_HI = 0.70, 5.30  # um: reference spectral domain of the sky field (as v40); the domain in force is SPECTRAL_DOMAIN
+SPECTRAL_DOMAIN = [LAM_LO, LAM_HI]   # set from the loaded filter curves by instruments.spectral_setup (audit finding 4); the reference by default
+
+
+def set_spectral_domain(lo, hi):
+    """Spectral domain [um] of the sky basis and of every wavelength coordinate of the networks (lam_unit). Plain module state, like ITEM_CHUNK."""
+    SPECTRAL_DOMAIN[0], SPECTRAL_DOMAIN[1] = float(lo), float(hi)
 
 
 def lam_unit(lam_um):
-    return (torch.log(lam_um) - math.log(LAM_LO)) / (math.log(LAM_HI) - math.log(LAM_LO))
+    lo, hi = SPECTRAL_DOMAIN
+    return (torch.log(lam_um) - math.log(lo)) / (math.log(hi) - math.log(lo))
 
 
 class RBFBasis(nn.Module):

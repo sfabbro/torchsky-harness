@@ -2,6 +2,44 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 18 Nov 2026, 01:45 to 03:10 UTC: instrument interface with HST as second instrument; the truth-test divergence is the blur convention running away; LMC item fit failed; image registry down
+
+### Instrument interface (decision 6; Opus build, `INSTRUMENT_INTERFACE.md`; I re-ran 30 tests, the agent reports 82)
+
+- New `fieldop/instruments.py`: one description per camera (NIRCam, HST WFC3/IR, HST ACS/WFC) holding the reader, the unit of the science plane and its factor to MJy/sr, the camera's own data-quality bits, detector names, pixel scales, telescope diameter and the filter-curve identifier. Every science extension of a multi-chip file is its own detector. NIRCam now runs through it with identical results (both recorded default state hashes reproduced exactly).
+- HST conversion to surface brightness:
+
+```latex
+S\,[\mathrm{MJy/sr}] = \frac{\mathrm{PHOTFNU}\times 10^{-6}}{\Omega_{\rm nom}\; t_{\rm unit}}\; x ,\qquad t_{\rm unit} = \mathrm{EXPTIME}\ \text{for files in electrons, 1 for electrons per second}
+```
+
+  with the nominal pixel solid angle from `IDCSCALE` and `PHOTFNU` derived from `PHOTFLAM` and the pivot wavelength when absent.
+- The spectral range and the filter-curve grid now come from the union of the loaded bandpasses (audit finding 4); with NIRCam alone they are the old constants. `--spec-k-rule span` grows the number of spectral coefficients with the span (default keeps 12). Data-quality bits are per instrument (finding 7).
+- Checks on real files, no fit (5 WFC3/IR exposures and 1 ACS exposure of SMACS against NIRCam):
+  - Units: HST over JWST aperture flux, median over 16 to 27 sources: F105W against F090W 1.20 to 1.28; F160W against F150W 0.92 to 0.94; F140W against F150W 0.81 to 0.83; ACS F814W against F090W 0.76 to 0.83. All of order 1 (a units error would give 17 or 2.6, the pixel-area ratios); the spread is mostly the colour of red cluster galaxies.
+  - Geometry: translations of 0.39 to 0.51 arcsec (WFC3/IR) and 0.10 arcsec (ACS) with HST's a priori pointing, which the registration pre-pass removes; scale and rotation zero within 1.8 sigma (about 200 to 250 parts per million, 40 to 50 arcsec of angle); residual scatter 22 to 27 mas, which is centroid noise of galaxies.
+  - Noise: blank-sky scatter over the file's error: NIRCam 0.96 to 1.03; WFC3/IR 0.78 to 0.91 (its error is 10% to 20% too large); ACS 1.12 to 1.22 (unflagged cosmic rays).
+- Choices to confirm with Seb: HST positions use the a priori guide-star solution, not the archive's Gaia-aligned one (my reading of "catalogue-free"; `--hst-wcs archive` switches); which HST data-quality bits are kept; ACS chips as independent exposures.
+- Not supported yet: WFC3/UVIS (6 files) and WFPC2 (8).
+- **Joint list of exposures built** (`joint/make_joint_splits.py`, on CANFAR under `scripts/onesky/`): the SMACS list plus 74 HST WFC3/IR exposures as training only (F105W 26, F125W 8, F140W 20, F160W 20; 24,700 s in all; every one covers the box), held-out set unchanged (24 JWST exposures). The four filter curves are already in the cluster's cache. First joint fit: `--splits /arc/projects/ots/adass2026/scripts/onesky/splits_SMACS_jwst_wfc3ir.json --gauge-ref-inst 0 --epoch-axes 0` plus the item arguments; the first run should be a 10-minute smoke run, since the joint loader has only been tested on a synthetic field and on single real files.
+- Package archive: `fieldop-tsky-83b17095.tar.gz`.
+
+### Why the truth test diverges with a learned response (Sonnet bisection, `fieldop_dbgB/DIVERGENCE_BISECTION.md`)
+
+- Cause: the common-blur convention (the rule that no kernel may be sharper than one sky node, enforced by a dilation of all kernels) runs away while the kernel network is learned: the dilation goes 1.0, 3.7, 10.9, 123 and then about 1,000 between steps 20 and 130; the kernel positions then fall inside the encoding's innermost radius and the kernel network's gradient is exactly zero from step 140.
+- Evidence: kernel learned with the convention on: held-out 2.23 times the noise value; with it off: 1.11; kernel at the truth with it on: 1.01; every other group of parameters learned: 1.01. Dividing the kernel's learning rate by 3 or 10 delays it (1.13, 1.09 in 400 steps; the dilation still creeps). More data does not cure it (16 exposures 1.02, 32 exposures 2.27; one seed each).
+- **Real fits have not shown this:** the dilation is printed at every logged step and stayed between 1.0 and 1.33 in every SMACS and LMC fit read so far. The truth problem is harsher (a kernel core of 0.07 arcsec on 0.10 arcsec pixels). But nothing prevents it, so it is a robustness fault to fix: a guard (warning when the dilation passes 2) and a better-posed convention. A cap at 4 was tried as a stopgap (1.12 and 1.03) and not adopted: the value is arbitrary and the convention is then permanently active.
+- Not known: why the kernel core sharpens along that direction; the rate across seeds; the item sky.
+
+### LMC item fit (`onesky_lmc_items002w_s0b`): failed, as its noise floor warned
+
+- 3,775 steps over 10 tiles (4.5 s per step), final learned noise floor 0.34 and 0.47. The fit's own held-out numbers: 3.28 over all pixels against input noise, and a median of 91 on pixels above signal-to-noise 5 (the official pipeline scores about 6 there). Official paired scoring is waiting on the registry (below).
+- Reading: about 380 steps per tile and 60,000 items for a crowded 20-arcsecond star field are far too few; with the new default bound on the noise floor the fit could not have hidden it. Next LMC test: one tile, 200 minutes, items against grid.
+
+### Infrastructure
+
+- Since 01:40 UTC every new session stays "Pending": the image registry answers HTTP 500 ("failed to resolve reference images.canfar.net/astroai/base:latest: unexpected status from HEAD request ... 500 Internal Server Error", last seen 03:02 UTC, node g0123). Waiting: the two SMACS fits with the new defaults (sessions oneskyg2, oneskyi2) and the LMC scoring job (scorelmc1). They start by themselves when the registry answers.
+
 ## 18 Nov 2026, 00:10 to 01:45 UTC: Seb approved the six decisions; new defaults, fair held-out scoring, and what the flat-field test on SMACS really measured
 
 Seb (17 Nov, late): "six decisions: ok, yes. go ahead. keep debugging the stuff from your audit." I read "go ahead" as also covering the GPU fits proposed in my last message (one LMC tile, items against grid; the count-rate fit with learned gain on LMC programme 1476).

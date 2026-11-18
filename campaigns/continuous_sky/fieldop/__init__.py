@@ -1,4 +1,4 @@
-"""fieldop: a general field operator mapping a continuous sky to individual JWST/HST exposures (Phase 2 of the ablation plan).
+"""fieldop: a general field operator mapping a continuous sky to individual exposures of several instruments (fieldop/instruments.py: JWST NIRCam, HST WFC3/IR and ACS/WFC).
 
     d_e(xi) = N_e[ (1/Q) sum_q alpha_e(xi) exp(gamma_e(xi, lambda_q)) int d^2u k_e(u; xi, lambda_q) s(Omega_e(xi, lambda_q) + u, lambda_q) ] + B_e(xi) + n_e(xi)
 
@@ -10,8 +10,9 @@ and written to metrics.json.
 __version__ = "0.1.0"
 
 APPROXIMATIONS = [
-    "F1 sky is static: s(Omega, lambda, t) = s(Omega, lambda) (no variable sources); spectrum = 12 RBF bumps uniform in log lambda on [0.70, 5.30] um "
-    "(partition of unity, v40 basis without the learned correction): spectral resolution ~ 0.18 dex, extrapolated by the end bumps outside the domain",
+    "F1 sky is static: s(Omega, lambda, t) = s(Omega, lambda) (no variable sources); spectrum = --spec-k (12) RBF bumps uniform in log lambda on the spectral "
+    "domain (0.70-5.30 um, widened to cover every loaded filter's quadrature nodes by --spectral-domain union; K grows with the span only with "
+    "--spec-k-rule span) (partition of unity, v40 basis without the learned correction): bump spacing 0.08 dex at K = 12 over the reference domain",
     "F2 sky in space = tent (bilinear) interpolant of a coefficient grid at --sky-pitch over the box + 2 x --sky-margin; ZERO outside: sources outside the "
     "sky domain and their wings are absent; data are used only inside the box + 2 x --data-margin (< the sky margin)",
     "F3 sky optimisation: fixed diagonal preconditioner 1 + f min(S/N_warm, cap) (5x5 dilated) on the coefficients; soft positivity penalty --sky-neg on the "

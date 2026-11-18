@@ -14,9 +14,12 @@ from dataclasses import dataclass, field
 import numpy as np
 import torch
 
-JWST_DET_CHAN = {**{f"NRC{m}{i}": "NIRCAM_SW" for m in "AB" for i in "1234"}, **{f"NRC{m}LONG": "NIRCAM_LW" for m in "AB"}}
-CHAN_PIX = {"NIRCAM_SW": 0.031, "NIRCAM_LW": 0.063, "WFC3_IR": 0.128, "ACS_WFC": 0.05}
-INST_DIAM = {"NIRCAM": 6.5, "WFC3": 2.4, "ACS": 2.4}
+from . import instruments as _ins
+
+# instrument facts live in instruments.py (INSTRUMENT_INTERFACE.md); these names are kept for older callers
+JWST_DET_CHAN = dict(_ins._NIRCAM_CHAN)
+CHAN_PIX = {c: p for i in _ins.INSTRUMENTS.values() for c, p in i.pixel_scale.items()}
+INST_DIAM = _ins.diameters()
 
 
 @dataclass
@@ -205,7 +208,9 @@ def _read_exposure_file_astropy(path, rate_path=None):
                 detector=str(h0.get("DETECTOR", "")).strip().upper(), instrument=str(h0.get("INSTRUME", "")).strip().upper())
 
 
-DQ_IGNORE_BITS = 0   # --dq-ignore-bits: data-quality bits that do NOT exclude a pixel (0 = strict DQ == 0, F27; set by cli.main, F42)
+DQ_IGNORE_BITS = 0   # --dq-ignore-bits: NIRCam's data-quality bits that do NOT exclude a pixel (0 = strict DQ == 0, F27; set by cli.main, F42);
+#                      other instruments: their own policy (instruments.py, --dq-ignore)
+FILTER_CURVE = None  # filter curve reader (instrument, filter, Q, cache dir) -> Filter; None = instruments.filter_curve (tests may set a stand-in)
 
 
 def load_exposure_file(path, box, half_data, scale=0.01, want_jac=False, rate_path=None, shift0=(0.0, 0.0), raw=None):
@@ -243,10 +248,15 @@ def load_exposure_file(path, box, half_data, scale=0.01, want_jac=False, rate_pa
     d, e, q = sci[y0:y1, x0:x1], err[y0:y1, x0:x1], None if dq is None else dq[y0:y1, x0:x1]
     if raw.get("usable") is not None:   # --loader torchfits: the reader returns the usability mask (finite, error > 0, DQ policy), not the DQ plane
         valid = inside & raw["usable"][y0:y1, x0:x1]
+    elif raw.get("dq_ok") is not None:  # the instrument's own data-quality policy (instruments.py; NIRCam: the expression below)
+        valid = inside & np.isfinite(d) & np.isfinite(e) & (e > 0) & raw["dq_ok"](q)
     else:
         valid = inside & np.isfinite(d) & np.isfinite(e) & (e > 0) & ((q.astype(np.int64) & ~int(DQ_IGNORE_BITS)) == 0)
-    if valid.sum() < 2000:
+    if valid.sum() < int(raw.get("min_valid", 2000)):
         return None
+    f_sky = float(raw.get("to_sky", 1.0)) if raw.get("level", "cal") == "cal" else 1.0
+    if f_sky != 1.0:                    # calibrated level, file not in MJy/sr (HST): science and error to surface brightness (instruments.to_sky_factor)
+        d, e = (d * np.float32(f_sky)).astype(np.float32), (e * np.float32(f_sky)).astype(np.float32)
     out = dict(d=np.nan_to_num(d), sig=np.where(np.isfinite(e) & (e > 0), e, 1.0).astype(np.float32), valid=valid, X=X.astype(np.float32),
                Y=Y.astype(np.float32), cut0=(int(y0), int(x0)), det_shape=(ny, nx), J=mean_jacobian(X, Y),
                detector=raw["detector"], instrument=raw["instrument"],
@@ -258,11 +268,8 @@ def load_exposure_file(path, box, half_data, scale=0.01, want_jac=False, rate_pa
 
 
 def svo_id(instrument, filt):
-    if instrument == "NIRCAM":
-        return f"JWST/NIRCam.{filt}"
-    if instrument == "WFC3":
-        return f"HST/WFC3_IR.{filt}"
-    return f"HST/ACS_WFC.{filt}"
+    """Filter-curve identifier of the instrument's description (instruments.Instrument.bandpass_id)."""
+    return _ins.resolve(instrument).bandpass_id(filt)
 
 
 def filter_instruments(ex):
@@ -270,7 +277,7 @@ def filter_instruments(ex):
     instruments (e.g. F814W on ACS and WFC3) is refused rather than given one instrument's curve."""
     out = {}
     for e in ex:
-        f, i = e["filter"], e.get("instrument", "NIRCAM")
+        f, i = e["filter"], _ins.resolve(e).key
         if out.setdefault(f, i) != i:
             raise SystemExit(f"filter {f} is used by two instruments ({out[f]}, {i}); filters are keyed by name: rename one of them in the splits file")
     return out
@@ -303,15 +310,19 @@ def tile_offsets(boxes):
     return {k: (float(-xi[i] * r2a), float(eta[i] * r2a)) for i, k in enumerate(ids)}
 
 
-def _read_cuts(path, boxes, half_data, shift0, want_jac, rpath):
-    """One file read, one cut per box (thread worker). Returns ([(box_id, cut dict)], error or None)."""
+def _read_cuts(path, boxes, half_data, shift0, want_jac, rpath, inst=None):
+    """One file read (by its instrument's reader), one cut per chip and box (thread worker). Returns ([(box_id, cut dict)], error or None); each
+    cut dict carries its chip's record fields (chip, name_suffix, to_sky, ...)."""
     try:
-        raw = read_exposure_file(path, rpath)
+        chips = (inst or _ins.INSTRUMENTS["NIRCAM"]).read(path, rpath)
         out = []
-        for b in boxes:
-            r = load_exposure_file(path, b, half_data, want_jac=want_jac, shift0=shift0, raw=raw)
-            if r is not None:
-                out.append((int(b["id"]), r))
+        for raw in chips:
+            for b in boxes:
+                r = load_exposure_file(path, b, half_data, want_jac=want_jac, shift0=shift0, raw=raw)
+                if r is not None:
+                    r.update({k: raw[k] for k in ("chip", "name_suffix", "to_sky", "level", "sci_unit", "to_sky_how", "wcs_name", "exptime", "filter")
+                              if k in raw})
+                    out.append((int(b["id"]), r))
         return out, None
     except Exception as exc:  # noqa: BLE001
         return [], exc
@@ -346,7 +357,7 @@ def load_field(cfg, dev, log=print):
     the single-box loader (cuts == exposures, cid == eid, tensors on `dev`). With several boxes the pixel tensors stay on the host (pinned
     when dev is CUDA) and are moved to the device per tile by tiles.TileSet. Returns (cuts, fset, meta, info); meta is per global exposure."""
     from concurrent.futures import ThreadPoolExecutor
-    from .bandpass import FilterSet, svo_filter
+    from .bandpass import FilterSet
     sp = json.load(open(cfg.splits))
     tiles = parse_tiles(cfg, sp)
     boxes = {int(b["id"]): b for b in sp["boxes"] if int(b["id"]) in tiles}
@@ -374,10 +385,20 @@ def load_field(cfg, dev, log=print):
         for fn, r in rj.get("exposures", {}).items():
             if r.get("registered", True):
                 shifts[fn.replace("_cal.fits", "")] = (r["shift_mas"][0] / 1000.0, r["shift_mas"][1] / 1000.0)
-    filters = sorted({e["filter"] for e in ex}, key=lambda f: int("".join(c for c in f if c.isdigit())))
-    insts = sorted({e.get("instrument", "NIRCAM") for e in ex})
+    ins_of = {id(e): _ins.resolve(e) for e in ex}                   # instrument description of every entry (instruments.py)
+    insts = sorted({ins_of[id(e)].key for e in ex})
     f_inst = filter_instruments(ex)       # audit 17 Nov 2026: each curve from ITS instrument (was insts[0] for every filter)
-    fl = [svo_filter(f, f_inst[f], svo_id(f_inst[f], f), cfg.n_lambda, cfg.svo_cache or None) for f in filters]
+    for e in ex:
+        if cfg.input_level not in ins_of[id(e)].levels:
+            raise SystemExit(f"{e['rootname']}: instrument {ins_of[id(e)].key} has no --input-level {cfg.input_level} (it supports {ins_of[id(e)].levels})")
+    curve = FILTER_CURVE or _ins.filter_curve
+    if len(insts) <= 1:                   # one instrument: the old order (digits of the name), names without digits after them by name
+        filters = sorted({e["filter"] for e in ex}, key=lambda f: (0, int("".join(c for c in f if c.isdigit()))) if any(c.isdigit() for c in f) else (1, f))
+        fl = [curve(_ins.INSTRUMENTS[f_inst[f]], f, cfg.n_lambda, cfg.svo_cache or None) for f in filters]
+    else:                                 # several instruments: digits of names are not comparable (F435W is 0.43 um, F444W 4.4 um): by pivot wavelength
+        fl = sorted([curve(_ins.INSTRUMENTS[f_inst[f]], f, cfg.n_lambda, cfg.svo_cache or None) for f in sorted({e["filter"] for e in ex})],
+                    key=lambda c: (c.pivot, c.name))
+        filters = [c.name for c in fl]
     fset = FilterSet(fl)
     # validation carve-out: per filter one TRAINING dither group (deterministic; global over the selected boxes)
     rng = np.random.default_rng(cfg.seed)
@@ -392,9 +413,9 @@ def load_field(cfg, dev, log=print):
     for e in ex:
         path = e["path"] if not cfg.data_root else os.path.join(cfg.data_root, e["file"])
         rpath = None
-        if cfg.input_level == "rate":
-            rpath = os.path.join(cfg.rate_dir, e["file"].replace("_cal.fits", "_rate.fits")) if cfg.rate_dir else path.replace("_cal.fits", "_rate.fits")
-        jobs.append((path, [boxes[k] for k in tiles], half_data, shifts.get(e["rootname"], (0.0, 0.0)), cfg.input_level == "rate", rpath))
+        if cfg.input_level == "rate":     # count-rate file: JWST naming (the only instrument with a count-rate level)
+            rpath = _ins.nircam_rate_path(path, e["file"], cfg.rate_dir)
+        jobs.append((path, [boxes[k] for k in tiles], half_data, shifts.get(e["rootname"], (0.0, 0.0)), cfg.input_level == "rate", rpath, ins_of[id(e)]))
     nw = max(1, int(getattr(cfg, "load_workers", 1))) if multi else 1
     pin = multi and torch.device(dev).type == "cuda"
 
@@ -414,25 +435,30 @@ def load_field(cfg, dev, log=print):
                 log(f"skip {e['rootname']}: no usable pixels in the data region")
                 continue
             path = jobs[k][0]
+            ins = ins_of[id(e)]
+            hf = {r.get("filter") for _, r in rs} - {None}
+            if hf and hf != {e["filter"]}:
+                raise SystemExit(f"{e['rootname']}: the list of exposures says filter {e['filter']}, the file header says {sorted(hf)}")
             for tile, r in rs:
                 det = r["detector"] or e["detector"]
                 if det not in dets:
                     dets.append(det)
-                chan = JWST_DET_CHAN.get(det, det)
+                chan = ins.channel_of(det)
                 if chan not in chans:
                     chans.append(chan)
                 split_lab = "held" if e["rootname"] in held else ("val" if e["dither_group"] in val_groups else "train")
                 host = {"d": to_t(r["d"]), "sig": to_t(r["sig"]), "valid": to_t(r["valid"]), "X": to_t(r["X"]), "Y": to_t(r["Y"]),
                         "Jpix": None if "Jpix" not in r else to_t(r["Jpix"])}
-                ee = Exposure(name=e["rootname"], filt=fset.index[e["filter"]], inst=insts.index(e.get("instrument", "NIRCAM")), chan=chans.index(chan),
+                ee = Exposure(name=e["rootname"] + r.get("name_suffix", ""), filt=fset.index[e["filter"]], inst=insts.index(ins.key), chan=chans.index(chan),
                               det=dets.index(det), t=0.0, mjd=float(e["mjd"]), det_shape=r["det_shape"], cut0=r["cut0"],
                               d=host["d"], sig=host["sig"], valid=host["valid"], X=host["X"], Y=host["Y"], R=rotation_of(r["J"]), split=split_lab,
-                              group=e["dither_group"], shift0=shifts.get(e["rootname"], (0.0, 0.0)), stripes=chan.startswith("NIRCAM"), bkg0=r["bkg0"],
+                              group=e["dither_group"], shift0=shifts.get(e["rootname"], (0.0, 0.0)), stripes=ins.stripes, bkg0=r["bkg0"],
                               Jpix=host["Jpix"],
                               extra={"file": e["file"], "path": path, "J": r["J"].tolist(), "detector": det, "filter": e["filter"], "pixar_a2": r["pixar_a2"],
-                                     "photmjsr": r.get("photmjsr", float("nan"))},
+                                     "photmjsr": r.get("photmjsr", float("nan")), "diameter_m": ins.diameter_m, "instrument": ins.key,
+                                     "rootname": e["rootname"], "chip": r.get("chip", 1), "to_sky": r.get("to_sky", 1.0), "sci_unit": r.get("sci_unit", "")},
                               tile=tile, c0=c0s[tile], host=host if multi else None)
-                ee.eid = gid.setdefault(e["rootname"], len(gid))
+                ee.eid = gid.setdefault(ee.name, len(gid))       # one exposure per chip (rootname + _sci<chip> for a file of several chips)
                 cuts.append(ee)
             if (k + 1) % 10 == 0:
                 log(f"loaded {k + 1}/{len(ex)} files ({len(cuts)} cuts)")
@@ -442,7 +468,7 @@ def load_field(cfg, dev, log=print):
     for i, e in enumerate(cuts):
         e.cid = i
     tt = epoch_coordinates([e.mjd for e in cuts], [insts[e.inst] for e in cuts], cfg.epoch_min_days, bool(getattr(cfg, "epoch_per_instrument", 1)),
-                           ref_mjd=mjds, ref_inst=[e.get("instrument", "NIRCAM") for e in ex])
+                           ref_mjd=mjds, ref_inst=[ins_of[id(e)].key for e in ex])
     for e, t_ in zip(cuts, tt):
         e.t = t_
     # one representative cut per global exposure (most valid pixels): source of the per-exposure metadata (R, sigbar, bkg0, J)

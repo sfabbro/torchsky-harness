@@ -1,0 +1,10 @@
+--- fieldop_orig/model.py	2026-11-17 18:50:48.513290904 -0700
++++ fieldop/model.py	2026-11-17 19:50:25.816390808 -0700
+@@ -506,6 +506,7 @@
+             s1 = math.sqrt(max(1.0, self.blur_floor / float(self.blur_moment(1.0))))
+         if s1 == 1.0:
+             return None
++        s1 = min(s1, 4.0)                        # DIAGNOSTIC (fieldop_dbgB): cap the dilation; a kernel core much narrower than the window drove s1 to 1e2 to 1e5
+         M = self.blur_moment(s1)
+         return s1 * torch.sqrt(torch.clamp(self.blur_floor / M, min=1.0))
+ 

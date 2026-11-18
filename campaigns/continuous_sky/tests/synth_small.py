@@ -74,6 +74,10 @@ def main():
     if a.held_xfit is not None:
         kw["held_xfit"] = a.held_xfit
     cfg = default_config(**kw)
+    spec = None
+    if os.path.exists(os.path.join(os.path.abspath(a.pkg), "fieldop", "instruments.py")):   # through the instrument interface (18 Nov 2026): domain, curve grid, K
+        from fieldop.instruments import spectral_setup
+        spec = spectral_setup(fset, cfg, log=lambda s: None)
     sky, N = make_sky(exps, fset, cfg, 2.8, "cpu")
     model = FieldOperator(cfg, fset, meta, sky, torch.device("cpu"))
     finfo = {}
@@ -120,7 +124,7 @@ def main():
            "setup_seconds": t_setup, "heldout_seconds": t_held, "train_loss_log": rec["steps"], "heldout_chi2": chi2, "heldout_chi2_snr5": chi2b, "heldout_summary": summ, "legacy_defaults": bool(a.legacy_defaults),
            "gauge_ref_inst": cfg.gauge_ref_inst, "kernel_norm_radius": cfg.kernel_norm_radius, "held_xfit": cfg.held_xfit,
            "heldout_n_px": n, "heldout_n_px_snr5": nb, "heldout_per_exposure": sc, "heldout_truth_noise_chi2": noise_floor,
-           "sky_fitted_numbers": int(n_fit), "sky_grid_N": N, "state_sha256": h.hexdigest(), "state_sha256_with_legacy_resid": h2.hexdigest(), "registration": reg,
+           "sky_fitted_numbers": int(n_fit), "sky_grid_N": N, "state_sha256": h.hexdigest(), "state_sha256_with_legacy_resid": h2.hexdigest(), "registration": reg, "spectral_setup": spec,
            "total_seconds": time.perf_counter() - T0}
     if a.truth_eval:
         res["sky_error"] = sky_error(model, exps, fset, truth)

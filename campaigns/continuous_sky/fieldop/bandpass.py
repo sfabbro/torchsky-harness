@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import torch
 
-CURVE_LO, CURVE_HI, CURVE_N = 0.55, 5.6, 48  # um: fixed log-lambda grid of the filter-curve input vector
+CURVE_LO, CURVE_HI, CURVE_N = 0.55, 5.6, 48  # um: reference log-lambda grid of the filter-curve input vector (FilterSet.set_curve_grid widens it)
 
 
 @dataclass
@@ -96,6 +96,17 @@ class FilterSet:
         curve = torch.tensor(np.stack([f.curve_vec for f in self.filters]), dtype=torch.float32, device=dev)
         piv = torch.tensor([f.pivot for f in self.filters], dtype=torch.float32, device=dev)
         return lam, w, curve, piv
+
+    def set_curve_grid(self, lo, hi, n):
+        """Filter-curve input grid [um] (log-spaced, n points) of every filter (instruments.spectral_setup). The reference grid (CURVE_LO, CURVE_HI,
+        CURVE_N, set by finish_filter) is left untouched, so the curve vectors are bit-identical then. Returns True when the grid changed."""
+        if (float(lo), float(hi), int(n)) == (CURVE_LO, CURVE_HI, CURVE_N):
+            return False
+        grid = np.exp(np.linspace(math.log(lo), math.log(hi), int(n)))
+        for f in self.filters:
+            v = f.T_at(grid)
+            f.curve_vec = v / max(v.max(), 1e-12)
+        return True
 
     def T_table(self, lam_flat):
         """T_f(lambda) for every filter f at the given wavelengths (normalised by each curve's max): (nf, M) numpy."""

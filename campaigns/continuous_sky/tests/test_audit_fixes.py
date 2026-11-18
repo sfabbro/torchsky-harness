@@ -36,7 +36,7 @@ def _fake_splits(tmp_path, exps):
     return str(p)
 
 
-def _fake_read_cuts(path, boxes, half_data, shift0, want_jac, rpath):
+def _fake_read_cuts(path, boxes, half_data, shift0, want_jac, rpath, inst=None):
     n = 48
     yy, xx = np.mgrid[0:n, 0:n].astype(np.float32)
     X, Y = (xx - n / 2) * 0.05, (yy - n / 2) * 0.05
@@ -67,7 +67,7 @@ def test_filter_curve_uses_each_filters_instrument(tmp_path, monkeypatch):
     calls = _load(tmp_path, monkeypatch, [_exp("j1", "F150W", "NIRCAM", "NRCB1"), _exp("h1", "F160W", "WFC3", "IR")])
     got = {c[0]: (c[1], c[2]) for c in calls}
     assert got["F150W"] == ("NIRCAM", "JWST/NIRCam.F150W")
-    assert got["F160W"] == ("WFC3", "HST/WFC3_IR.F160W")      # before the fix: ("NIRCAM", "JWST/NIRCam.F160W")
+    assert got["F160W"] == ("WFC3_IR", "HST/WFC3_IR.F160W")   # before the fix: ("NIRCAM", "JWST/NIRCam.F160W"); label = instrument key since 18 Nov
 
 
 def test_filter_name_shared_by_two_instruments_is_refused(tmp_path, monkeypatch):

@@ -68,7 +68,15 @@ def build_parser():
     g.add_argument("--sky-pitch", type=float, default=0.04)
     g.add_argument("--sky-margin", type=float, default=2.0, help="sky domain = box + 2 x margin [arcsec]")
     g.add_argument("--data-margin", type=float, default=1.0, help="data region = box + 2 x margin [arcsec] (< sky margin)")
-    g.add_argument("--spec-k", type=int, default=12)
+    g.add_argument("--spec-k", type=int, default=12, help="number of spectral coefficients (RBF bumps); with --spec-k-rule span: the number over the "
+                   "reference domain 0.70-5.30 um")
+    g.add_argument("--spec-k-rule", choices=["fixed", "span"], default="fixed",
+                   help="'fixed': K = --spec-k whatever the spectral domain; 'span': K grows with ln(hi / lo) of the domain at the reference bump "
+                   "spacing (K = --spec-k for the reference domain, for example 15 for 0.37-5.30 um)")
+    g.add_argument("--spectral-domain", choices=["union", "fixed"], default="union",
+                   help="wavelength domain of the sky basis and of the filter-curve input grid: 'union' = the reference 0.70-5.30 um (curves "
+                   "0.55-5.6 um) widened to cover every loaded filter's quadrature nodes and curve support (audit finding 4; equal to the reference "
+                   "for the NIRCam wide filters F090W-F444W); 'fixed' = the reference whatever is loaded")
     g.add_argument("--sky-neg", type=float, default=1.0)
     g.add_argument("--sky-precond", type=float, default=0.02, help="diagonal preconditioner of the sky: 1 + f x (local warm-start S/N), 0 = off")
     g.add_argument("--sky-precond-cap", type=float, default=2000.0)
@@ -208,7 +216,13 @@ def build_parser():
     g.add_argument("--filter-shift-init", default="", help="JSON file {\"DETECTOR/FILTER\": [dx, dy]} (detector pixels) giving the starting shifts")
     g.add_argument("--lr-filter-shift", type=float, default=0.03, help="Adam step of the pair shift, detector pixels (same warm-up and cosine factor as the others)")
     g.add_argument("--dq-ignore-bits", type=int, default=0,
-                   help="data-quality bits that do not exclude a pixel (F42); 0 = strict DQ == 0; 2 = keep pixels flagged SATURATED only")
+                   help="NIRCam data-quality bits that do not exclude a pixel (F42); 0 = strict DQ == 0; 2 = keep pixels flagged SATURATED only. "
+                   "Other instruments use their own policy (fieldop/instruments.py), changed by --dq-ignore")
+    g.add_argument("--dq-ignore", default="", help="per-instrument data-quality bits that do not exclude a pixel, 'WFC3_IR:528,ACS_WFC:80' (replaces "
+                   "that instrument's default; NIRCam's is --dq-ignore-bits)")
+    g.add_argument("--hst-wcs", choices=["apriori", "archive"], default="apriori",
+                   help="HST header solution: 'apriori' = the guide-star alternate WCS (not registered to any catalogue of the images, as the JWST "
+                   "_cal headers), 'archive' = the primary WCS as served (usually aligned to Gaia by registering the images)")
     g.add_argument("--nonlin", type=int, default=0)
     g.add_argument("--pattern-grid", type=int, default=8)
     g.add_argument("--stripes", type=int, default=1)
@@ -343,7 +357,7 @@ def filt_info_of(exps, fset, insts):
 STRUCTURE_OPTIONS = ("sky_form sky_pitch item_count item_levels spec_k n_lambda level_nh level_factor level_overlap kernel_extent render_pitch render_os_pix "
                      "k_hidden k_layers dh enc_r0 enc_nrad enc_mmax filter_input amplitude distortion pattern_grid stripes pixel_gain pixel_gain_poly filter_shift "
                      "nonlin tau_mode k_space k_time k_lambda k_exp epoch_axes epoch_per_instrument input_level kernel_norm_radius gauge_ref_inst blur_floor "
-                     "field_init item_raster item_patch item_impl rate_units loader").split()
+                     "field_init item_raster item_patch item_impl rate_units loader spec_k_rule spectral_domain hst_wcs").split()
 
 
 def plain_config(cfg):
@@ -445,6 +459,10 @@ def main(argv=None):
                         write_prediction)
     cfg = parse_config(argv)
     _data.DQ_IGNORE_BITS = int(cfg.dq_ignore_bits)
+    from . import instruments as _ins
+    _ins.DQ_IGNORE_OVERRIDE.clear()
+    _ins.DQ_IGNORE_OVERRIDE.update(_ins.parse_dq_ignore(getattr(cfg, "dq_ignore", "")))
+    _ins.HST_WCS = getattr(cfg, "hst_wcs", "apriori")
     _data.RATE_WCS = cfg.rate_wcs
     _data.LOADER = getattr(cfg, "loader", "astropy")
     from . import sky as _sky
@@ -476,6 +494,12 @@ def main(argv=None):
     if cfg.heldout_only and not (cfg.state and os.path.exists(cfg.state)):
         raise SystemExit("--heldout-only needs --state FILE (a fieldop_state.pt written by an earlier run)")
     exps, fset, meta, info = load_field(cfg, dev, log=log)
+    spec_rec = _ins.spectral_setup(fset, cfg, log=log)                  # audit finding 4: spectral domain, curve grid and K from the loaded curves
+    for k_ in info["insts"]:
+        if k_ in _ins.INSTRUMENTS:
+            i_ = _ins.INSTRUMENTS[k_]
+            log(f"instrument {k_}: {i_.telescope}, aperture {i_.diameter_m} m, pixel scale {i_.pixel_scale} arcsec, data-quality bits kept "
+                f"{i_.dq_ignore_bits()} (rejects: {', '.join(i_.dq_reject_names())}), stripes {i_.stripes}, units {i_.sci_units}")
     resolve_instrument_options(cfg, len(info["insts"]), log=log)         # audit findings 5 and 9: refuses several instruments without --gauge-ref-inst
     log(f"instruments {info['insts']}; --gauge-ref-inst {cfg.gauge_ref_inst}; --kernel-norm-radius {cfg.kernel_norm_radius} arcsec; legacy defaults {cfg.legacy_defaults}")
     log(f"loaded {info['n_exposures']} exposures ({info['n_cuts']} cuts in {len(info['tiles'])} tile(s) {info['tiles']}, {info['host_gb']:.2f} GB of pixels): "
@@ -606,7 +630,7 @@ def main(argv=None):
              "note": "mean squared residual / input sigma^2 (file sigma x load-time factors; no learned floor or noise scale), own mask, held-out exposures"}
     log(f"final learned noise floor {nf} (bound {getattr(cfg, 'noise_floor_max', 0.0)}); held-out chi2/px (input noise) {ho_in['chi2_input_noise']}")
     metrics = {"config": vars(cfg), "info": info, "noise_floor_final": nf, "noise_floor_first_above_0.2_step": rec.get("noise_floor_first_above"),
-               "heldout_input_noise": ho_in, "heldout_summary": summ, "instrument_mean_log_throughput": ithr, "state_load_report": load_report, "fit": rec, "warm_kernel": winfo, "registration_prepass": reg, "tau": model.tau.table(), "heldout_own": scores,
+               "heldout_input_noise": ho_in, "spectral_setup": spec_rec, "heldout_summary": summ, "instrument_mean_log_throughput": ithr, "state_load_report": load_report, "fit": rec, "warm_kernel": winfo, "registration_prepass": reg, "tau": model.tau.table(), "heldout_own": scores,
                "effective_variability": effv, "gauges": gauges, "nuisance_sizes": nsz, "tiles": ts.summary() if ts.multi else None,
                "approximations": APPROXIMATIONS, "sources_sha256_16": shas, "pred_dir": str(pred_dir), "seconds": time.perf_counter() - T0}
     if model.fs_on:
