@@ -28,7 +28,7 @@ Status vocabulary:
 | `fitsio` (python-fitsio) | `torchfits` | owner: torchfits | do not import in torchsky |
 | CFITSIO | `torchfits` backend | owner: torchfits | package-level |
 | `astropy.table` (FITS tables) | `torchfits.table`, `torchsky.catalogs` batches | partial | torchfits owns table codec; torchsky owns catalog semantics |
-| pandas / polars / PyArrow / DuckDB | Arrow/tensor batches at boundaries | interop | catalog tests and `bench_catalog_crossmatch_arrow`; not replacements |
+| pandas / polars / PyArrow / DuckDB | Arrow/tensor batches at boundaries | interop | catalog tests; tables are read by torchfits/pyarrow/polars and passed to torchsky as tensors; not replacements |
 
 ## 2. WCS, astrometry, coordinates, time
 

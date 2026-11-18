@@ -71,6 +71,7 @@ throughput.
 | `bench_sphere_matrix` | summary `failed_thresholds` must be empty | `bench-sphere-matrix-release-gate` |
 | `bench_spin_matrix` | summary `failures` must be empty | `bench-spin-matrix-release-gate` |
 | `bench_catalog_compat` | `synthetic_clustered`, `real_astropy_votable_catalogs`, `real_astropy_votable_fits_roundtrip` | `bench-catalog-release-gate` |
+| `bench_catalog_match_exact` | poles, RA wrap, wrap at the pole, duplicates, equidistant ties, radius ladder 1 mas to 1 deg, per-row radii over 5 dex, Plummer cluster, two-sided sum/quadrature/max, mpmath boundary | `bench-catalog-match-exact-release-gate` |
 | `bench_map_ifu` | `ifu_matched_sparse_spectrum` | `bench-map-ifu-gate` |
 | `bench_map_ifu_spectral_axis` | `ifu_nonuniform_axis_line_localization`, `ifu_nonuniform_axis_constant_spectrum`, `ifu_regular_axis_spectrum_interpolation`, `ifu_nonuniform_axis_interpolation_envelope` | `bench-map-ifu-spectral-axis-gate` |
 | `bench_map_healpix_multiband` | `healpix_multiband_flat_multiscale`, `healpix_multiband_sed_registration`, `healpix_multiband_plane_photometry`, `healpix_multiband_roundtrip_cube` | `bench-map-healpix-multiband-gate` |

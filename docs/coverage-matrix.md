@@ -36,6 +36,8 @@ Performance = throughput and speedup recorded (never gated) by `benchmarks/bench
 | map | SWarp | `test_map_swarp_optional_parity.py`, `test_map_external_tools_smoke.py` | comparator_perf `map` (binary wall time), `bench-map-swarp-required` (local) | required on `improc` |
 | map | Montage (`mProject`) | `test_montage_projection_parity.py` | comparator_perf `map`, `bench-map-montage-required` (local) | required on `improc` |
 | catalogs | astropy SkyCoord matching | `test_catalog_compat.py` | `bench-catalog-release-gate`; comparator_perf `catalogs` (1e5, 1e6) | release gate |
+| catalogs | exact crossmatch (brute force, mpmath, scipy cKDTree, astropy) | — | `bench-catalog-match-exact-release-gate` | release gate |
+| catalogs | crossmatch performance vs scipy cKDTree / astropy | — | `catalog-match-perf`; CANFAR `catalog`, `catalog-match-1e7`, `catalog-match-1e8`, `cuda` | record |
 | catalogs | STILTS (`tmatch2`, `tskymatch2`, `tmatch1`, `tmatchn`) | `test_stilts_parity.py`: synthetic (1e5, RA wrap, pole cap) and **real Gaia DR3 x 2MASS x AllWISE** (`scripts/fetch_real_catalogs.py`, sha256-checked against the manifest); exact row-tuple equality | `test_stilts_parity.py` records per-mode STILTS vs torchsky timings (comparator performance table, area `catalogs`); comparator_perf `catalogs` (tmatch2, tskymatch2; 1e5, 1e6) | required on `improc` (`REQUIRE_TOOLS=1`) |
 
 ### pixwin

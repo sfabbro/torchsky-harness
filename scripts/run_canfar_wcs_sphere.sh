@@ -24,12 +24,16 @@ case "${mode}" in
   cpu | cuda | optimization-cpu | optimization-cuda | real-data-gates | spectral | sphere | sparse | healsparse | spin | geometry | cuhpx | \
   wcs-paper2 | wcs-tpv | wcs-spectral | wcs-tabular | sht-profile | moc | catalog | \
   catalog-scale | catalog-scale-1e6 | catalog-scale-1e7 | catalog-scale-real | \
+  catalog-match-1e7 | catalog-match-1e8 | \
   observed | geom-cuda | world-cuda | gpu-validate) ;;
   *)
-    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, observed, geom-cuda, or world-cuda)" >&2
+    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, observed, geom-cuda, or world-cuda)" >&2
     exit 2
     ;;
 esac
+
+# Threads for catalog benchmarks: every engine gets the same count.
+catalog_threads="${CATALOG_THREADS:-$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN)}"
 
 mkdir -p "${artifact_root}"
 echo "started_utc=$(date -u +%FT%TZ)" > "${artifact_root}/HEARTBEAT"
@@ -517,16 +521,13 @@ case "${mode}" in
       --json-out "${artifact_root}/catalog_compat.json" || job_rc=$?
     vos_upload after_catalog_compat || echo "after_catalog_compat VOS upload failed; continuing job" >&2
     pixi run --manifest-path "${source_root}/pixi.toml" -e bench-all -- \
-      python "${source_root}/benchmarks/bench_catalog_crossmatch.py" \
-      --n-left 1000000 --n-right-band 500000 --n-right-background 500000 --runs 3 \
-      --skip-decl-pruned \
-      --json-out "${artifact_root}/catalog_n1e6.json" || job_rc=$?
-    vos_upload after_catalog_n1e6 || echo "after_catalog_n1e6 VOS upload failed; continuing job" >&2
+      python "${source_root}/benchmarks/bench_catalog_match_exact.py" --scale 4 \
+      --json-out "${artifact_root}/catalog_match_exact.json" || job_rc=$?
+    vos_upload after_catalog_match_exact || echo "after_catalog_match_exact VOS upload failed; continuing job" >&2
     pixi run --manifest-path "${source_root}/pixi.toml" -e bench-all -- \
-      python "${source_root}/benchmarks/bench_catalog_crossmatch.py" \
-      --n-left 10000000 --n-right-band 500000 --n-right-background 500000 \
-      --runs 1 --skip-decl-pruned \
-      --json-out "${artifact_root}/catalog_n1e7.json" || job_rc=$?
+      python "${source_root}/benchmarks/bench_catalog_match_perf.py" \
+      --sizes 10000,100000,1000000 --threads "1,${catalog_threads}" --runs 3 \
+      --json-out "${artifact_root}/catalog_match_perf_1e6.json" || job_rc=$?
     if [[ "${job_rc}" -ne 0 ]]; then
       echo "catalog job failures rc=${job_rc}"
       exit "${job_rc}"
@@ -539,7 +540,8 @@ case "${mode}" in
     pixi run --manifest-path "${source_root}/pixi.toml" -e test -- \
       pytest "${TORCHSKY_SUBJECT_ROOT}/tests/test_catalog_covering.py" \
       "${TORCHSKY_SUBJECT_ROOT}/tests/test_catalog_no_dataframe.py" \
-      "${TORCHSKY_SUBJECT_ROOT}/tests/test_catalogs.py" -q --tb=line \
+      "${TORCHSKY_SUBJECT_ROOT}/tests/test_catalogs.py" \
+      "${TORCHSKY_SUBJECT_ROOT}/tests/test_crossmatch_engine.py" -q --tb=line \
       --junitxml="${artifact_root}/catalog_scale_pytest.xml" || job_rc=$?
     vos_upload after_catalog_scale_pytest || echo "after_catalog_scale_pytest VOS upload failed; continuing job" >&2
     pixi run --manifest-path "${source_root}/pixi.toml" -e test -- \
@@ -576,6 +578,16 @@ case "${mode}" in
       python "${source_root}/scripts/run_catalog_scale_contract.py" \
       --left-rows 10000000 --layout sparse --find best --engine-fast \
       --json-out "${artifact_root}/catalog_scale_1e7_sparse_best.json"
+    ;;
+  catalog-match-1e7 | catalog-match-1e8)
+    install_env bench-all
+    record_versions bench-all
+    if [[ "${mode}" == "catalog-match-1e7" ]]; then sizes="10000000"; else sizes="100000000"; fi
+    pixi run --manifest-path "${source_root}/pixi.toml" -e bench-all -- \
+      python "${source_root}/benchmarks/bench_catalog_match_perf.py" \
+      --sizes "${sizes}" --layouts sparse,dense --modes best,all --threads "${catalog_threads}" \
+      --runs 1 --astropy-max-n 0 \
+      --json-out "${artifact_root}/catalog_match_perf_${mode#catalog-match-}.json"
     ;;
   catalog-scale-real)
     install_env test
@@ -725,9 +737,9 @@ PY
       --grid-size 8 --n-points 10000 --runs 5 --device cuda \
       --json-out "${artifact_root}/wcs_tabular_cuda.json" || job_rc=$?
     pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
-      python "${source_root}/benchmarks/bench_catalog_crossmatch.py" \
-      --n-left 20000 --n-right-band 50000 --n-right-background 10000 --runs 3 \
-      --device cuda \
+      python "${source_root}/benchmarks/bench_catalog_match_perf.py" \
+      --sizes 100000,1000000 --layouts sparse,dense --modes best,all,knn2 --runs 3 \
+      --device cuda --astropy-max-n 0 \
       --json-out "${artifact_root}/catalog_cuda.json" || job_rc=$?
     pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
       python "${source_root}/benchmarks/bench_observed_place.py" \

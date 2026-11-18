@@ -299,6 +299,26 @@ CLAIMS: dict[str, EvaluationClaim] = {
         ),
     ),
 
+    "bench_catalog_match_exact": EvaluationClaim(
+        scope="reference_comparison",
+        required_rows=(
+            "pole_north", "pole_south", "ra_wrap", "antimeridian_at_pole",
+            "coincident_duplicates", "equidistant_ties",
+            "radius_ladder_0.001arcsec", "radius_ladder_0.01arcsec",
+            "radius_ladder_0.1arcsec", "radius_ladder_1arcsec",
+            "radius_ladder_10arcsec", "radius_ladder_60arcsec",
+            "radius_ladder_3600arcsec", "per_row_radius_5dex", "plummer_cluster",
+            "two_sided_sum", "two_sided_quadrature", "two_sided_max",
+            "mpmath_boundary_separation",
+        ),
+        comparators=("bruteforce", "mpmath", "scipy", "astropy"),
+        limitations=(
+            "synthetic adversarial geometry at bounded sizes (<= ~2k rows per"
+            " side by default); exact set equality outside a 1e-8 arcsec tie band",
+            "positions only: no epoch propagation, ellipses or probabilistic"
+            " association",
+        ),
+    ),
     "bench_map_cube": EvaluationClaim(
         scope="synthetic_truth",
         required_rows=("cube_constant_bands",),

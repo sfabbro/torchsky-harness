@@ -16,6 +16,9 @@ torchsky production APIs, or source-repository files were changed by this work.
   Their references into `torchsky.catalogs.core` are version-coupled benchmark
   diagnostics, not a supported torchsky API. This extraction does not widen
   that API or change their numerical work.
+  Both were retired on 2026-11-18 to `docs/archive/catalog-crossmatch-pre-rewrite/`
+  when torchsky removed those internals; `bench_catalog_match_exact.py` and
+  `bench_catalog_match_perf.py` replace them through the public API.
 - Catalog evaluator tests remain separate from torchsky's production behavior
   and interop tests. Keep the package's catalog and opt-in torchfits facade
   tests in torchsky; retain evaluator tests here when the source snapshot is

@@ -69,19 +69,23 @@ def test_canfar_wcs_sphere_runner_contract() -> None:
     ):
         assert f"\n  {mode})" in runner
     assert "--moc-only" in runner
-    assert "catalog_n1e7.json" in runner
+    assert "bench_catalog_match_exact.py" in runner
+    assert "bench_catalog_match_perf.py" in runner
+    assert "catalog_match_perf_1e6.json" in runner
+    assert "catalog-match-1e7 | catalog-match-1e8)" in runner
+    assert "bench_catalog_crossmatch.py" not in runner
+    assert "test_crossmatch_engine.py" in runner
     assert "bench_catalog_compat.py" in runner
     assert "catalog_compat.json" in runner
     assert "run_catalog_scale_contract.py" in runner
     assert "catalog_scale_200k_dense.json" in runner
     assert "catalog_scale_1e7_sparse_best.json" in runner
     assert "vos_upload after_catalog_compat" in runner
-    assert "vos_upload after_catalog_n1e6" in runner
+    assert "vos_upload after_catalog_match_exact" in runner
     assert "vos_run" in runner
     assert "timeout --foreground" in runner
     assert 'vcp "${artifact_root}/."' not in runner
     assert "wcs_paper2_fused0.json" in runner
-    assert runner.count("--skip-decl-pruned") >= 2
     assert "test_wcs_observed_frames.py" in runner
     assert "test_catalogs.py" in runner
     assert "bench_wcs_spectral_temporal.py" in runner
