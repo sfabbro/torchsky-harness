@@ -2,6 +2,53 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 18 Nov 2026, 13:00 UTC: the new zero-level rule is what hurt the item sky; on one LMC tile both forms beat the official pipeline in every bin
+
+Collection by a Haiku agent. All scores cross-fitted, no scorer offset.
+
+### SMACS item-sky ablations (200 minutes each, same package)
+
+| Signal-to-noise | Pipeline | Saved old fit, re-scored | Old defaults, new run | New defaults, old zero rule | New defaults (masked zero) |
+|---|---|---|---|---|---|
+| headline (5 and above) | 1.822 | 1.733 | 1.587 | 1.607 | 2.026 |
+| 1 to 5 | 1.094 | 0.976 | 0.979 | 0.978 | 0.977 |
+| 5 to 20 | 1.174 | 1.092 | 1.093 | 1.093 | 1.089 |
+| 20 to 50 | 1.237 | 1.169 | 1.162 | 1.143 | 1.161 |
+| 50 to 200 | 6.70 | 6.87 | 5.66 | 5.86 | 8.90 |
+| above 200 | 92 | 83 | 60 | 64 | 138 |
+| steps | | about 4,400 | 3,387 | 3,463 | 3,131 |
+| long-wavelength flux over mosaic | | 0.98 to 1.00 | 1.00 to 1.01 | 0.98 to 1.00 | 1.15 to 1.17 |
+
+- **The masked zero-level rule is the cause of the item sky's loss on bright pixels and of its 16% long-wavelength flux excess.** Switching only that rule back to the old median gives -0.418 [-0.599, -0.247] in the headline (50 to 200: -3.0; above 200: -75) and fluxes back at 0.98 to 1.00. The joint JWST + HST fit, which also used the masked rule, shows the same bright-pixel loss (10.2 and 108). Mechanism not established; candidates: each refresh moves the backgrounds and the bright cores do not re-converge, or the rule's reference level is biased where the item sky has faint wings.
+- The noise bounds, the per-exposure step sizes and the row-masked held-out steps are harmless here: the fit with all of them and the old zero rule scores 1.607, the same as the old defaults (1.587).
+- **Decision: `--sky-zero median` is the default again for now** (passed explicitly in launches until the package default is switched back). This reverses decision 1 of 17 Nov, which I had recommended on synthetic evidence. The deep-sky bias the masked rule was built for (17 Nov truth test) is still there and needs a form that does not disturb the bright end.
+- **Run-to-run scatter is larger than the bootstrap intervals suggest.** The saved old fit and a new run with the same defaults differ by -0.147 [-0.251, -0.031] in the headline (5.66 against 6.87 at 50 to 200, 60 against 83 above 200), with fewer steps in the better one. Below signal-to-noise 50 the scores repeat to 0.01. So headline differences of about 0.15 between single fits are not established by one run each; the bootstrap is over dither groups and does not include the fit's own variability. A second seed of the same configuration is running to measure it.
+- With these two new runs the item sky is better than the official pipeline in the headline again (-0.235 [-0.393, -0.102] and -0.215 [-0.384, -0.071]) and in every bin, bright pixels included. Given the scatter just described, I would not put more weight on that than on the earlier -0.088; the bins below 50 are the robust part (-0.12, -0.08, -0.08 to -0.09).
+
+### LMC tile 7 alone (200 minutes each; 27 held-out cuts, 2.46 million pixels above signal-to-noise 5)
+
+| Signal-to-noise | Pipeline | Item sky (1,450 steps, slow node) | Grid sky (5,219 steps) |
+|---|---|---|---|
+| headline (5 and above) | 4.13 | 2.73 (-1.40 [-1.92, -1.00]) | 2.89 (-1.24 [-1.81, -0.85]) |
+| below 1 | 2.22 | 2.02 | 2.14 |
+| 1 to 5 | 2.92 | 2.75 | 2.83 |
+| 5 to 20 | 1.99 | 1.76 | 1.75 |
+| 20 to 50 | 3.47 | 2.65 | 2.47 |
+| 50 to 200 | 15.2 | 8.3 | 5.9 |
+| above 200 | 228 | 96 | 146 |
+
+- **With the whole budget on one tile, both forms beat the official pipeline in every bin**, bright stars included (above 200: 96 and 146 against 228). The ten-tile fits of 17 Nov, with about 380 steps per tile, were worse than the pipeline from 20 to 200. So on LMC the limit was steps per tile, not the form.
+- Items against grid: items better below 5 and above 200, grid better at 20 to 200, with 3.6 times more steps for the grid (the item fit ran on a node twice as slow, and an item step at 0.02 arcsec costs more). The item fit ended with one noise floor at its bound of 0.2: still under-fitted.
+- Caveats: one tile; the item fit used the masked zero rule (two refreshes), now known to hurt bright pixels on SMACS; the pipeline's LMC mosaic has a known alignment fault in one F090W observation, which flatters us in that band; all LMC scores are well above 1.
+- For large areas this sets the cost: about 200 GPU minutes per 20-arcsecond tile to beat the pipeline at this depth, with the current step speed.
+
+### Launched at 12:47 to 12:56 UTC (node g0123, archive `fieldop-tsky-964088ce.tar.gz`)
+
+- `onesky_smacs_jwsthst_items_xcorr_s0`: joint JWST + HST with the catalogue-free coarse registration and HST's own pointing (masked zero rule, to compare like for like with the first joint fit).
+- `onesky_smacs_items004w_zmed_norm2_s0`: old zero rule plus the 2 arcsec kernel normalisation.
+- `onesky_smacs_items004w_zmed_seed1_s0`: the new-defaults-with-old-zero-rule configuration with another seed, for run-to-run scatter.
+- Still running until about 13:25: the ablation without noise bounds (masked zero rule).
+
 ## 18 Nov 2026, 10:10 UTC: first joint JWST + HST fit: one sky fits both, fluxes right in all six JWST bands, held-out JWST prediction unchanged
 
 Fit `onesky_smacs_jwsthst_items_s0`: item sky, 85 JWST and 60 HST WFC3/IR training exposures (plus 28 validation), 200 minutes, 3,133 steps, new defaults, kernel normalised within 2 arcsec, HST positions started from the archive solution (shortcut, see 06:15). Collection by a Haiku agent; flux check by me.
