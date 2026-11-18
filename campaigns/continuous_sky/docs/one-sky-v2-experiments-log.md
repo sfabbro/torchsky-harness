@@ -2,6 +2,62 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 18 Nov 2026, 06:15 UTC: how much the old held-out scores were flattered; first joint JWST + HST run; where the new zero-level rule works
+
+### Decision 3 measured on real data: re-scoring the two saved SMACS fits with cross-fitted held-out terms
+
+Same fitted sky and response as before (`onesky_grid004_dq2`, `onesky_items004w`); only the held-out exposures' own terms are now fitted on one half of the pixels and predict the other half. No scorer offset; 24 held-out exposures; 68% intervals.
+
+| | Old score | Cross-fitted | Difference | Against the official pipeline (1.822), cross-fitted |
+|---|---|---|---|---|
+| Item sky, headline | 1.689 | 1.733 | +0.044 [+0.012, +0.073] | -0.088 [-0.230, +0.041] |
+| Grid sky, headline | 1.713 | 1.768 | +0.055 [+0.040, +0.073] | -0.054 [-0.230, +0.085] |
+
+- By bin the item sky loses 0.02 to 0.03 at every signal-to-noise below 50 (all significant) and nothing measurable above.
+- **Consequence for what I told Seb on 16 Nov:** "the item sky is ahead of the official pipeline in the headline (-0.133 [-0.270, -0.005])" becomes -0.088 [-0.230, +0.041]: the headline lead is no longer significant. What survives clearly: the item sky is better than the pipeline at signal-to-noise 1 to 5 (-0.118 [-0.123, -0.110]), 5 to 20 (-0.082 [-0.096, -0.069]) and 20 to 50 (-0.068 [-0.121, -0.025]), level at 50 to 200 and above 200. The grid sky is worse than the pipeline at 5 to 50 and better at 50 to 200.
+- So the flattery was real but small (2% to 3% of the score); it does not change which form is better.
+- Old states load in the new package without loss (all tensors found; one removed buffer ignored).
+
+### First joint JWST + HST run (10-minute smoke run, item sky, 123 JWST + 74 HST WFC3/IR exposures)
+
+- The joint loader, the two instrument descriptions, the filter curves from the cluster's cache and the 2 arcsec kernel normalisation all ran: 145 training and 28 validation exposures, 8,309 patches.
+- **Registration is the first real problem.** With HST's a priori pointing the offsets are 0.4 to 0.5 arcsec (three to four HST pixels), and the registration pre-pass, which is gradient steps, moved the translations by only 4 to 6 mas rms. The fit then starts at an input-noise score of 74 (18 for JWST alone). A gradient pre-pass cannot capture offsets larger than about a kernel width.
+- **Shortcut taken for the first long joint fit (launched 06:04 UTC, `onesky_smacs_jwsthst_items_s0`, 200 minutes):** HST positions start from the archive's solution (`--hst-wcs archive`), which was aligned to Gaia by the archive (within 25 mas of the JWST frame); the fit refines from there. This is a catalogue-informed starting value. The catalogue-free way is a coarse cross-correlation against the starting sky before the gradient pre-pass (the harness already has such a tool for LMC: `--shifts-from`); to build next.
+- The zero-level refresh costs about 5 minutes each time on 173 exposures (it renders every exposure), five times per fit: 12% of a 200-minute fit. To be made cheaper (subsample).
+
+### Where the new zero-level rule works
+
+- Item sky on SMACS: 83 to 86 of 86 training exposures find source-free pixels at each refresh (5% to 100% of their pixels): the rule is active.
+- Grid sky on SMACS: 77 exposures at the first refresh, 1 at the second, none at the third: as the grid sky takes up diffuse light and background, no pixel counts as source-free any more and the rule falls back to the old data median. So with the grid sky in a field full of diffuse light the new rule is inoperative. (With the item sky it holds.)
+- HST exposures of the cluster core (0.128 arcsec pixels): 0 to 96 of 30,500 pixels source-free; reference level kept.
+- This says something general: the zero level can only be set where an exposure sees empty sky. A 20-arcsecond box in a cluster core has none for the coarser instruments; larger areas (tiles reaching blank sky) are needed for the zero level, not only for depth.
+
+### GPU queue at 06:15 UTC
+
+- Running on g0123: `onesky_smacs_grid004_v2_s0`, `onesky_smacs_items004w_v2_s0` (new defaults; end about 08:30), `onesky_smacs_jwsthst_items_s0` (joint; ends about 09:40).
+- Running on g0126 (slow yesterday; speed being checked): `onesky_lmc_t7_items002w_s0`, the item sky on LMC tile 7 alone (the tile with the most held-out cuts and both programmes), 200 minutes, new defaults. Its grid twin follows.
+
+## 18 Nov 2026, 05:45 UTC: registry back; official LMC score of the item fit (corrects my "failed"); queue running
+
+- The image registry answered again at about 05:00 UTC (last error 04:55:22Z; first 01:40:13Z). The two SMACS fits with the new defaults started at about 05:02 and run at normal speed (grid 1.14 s per step, items 3.3 s per step); they end about 08:30.
+- **LMC item fit, official paired score (10 tiles, 62 held-out exposures, 12.1 million pixels above signal-to-noise 5; no scorer offset; old all-pixel held-out terms for both of our fits):**
+
+| Signal-to-noise | Official pipeline | Item sky (17 Nov) | Earlier grid fit (`fieldop_tiles_fix_sky002`) |
+|---|---|---|---|
+| headline (5 and above) | 6.11 | 7.32 (+1.20 [+0.74, +1.70]) | 8.03 (+1.92 [+1.31, +2.48]) |
+| below 1 | 1.92 | 1.68 (-0.24) | 1.84 (-0.09) |
+| 1 to 5 | 2.15 | 1.97 (-0.17) | 2.04 (-0.11) |
+| 5 to 20 | 2.21 | 2.17 (-0.04 [-0.09, +0.03]) | 2.17 (-0.04) |
+| 20 to 50 | 4.52 | 5.60 (+1.08) | 4.00 (-0.52) |
+| 50 to 200 | 28.9 | 40.4 (+11.4) | 29.1 (+0.2) |
+| above 200 | 259 | 308 (+49 [+8, +93]) | 531 (+272) |
+
+  - So the item fit did not fail outright: with about 380 steps per tile it is better than the official pipeline below signal-to-noise 5, level at 5 to 20, worse from 20 to 200, and far better than the grid fit on the brightest pixels. In the headline it is worse than the pipeline and better than the grid fit. Its learned noise floor (0.34 and 0.47) still says the bright pixels were not fitted, which is where it loses.
+  - My earlier statement to Seb ("failed; median 91 where the pipeline scores about 6") compared two different measures and is withdrawn.
+  - Every LMC score here is far above 1 for all methods including the pipeline (crowded field, bright stars), so differences at 50 and above are dominated by a few stars.
+- Launched at 05:36 to 05:40 UTC on the new package (`fieldop-tsky-83b17095.tar.gz`): re-scoring of the saved grid and item fits with cross-fitted held-out terms (old states load: all tensors found, one extra key ignored), and the 10-minute joint JWST + HST smoke run (197 files loading).
+- First look at the grid fit with new defaults: the learned noise scale sits at its bound of 2.0 for two long-wavelength filters at step 300, and the noise floor is 0.14 and 0.09 at 15% progress (the old grid fit ended at 0.016 to 0.043). To be read at the end: the bound is doing what it is for, but a fit pressing on it has a misfit that needs explaining.
+
 ## 18 Nov 2026, 01:45 to 03:10 UTC: instrument interface with HST as second instrument; the truth-test divergence is the blur convention running away; LMC item fit failed; image registry down
 
 ### Instrument interface (decision 6; Opus build, `INSTRUMENT_INTERFACE.md`; I re-ran 30 tests, the agent reports 82)
@@ -32,6 +88,8 @@ S\,[\mathrm{MJy/sr}] = \frac{\mathrm{PHOTFNU}\times 10^{-6}}{\Omega_{\rm nom}\; 
 - Not known: why the kernel core sharpens along that direction; the rate across seeds; the item sky.
 
 ### LMC item fit (`onesky_lmc_items002w_s0b`): failed, as its noise floor warned
+
+> **Correction, 18 Nov 05:45 UTC:** "failed" and "median 91 against about 6" were wrong. The 91 is the fit's own number on pixels where the *model* is above signal-to-noise 5, an unweighted median over cuts; it is not the protocol's score. The official paired score is in the entry of 18 Nov 05:45: headline 7.32 against 6.11 for the official pipeline and 8.03 for the earlier grid fit.
 
 - 3,775 steps over 10 tiles (4.5 s per step), final learned noise floor 0.34 and 0.47. The fit's own held-out numbers: 3.28 over all pixels against input noise, and a median of 91 on pixels above signal-to-noise 5 (the official pipeline scores about 6 there). Official paired scoring is waiting on the registry (below).
 - Reading: about 380 steps per tile and 60,000 items for a crowded 20-arcsecond star field are far too few; with the new default bound on the noise floor the fit could not have hidden it. Next LMC test: one tile, 200 minutes, items against grid.
