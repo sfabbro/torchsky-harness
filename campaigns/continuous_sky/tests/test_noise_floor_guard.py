@@ -65,7 +65,9 @@ def test_bound_holds():
     model, rec, logs, _ = tiny_fit(steps=8, floor0=0.3, noise_floor_max=0.05)
     assert max(train.noise_floor_values(model)) <= 0.05 + 1e-6
     assert max(rec["noise_floor_final"]) <= 0.05 + 1e-6
-    assert not any(s.startswith("WARNING") for s in logs)
+    # since 18 Nov 2026 a floor sitting AT its bound is itself reported (first logged step, and end of the fit); it is never above the 0.2 level here
+    w = [s for s in logs if s.startswith("WARNING")]
+    assert len(w) == 2 and all("sits at its bound" in x for x in w), w
 
 
 def test_default_is_unbounded():

@@ -317,6 +317,28 @@ def _read_cuts(path, boxes, half_data, shift0, want_jac, rpath):
         return [], exc
 
 
+def epoch_coordinates(mjd, inst, min_days, per_instrument=True, ref_mjd=None, ref_inst=None):
+    """Normalised epoch t in [-1, 1] of every exposure (audit finding 12). per_instrument: each instrument's own first and last exposure map
+    to -1 and +1, and an instrument whose own span is shorter than min_days gets t = 0 for all its exposures (its epoch axes are off). Not
+    per_instrument (--legacy-defaults): the old rule, one span over the whole field, so adding an instrument observed years earlier switched
+    the epoch axes on for every instrument. ref_mjd / ref_inst (default: the same arrays) are the exposures that define the spans."""
+    mjd = np.asarray(mjd, float)
+    inst = np.asarray(inst)
+    rm = mjd if ref_mjd is None else np.asarray(ref_mjd, float)
+    ri = inst if ref_inst is None else np.asarray(ref_inst)
+    t = np.zeros(len(mjd))
+    for k in ([None] if not per_instrument else list(np.unique(inst))):
+        g = np.ones(len(mjd), bool) if k is None else (inst == k)
+        if not g.any():
+            continue
+        r = np.ones(len(rm), bool) if k is None else (ri == k)
+        lo, hi = rm[r].min(), rm[r].max()
+        span = max(float(hi - lo), 1e-9)
+        if span >= min_days:
+            t[g] = (mjd[g] - lo) / span * 2 - 1
+    return [float(x) for x in t]
+
+
 def load_field(cfg, dev, log=print):
     """Protocol v1 field: exposures of the split that overlap the data region of the selected box(es) (--tiles, default the one box --box-id).
     Each file is read once and cut once per selected box it overlaps (a CUT is an Exposure object: its own pixels, header positions in that
@@ -416,10 +438,13 @@ def load_field(cfg, dev, log=print):
                 log(f"loaded {k + 1}/{len(ex)} files ({len(cuts)} cuts)")
     if cfg.input_level == "rate" and getattr(cfg, "rate_units", "dn") == "sky":
         set_rate_to_sky(cuts, cfg, log)
-    span = max(float(mjds.max() - mjds.min()), 1e-9) if len(mjds) else 1.0
+    span = max(float(mjds.max() - mjds.min()), 1e-9) if len(mjds) else 1.0      # whole-field span (reported; the epoch coordinate may use per-instrument spans)
     for i, e in enumerate(cuts):
         e.cid = i
-        e.t = float((e.mjd - mjds.min()) / span * 2 - 1) if span >= cfg.epoch_min_days else 0.0
+    tt = epoch_coordinates([e.mjd for e in cuts], [insts[e.inst] for e in cuts], cfg.epoch_min_days, bool(getattr(cfg, "epoch_per_instrument", 1)),
+                           ref_mjd=mjds, ref_inst=[e.get("instrument", "NIRCAM") for e in ex])
+    for e, t_ in zip(cuts, tt):
+        e.t = t_
     # one representative cut per global exposure (most valid pixels): source of the per-exposure metadata (R, sigbar, bkg0, J)
     reps = {}
     for e in cuts:

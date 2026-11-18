@@ -2,6 +2,47 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 18 Nov 2026, 00:10 to 01:45 UTC: Seb approved the six decisions; new defaults, fair held-out scoring, and what the flat-field test on SMACS really measured
+
+Seb (17 Nov, late): "six decisions: ok, yes. go ahead. keep debugging the stuff from your audit." I read "go ahead" as also covering the GPU fits proposed in my last message (one LMC tile, items against grid; the count-rate fit with learned gain on LMC programme 1476).
+
+### New defaults (Sonnet build, `DEFAULTS_V2_2026-11-18.md`; I re-ran 30 tests on the final tree, the agent reports 75 in all)
+
+- `--sky-zero masked` (zero level from pixels the model calls source-free); `--noise-floor-max 0.2`; new `--noise-scale-max 2.0` (learned noise scale per detector and filter kept within a factor of 2, with a warning at the bound); `--nuisance-steps exposure`.
+- Several instruments: the fit refuses to start without an explicit `--gauge-ref-inst`, and normalises the kernel within 2 arcsec unless told otherwise.
+- **Held-out scoring is now cross-fitted (`--held-xfit 1`)**: each held-out exposure's own terms (background, affine, gain, codes, stripes) are fitted on one half of interleaved 4 by 4 pixel blocks and predict the other half, then the reverse, so no predicted pixel was seen by the terms that predict it. The old all-pixel score is still printed next to it. On the two short synthetic fits the old way was flattering by 0.2% to 4.6% against input noise and 5.5% to 9.0% against the model's noise (3 held-out exposures, unconverged fits: indicative only). The real size is measured by re-scoring the saved SMACS states (queued).
+- `--heldout-only --state FILE` re-runs only the held-out stage from a saved state (older states load; missing and extra keys are logged); the launch configuration is now stored inside the state.
+- Audit findings fixed: 12 (time axes decided per instrument), 14 (held-out optimiser steps only the rows present). Finding 15 (start the throughput, distortion and noise fields at exactly zero) is available as `--field-init zero` but **not** default: the exact zero start is singular (the fields are normalised by their rms, so the first gradient is about 10,000 times larger and gradient clipping scales every other operator gradient down on that step); to be tested on a GPU before it becomes default.
+- Removed: `--tau-prior`, `--sky-tv`, `--xfit`, `--xfit-frac`, `--gauge-shift` and their code. **I removed 5 options, not the 20 I had proposed:** the other 15 "never exercised" options select data or resources (`--box-id`, `--data-root`, `--load-workers`, ...), belong to planned tests (`--nonlin`, `--rate-photom`), or are now used (`--kernel-norm-radius`).
+- `--legacy-defaults` restores every old default; with it the two small synthetic fits reproduce the recorded state hashes exactly (grid `ff0f1183...`, items `840b7a11...`), which is the proof that nothing else changed. New default hashes: grid `579e2b1c...`, items `ba5f9c80...`.
+- Package archive: `fieldop-tsky-90ff3b37.tar.gz`.
+
+### What the flat-field test on SMACS measured (Opus diagnosis on the saved states and the real files, `FLAT_PATTERN_DIAGNOSIS.md`)
+
+- **Correction to my entry of 23:15:** a SMACS detector pixel is seen by 4 to 6 training exposures, not about 30 (I misread a count of gradient visits). With so few, the learned gain's error against the true flat (3.1% to 4.7%) is larger than the flat itself (2.2% to 4.3%). That is why it cannot help faint pixels: on a background at signal-to-noise 9 to 30 per pixel it costs 0.42 where no gain costs 0.17 (signal-to-noise 1 to 5; perfect-sky calculation on the 12 local held-out exposures, per-exposure terms not re-fitted).
+- With a perfect flat the excess would be 0.010 at signal-to-noise 1 to 5 and 0.11 at 50 to 200: this is the ceiling the learned gain is aiming for.
+- Shrinking the map by its own noise makes it harmless on faint pixels (0.16 to 0.17, the same as no gain) and gives back the bright-pixel advantage. So shrinkage is necessary, and more exposures per pixel are what makes the gain pay.
+- **What the pipeline's flat contains:** calibrated = count rate times conversion over flat; the pixel-area map is not applied. On NRCB1 the flat contains the pixel-area variation (large-scale correlation +0.79); on the long-wavelength detector it does not (-0.09). So yesterday's doubt was real: on the long-wavelength detector the model's area factor leaves a large-scale term of 0.77% rms (mostly a tilt) that only the per-detector throughput field could carry, and that field is pruned on a 20-arcsecond box. Nothing is counted twice. Not known whether the long-wavelength flat leaves the area out by design.
+- **The additive detector pattern is not the flat in disguise.** Its reported size (1.5 to 3.7 sigma) was mostly grid nodes no training pixel touches plus a degree-2 surface that trades with the per-exposure background shapes; beyond degree 2 it is 0.05 to 0.19 sigma, and it adds at most 0.001 to 0.035 to held-out scores. The end-of-fit report now gives the size over the observed footprint and beyond degree 2.
+- New form, off by default (`--pixel-gain-prior mix2 --pixel-gain-gauge poly+pattern`): the gain multiplies sky plus background; the additive pattern stays in detector units; the gain is projected off what the pattern and the polynomial can represent; its prior is a two-component mixture whose weights and widths are learned from the data (expectation-maximisation with the posterior variance), so the shrinkage strength is not set by hand.
+
+```latex
+d = e^{g}\Big[\frac{a}{a_{\rm nom}\,C}\sum_q w_q\,e^{\gamma_q}\,(K_q * s)_q + b\Big] + A_{\rm det} + \text{stripes}
+```
+
+- Synthetic check (2 seeds): flat error 0.0336 and 0.0377 against 0.0369 and 0.0445 for today's form; held-out prediction better than today's form and than no gain at every signal-to-noise below 20; above 20 the sign differs between seeds. No real-data run yet.
+- Open: the long-wavelength flats differ between filters (correlation 0.85 to 0.90), so one gain map per detector may not be enough there; the mixture's tail component did not separate at a noise limit of 4.6%.
+
+### What this means for the plan
+
+- The flat-field test needs many exposures per detector pixel, which a 20-arcsecond box cannot give on SMACS. Before launching it on LMC programme 1476 I count the exposures per detector pixel there from the LMC state (the tool exists: `flat_check.py --ref-state`). If that count is also small, the right test covers more of each detector (more or larger tiles), not just more exposures.
+
+### GPU queue (18 Nov 01:40 UTC)
+
+- Launched on node g0123: `onesky_smacs_grid004_v2_s0` (method `onesky_grid004_v2`) and `onesky_smacs_items004w_v2_s0` (`onesky_items004w_v2`): the two SMACS reference fits with the new defaults and cross-fitted held-out scoring. Both are waiting: the image registry returned HTTP 500 on the image pull at 01:40 (`images.canfar.net`), the sessions retry by themselves.
+- Next: re-score the saved states of `onesky_grid004_dq2` and `onesky_items004w` with `--heldout-only --legacy-defaults --held-xfit 1` (measures the flattery of the old scores on real data); one LMC tile, items against grid; then the count-rate fit with the new gain prior where the exposure count per pixel allows.
+- The LMC item fit of 17 Nov finished its fit at 00:24 UTC (3,775 steps; learned noise floor 0.34 and 0.47 at the end); collection at 02:13.
+
 ## 17 Nov 2026, 23:15 UTC: first sound count-rate fits on SMACS: the fit learns the true flat field, but not yet well enough to help prediction
 
 Collection by a Haiku agent; flat comparison and flux check by me. Fits: `fieldop_rate_grid3` (control, 9,140 steps, 1.31 s per step) and `fieldop_rate_gain_grid3` (learned gain per detector pixel, 8,821 steps), both from count-rate files in sky units, 200 minutes, grid sky.
@@ -31,7 +72,7 @@ Against the official pipeline at count-rate level: headline +0.54 (control) and 
 
 - So a flat field can be learned from the sky exposures alone, with no flat-field frames: criterion 1 of test 3 passes (rule: at least 0.3 where the noise allows more than 0.5; measured 0.45 to 0.50 there).
 - Criterion 2 fails on SMACS: the count-rate fit with gain is worse than its calibrated twin by 0.29 to 0.35 at signal-to-noise 5 to 50 (rule: at most 0.05), and it is not better than the control without gain except on bright pixels (50 to 200: 5.2 against 7.2). At faint pixels it is worse (1.35 against 1.24).
-- Reading: each SMACS detector pixel is seen about 30 times, so the per-pixel noise of the learned gain (median 1.7% to 3.9%) is as large as the flat itself (2% to 4%); the map is half signal, half noise (slope 0.56 to 0.71), and the noise half costs more on faint pixels than the signal half gains. Two things follow, neither tested yet: shrink the map by its own noise (a learned prior on its amplitude), and use more visits per pixel, which is what LMC programme 1476 provides (680 exposures).
+- (Corrected 18 Nov: 4 to 6 training exposures per pixel, not 30; see the entry of 18 Nov.) Reading: each SMACS detector pixel is seen about 30 times, so the per-pixel noise of the learned gain (median 1.7% to 3.9%) is as large as the flat itself (2% to 4%); the map is half signal, half noise (slope 0.56 to 0.71), and the noise half costs more on faint pixels than the signal half gains. Two things follow, neither tested yet: shrink the map by its own noise (a learned prior on its amplitude), and use more visits per pixel, which is what LMC programme 1476 provides (680 exposures).
 - **Verdict for test 3 on SMACS:** the element is not dropped and not adopted. It learns the right thing but does not pay yet; the LMC fit decides. I am not applying the letter of the drop rule (which says drop) because its first criterion passed clearly and the failure of the second has a specific, testable cause.
 - Open doubt (long-wavelength pixel area counted twice) not settled: the per-detector throughput field was pruned in both fits, the detector pattern is larger on the long-wavelength detector (3.0 to 3.7 sigma against 1.5 to 2.1), consistent with it but not proof.
 - Also visible in the new end-of-fit report: 53% to 56% of the F090W kernel lies beyond 2.5 arcsec (the wings and background trade again); held-out background constants sit 1.2 sigma from the data median (training: 0.27).

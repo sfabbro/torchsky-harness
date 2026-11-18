@@ -225,7 +225,7 @@ def fit_kernel_to_truth(model, steps=2500, log=print, seed=0):
 # ----------------------------------------------------------------------------- model construction and fit
 from fieldop.cli import default_config, make_sky  # noqa: E402
 from fieldop.model import FieldOperator  # noqa: E402
-from fieldop.train import chi2_exposure, fit, fit_heldout, predict_exposure, register_prepass, warm_kernel  # noqa: E402
+from fieldop.train import chi2_exposure, fit, fit_heldout, heldout_stage, predict_exposure, register_prepass, warm_kernel  # noqa: E402
 
 
 class TruthOperator(FieldOperator):
@@ -289,19 +289,21 @@ def run_fit(exps, fset, meta, cfg, freeze_kernel=True, sky_half=2.5, log=print, 
     rec = fit(model, exps, cfg, log=log)
     t_fit = time.perf_counter()
     held = [e.eid for e in exps if e.split == "held"]
-    fit_heldout(model, exps, held, cfg, log=log)
-    P = {k: v.detach() for k, v in model.prepare().items()}
-    sc = {}
+    stage = heldout_stage(model, exps, held, cfg, log=log, tile=22)      # 18 Nov 2026: cross-fitted prediction (default) and the old all-pixel fit
+    P = stage["P"]
+    sc, sc_old = {}, {}
     for e in exps:
         if e.split == "held":
-            m, pv, S = predict_exposure(model, e, P, cfg, tile=22)
-            sc[e.name] = chi2_exposure(e, m, pv, S=S, snr_min=5.0)
-    n = sum(v["n"] for v in sc.values())
-    chi2 = sum(v["chi2"] * v["n"] for v in sc.values()) / n
+            sc[e.name] = stage["pred"](e)[3]
+            sc_old[e.name] = sc[e.name].get("all_pixel_old", sc[e.name])
+    n = sum(v["n"] for v in sc_old.values())
+    chi2 = sum(v["chi2"] * v["n"] for v in sc_old.values()) / n          # all-pixel fit: the number of the earlier tables (heldout_chi2 keeps its meaning)
+    chi2_x = sum(v["chi2"] * v["n"] for v in sc.values()) / n if getattr(cfg, "held_xfit", 0) else None
     floor = noise_floor_heldout(model, exps, cfg, P)
     t_end = time.perf_counter()
     res = {"sky_form": cfg.sky_form, "steps": rec["n_steps"], "fit_seconds": rec["seconds"], "setup_seconds": t_setup - t0, "prepass_seconds": t_reg - t_setup,
            "heldout_seconds": t_end - t_fit, "total_seconds": t_end - t0, "heldout_chi2": chi2, "noise_only_chi2": floor, "ratio_to_floor": chi2 / floor,
+           "heldout_chi2_crossfitted": chi2_x, "ratio_to_floor_crossfitted": (chi2_x / floor) if chi2_x is not None else None,
            "loss_curve": rec["steps"], "kernel_start": info.get("kernel_start"), "n_train": sum(e.split == "train" for e in exps),
            "sky_zero_record": rec.get("sky_zero")}
     return model, res

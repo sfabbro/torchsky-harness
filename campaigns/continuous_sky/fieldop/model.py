@@ -55,7 +55,9 @@ class PixelGain(nn.Module):
     training cut) logg is orthogonal to the monomials of total degree <= order (order 0: zero mean; 2: mean, tilt and curvature removed);
     pixels of the box never observed in training are held at logg = 0 (G = 1), as is every pixel outside the box."""
 
-    def __init__(self, labels, boxes, obs, info, count, order, dev):
+    def __init__(self, labels, boxes, obs, info, count, order, dev, pattern_grid=0, det_shapes=None):
+        """pattern_grid > 0 (--pixel-gain-gauge poly+pattern): the bilinear hat functions of the additive pattern's grid (over the whole
+        detector, det_shapes[k]) are projected out too, so that G and the additive pattern have no common component (diagnosis 17 Nov 2026)."""
         super().__init__()
         self.labels, self.boxes, self.order = list(labels), [tuple(int(v) for v in b) for b in boxes], int(order)
         sizes = [b[2] * b[3] for b in self.boxes]
@@ -71,6 +73,11 @@ class PixelGain(nn.Module):
             idx = torch.nonzero(o)[:, 0]
             rr, cc = idx // b[3] + b[0], idx % b[3] + b[1]
             V = poly_basis(rr, cc, b, self.order)
+            if pattern_grid > 0 and det_shapes is not None:
+                Gp, (ny, nx) = int(pattern_grid), det_shapes[k]
+                u, w = rr.double() / (ny - 1) * (Gp - 1), cc.double() / (nx - 1) * (Gp - 1)
+                H = torch.stack([(1 - (u - i).abs()).clamp(min=0) * (1 - (w - j).abs()).clamp(min=0) for i in range(Gp) for j in range(Gp)], -1)
+                V = torch.cat([V, H[:, H.sum(0) > 1e-9]], -1)
             Q = torch.linalg.qr(V)[0] if idx.numel() > V.shape[1] else torch.zeros(idx.numel(), 0, dtype=torch.float64)
             self.register_buffer(f"pidx{k}", (idx + self.off[k]).to(dev), persistent=False)
             self.register_buffer(f"pQ{k}", Q.float().to(dev), persistent=False)
@@ -108,6 +115,59 @@ class PixelGain(nn.Module):
         un = self.logg[~self.obs]
         return {"max_projected_component_rms": proj, "max_abs_unobserved": float(un.abs().max()) if un.numel() else 0.0}
 
+    # ---- learned shrinkage prior (--pixel-gain-prior, diagnosis 17 Nov 2026); off by default: nothing below is used and the state is unchanged
+    prior_mode = "off"
+
+    def set_prior(self, mode):
+        """Zero-mean prior on log G per key, its scales LEARNED (em_update): 'gauss' one Gaussian of width tau; 'mix2' a two-component scale
+        mixture pi_1 N(0, tau_1^2) + pi_2 N(0, tau_2^2) (a narrow core and a wide tail: real flats have a few per cent of strongly deviant
+        pixels that a single Gaussian would shrink away). Starting values only (no strength is set by hand): tau_1 = the median per-pixel noise
+        limit 1 / sqrt(I_p) of the key, tau_2 = 5 tau_1, pi = (0.9, 0.1)."""
+        self.prior_mode = mode
+        K = 1 if mode == "gauss" else 2
+        tau0 = []
+        for k in range(len(self.boxes)):
+            inf_ = self.info[getattr(self, f"pidx{k}")]
+            tau0.append(float(torch.median(1.0 / torch.sqrt(inf_.clamp(min=1e-12)))) if inf_.numel() else 0.05)
+        tau = torch.tensor([[t, 5.0 * t][:K] for t in tau0], dtype=torch.float32, device=self.logg.device)
+        pi = torch.tensor([[1.0] if K == 1 else [0.9, 0.1] for _ in tau0], dtype=torch.float32, device=self.logg.device)
+        self.register_buffer("prior_tau", tau)
+        self.register_buffer("prior_pi", pi)
+
+    def prior_nll(self):
+        """-log prior summed over the observed pixels of every key (constants dropped); differentiable in logg."""
+        tot = self.logg.new_zeros(())
+        for k in range(len(self.boxes)):
+            g = self.logg[getattr(self, f"pidx{k}")]
+            t, p = self.prior_tau[k], self.prior_pi[k]
+            lp = torch.log(p)[None] - torch.log(t)[None] - 0.5 * (g[:, None] / t[None]) ** 2
+            tot = tot - torch.logsumexp(lp, -1).sum()
+        return tot
+
+    @torch.no_grad()
+    def em_update(self):
+        """EM step for the prior's weights and widths from the current (MAP) map and the per-pixel posterior variance of each component,
+        1 / (I_p + 1 / tau_k^2) with I_p the stored information of log G (sum over training cuts of max(d^2/sig^2 - 1, 0)):
+        r_pk ~ pi_k N(g_p; 0, tau_k^2);  tau_k^2 <- sum_p r_pk (g_p^2 + 1 / (I_p + 1 / tau_k^2)) / sum_p r_pk;  pi_k <- mean_p r_pk."""
+        for k in range(len(self.boxes)):
+            idx = getattr(self, f"pidx{k}")
+            if idx.numel() == 0:
+                continue
+            g, inf_ = self.logg[idx].double(), self.info[idx].double()
+            t, p = self.prior_tau[k].double(), self.prior_pi[k].double()
+            lp = torch.log(p)[None] - torch.log(t)[None] - 0.5 * (g[:, None] / t[None]) ** 2
+            r = torch.softmax(lp, -1)
+            post = 1.0 / (inf_[:, None] + 1.0 / t[None] ** 2)
+            t2 = (r * (g[:, None] ** 2 + post)).sum(0) / r.sum(0).clamp(min=1e-12)
+            self.prior_tau[k] = t2.sqrt().clamp(min=1e-4).float()
+            self.prior_pi[k] = (r.mean(0).clamp(min=0.01) / r.mean(0).clamp(min=0.01).sum()).float()
+
+    def prior_table(self):
+        if self.prior_mode == "off":
+            return None
+        return {lab: {"tau": [round(float(x), 5) for x in self.prior_tau[k]], "pi": [round(float(x), 4) for x in self.prior_pi[k]]}
+                for k, lab in enumerate(self.labels)}
+
     def map(self, k):
         """(nr, nc) log-gain map of key k (host numpy) and its observed mask, count and information maps."""
         r0, c0, nr, nc = self.boxes[k]
@@ -116,7 +176,7 @@ class PixelGain(nn.Module):
         return f(self.logg), f(self.obs), f(self.count), f(self.info)
 
 
-def build_pixel_gain(cuts, meta, mode, order, dev, fset_names=None, det_names=None):
+def build_pixel_gain(cuts, meta, mode, order, dev, fset_names=None, det_names=None, pattern_grid=0):
     """PixelGain from the TRAINING cuts (split == 'train'): per key the bounding box of the detector pixels valid in at least one cut, the
     observed mask, the number of training cuts seeing each pixel and the information sum_e max(d^2 / sig^2 - 1, 0) (Fisher information of
     log G per pixel if the rest of the model were known and m ~ d; F44). Returns (PixelGain, key of every exposure (list, -1 = none))."""
@@ -167,7 +227,28 @@ def build_pixel_gain(cuts, meta, mode, order, dev, fset_names=None, det_names=No
         count.append(cnt)
         dn = det_names[kk[0]] if det_names else str(kk[0])
         labels.append(dn if len(kk) == 1 else f"{dn}/{fset_names[kk[1]] if fset_names else kk[1]}")
-    return PixelGain(labels, boxes, obs, info, count, order, dev), ekey
+    det_shapes = None
+    if pattern_grid > 0:
+        first = {}
+        for i in range(E):
+            first.setdefault(int(meta["det"][i]), tuple(int(v) for v in meta["det_shape"][i]))
+        det_shapes = [first[kk[0]] for kk, _ in keys]
+    return PixelGain(labels, boxes, obs, info, count, order, dev, pattern_grid=pattern_grid, det_shapes=det_shapes), ekey
+
+
+def resolve_instrument_options(cfg, n_inst, log=None):
+    """Audit findings 5 and 9. --gauge-ref-inst and --kernel-norm-radius default to None (unset). With one instrument they resolve to the old
+    defaults (-1 = every training exposure, 0 = unit integral over the whole kernel support). With more than one instrument the reference
+    instrument of the throughput gauge must be given explicitly (SystemExit otherwise) and an unset norm radius becomes 2 arcsec. Idempotent."""
+    if getattr(cfg, "gauge_ref_inst", None) is None:
+        if n_inst > 1:
+            raise SystemExit(f"{n_inst} instruments are loaded: --gauge-ref-inst INDEX must be given explicitly (the absolute flux scale of the "
+                             f"fit is the reference instrument's; -1 = all training exposures, weighted by their number, is a compromise)")
+        cfg.gauge_ref_inst = -1
+    if getattr(cfg, "kernel_norm_radius", None) is None:
+        cfg.kernel_norm_radius = 2.0 if n_inst > 1 else 0.0
+        if log is not None:
+            log(f"kernel normalisation radius {cfg.kernel_norm_radius} arcsec ({'several instruments: default 2 arcsec' if n_inst > 1 else 'one instrument: whole support'})")
 
 
 class FieldOperator(nn.Module):
@@ -207,6 +288,7 @@ class FieldOperator(nn.Module):
         self.register_buffer("Phi", Phi)          # (nf, Q, K)
         self.register_buffer("Phi_band", (Phi * w[..., None]).sum(1))
         n_det, n_inst, n_chan = meta["n_det"], meta["n_inst"], meta["n_chan"]
+        resolve_instrument_options(cfg, n_inst)           # no-op when the command line (or a test) already did it
         self.n_det, self.n_inst, self.n_chan = n_det, n_inst, n_chan
         # render pitch per channel: --render-pitch, or (0) the largest sky_pitch / k at or below (channel pixel) / --render-os-pix
         self.levels_ch, self.os_ch, self.render_pitch_ch = [], [], []
@@ -220,7 +302,7 @@ class FieldOperator(nn.Module):
             if abs(sky.pitch / pr - os_) > 1e-6:
                 raise ValueError("--render-pitch must divide the sky pitch")
             self.levels_ch.append(Levels(pr, cfg.level_factor, cfg.level_nh, cfg.kernel_extent, a=cfg.level_overlap, device=dev,
-                                         norm_r=getattr(cfg, "kernel_norm_radius", 0.0)))
+                                         norm_r=float(getattr(cfg, "kernel_norm_radius", 0.0) or 0.0)))
             self.os_ch.append(os_)
             self.render_pitch_ch.append(pr)
         self.levels = self.levels_ch[int(np.argmin(self.render_pitch_ch))]   # finest (warm start, diagnostics)
@@ -234,8 +316,9 @@ class FieldOperator(nn.Module):
         self.g_fin = nn.Linear(curves.shape[1], 16) if cfg.filter_input == "curve" else nn.Embedding(len(fset), 16)
         self.g_inst = nn.Embedding(n_inst, 4)
         self.g_det_emb = nn.Embedding(n_det, 8)
-        self.gdet = mlp(8 + 10 + 9, 32, 1, 2)
-        self.gep = mlp(5 + 9 + 4, 32, 1, 2)
+        zl = getattr(cfg, "field_init", "random") == "zero"     # audit 15: the throughput and distortion fields start at exactly zero output
+        self.gdet = mlp(8 + 10 + 9, 32, 1, 2, zero_last=zl)
+        self.gep = mlp(5 + 9 + 4, 32, 1, 2, zero_last=zl)
         self.u = nn.Parameter(torch.zeros(E, device=dev))
         # ---- geometry
         self.affine = nn.Parameter(torch.zeros(E, 6, device=dev))   # raw; physical = raw * aff_scale (matrix 1e-3, shift 0.01 arcsec per unit)
@@ -244,8 +327,8 @@ class FieldOperator(nn.Module):
         self.fshift = None
         self.zD = nn.Parameter(torch.zeros(E, 6, device=dev))
         self.D_det = nn.Embedding(n_det, 8)
-        self.Dst = mlp(8 + 10 + 9, 32, 2, 2)
-        self.Ddr = mlp(8 + 10 + 5, 32, 2, 2)
+        self.Dst = mlp(8 + 10 + 9, 32, 2, 2, zero_last=zl)
+        self.Ddr = mlp(8 + 10 + 5, 32, 2, 2, zero_last=zl)
         # ---- detector
         self.bkg = nn.Parameter(torch.zeros(E, 6, device=dev))
         with torch.no_grad():
@@ -351,7 +434,9 @@ class FieldOperator(nn.Module):
         mode = getattr(cfg, "pixel_gain", "off")
         if mode == "off":
             return None
-        pg, ekey = build_pixel_gain(cuts, self.meta, mode, getattr(cfg, "pixel_gain_poly", 2), self.dev, fset_names=fset_names, det_names=det_names)
+        pgrid = int(cfg.pattern_grid) if getattr(cfg, "pixel_gain_gauge", "poly") == "poly+pattern" and self.pattern is not None else 0
+        pg, ekey = build_pixel_gain(cuts, self.meta, mode, getattr(cfg, "pixel_gain_poly", 2), self.dev, fset_names=fset_names, det_names=det_names,
+                                    pattern_grid=pgrid)
         self.pixgain = pg
         self.gain_key = ekey
         return pg
@@ -367,7 +452,11 @@ class FieldOperator(nn.Module):
     @staticmethod
     def tau_spec(cfg, meta):
         t = np.asarray(meta["t"])[np.asarray(meta["train"], bool)]
-        multi_epoch = len(np.unique(np.round(t, 6))) > 1 and cfg.epoch_axes
+        if getattr(cfg, "epoch_per_instrument", 1):      # audit 12: the epoch axes switch on only if some instrument has several epochs of its own
+            inst = np.asarray(meta["inst"])[np.asarray(meta["train"], bool)]
+            multi_epoch = any(len(np.unique(np.round(t[inst == i], 6))) > 1 for i in np.unique(inst)) and cfg.epoch_axes
+        else:
+            multi_epoch = len(np.unique(np.round(t, 6))) > 1 and cfg.epoch_axes
         glob = "learned" if cfg.tau_mode == "learned" else "on"
 
         def km(mode):
@@ -851,7 +940,7 @@ class FieldOperator(nn.Module):
 
     def shift_gauge(self, P):
         """Common shift: mean LEARNED displacement (Omega - X_wcs - shift0) over the training exposures at the 3x3 lattice, all lambda nodes [arcsec]
-        (F18; logged, and penalised only if --gauge-shift > 0; the learned translations are also projected to zero mean)."""
+        (F18; logged only; the learned translations are projected to zero mean)."""
         tr = self.ref_eids
         acc = []
         for e in tr[:: max(1, tr.numel() // 64)]:
@@ -860,6 +949,30 @@ class FieldOperator(nn.Module):
             pos = self.positions(e, X, X, xi, P)
             acc.append(pos.mean((0, 1)) - self.shift0[e])
         return torch.stack(acc).mean(0)
+
+    @torch.no_grad()
+    def instrument_mean_log_throughput(self, P=None, names=None):
+        """Audit finding 5: mean log-throughput gamma (relative to the published curves, after the gauge) of the training exposures of each
+        instrument, T-weighted over the Lambda nodes and averaged over the lattice. The gauge sets it to zero for the reference set; for the other
+        instruments it is the flux-scale offset the fit has learned relative to that set. {instrument: {"mean_log_g", "n_train_exposures"}}."""
+        P = self.prepare() if P is None else P
+        if self.amp != "structured":
+            return {}
+        keep = self.gref
+        out = {}
+        try:
+            for i in range(self.n_inst):
+                ids = [int(e) for e in self.ref_eids.tolist() if int(self.e_inst[e]) == i]
+                if not ids:
+                    continue
+                self.gref = torch.as_tensor(ids, device=self.dev, dtype=torch.long)
+                g = self.gamma_raw_ref(P) - P["m"].flatten()[None]
+                Tw = self.T_ref[self.e_filt[self.gref]]
+                out[names[i] if names and i < len(names) else str(i)] = {"mean_log_g": float((Tw * g).sum() / Tw.sum().clamp(min=1e-12)),
+                                                                        "n_train_exposures": len(ids)}
+        finally:
+            self.gref = keep
+        return out
 
     @torch.no_grad()
     def gauge_report(self, exps=None, P=None):

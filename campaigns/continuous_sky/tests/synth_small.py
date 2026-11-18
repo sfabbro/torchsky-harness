@@ -37,6 +37,10 @@ def parse():
     ap.add_argument("--item-impl", default="", help="prototype / torchsky (empty = not passed, for packages without the flag)")
     ap.add_argument("--sky-pitch", type=float, default=0.06)
     ap.add_argument("--truth-eval", type=int, default=1)
+    ap.add_argument("--legacy-defaults", type=int, default=0, help="1: every default changed on 18 Nov 2026 set back to its old value (cli.LEGACY_DEFAULTS)")
+    ap.add_argument("--gauge-ref-inst", type=int, default=None, help="two instruments: must be given (the package refuses otherwise)")
+    ap.add_argument("--kernel-norm-radius", type=float, default=None)
+    ap.add_argument("--held-xfit", type=int, default=None, help="override of the held-out cross-fitting default of the chosen defaults")
     ap.add_argument("--out", required=True)
     return ap.parse_args()
 
@@ -48,7 +52,7 @@ def main():
     from fieldop.cli import default_config, make_sky
     from fieldop.model import FieldOperator
     from fieldop.synth import SynthInstrument, make_field
-    from fieldop.train import chi2_exposure, fit, fit_heldout, predict_exposure, register_prepass, warm_kernel
+    from fieldop.train import fit, heldout_stage, register_prepass, summarise_scores, warm_kernel
     T0 = time.perf_counter()
     torch.manual_seed(a.seed)
     insts = [SynthInstrument("A", 0.10, 40, 6.5, 0.07, 1.5, space_grad=0.15, chromatic=1.0, flat_grad=0.08, filters=[("A1", 1.0, 1.3), ("A2", 1.6, 2.1)]),
@@ -66,6 +70,9 @@ def main():
             kw.update(item_raster=a.item_raster, item_patch=a.item_patch)
         if a.item_impl:
             kw.update(item_impl=a.item_impl)
+    kw.update(legacy_defaults=bool(a.legacy_defaults), gauge_ref_inst=a.gauge_ref_inst, kernel_norm_radius=a.kernel_norm_radius)
+    if a.held_xfit is not None:
+        kw["held_xfit"] = a.held_xfit
     cfg = default_config(**kw)
     sky, N = make_sky(exps, fset, cfg, 2.8, "cpu")
     model = FieldOperator(cfg, fset, meta, sky, torch.device("cpu"))
@@ -82,14 +89,13 @@ def main():
     rec = fit(model, exps, cfg, log=lg)
     held = [e.eid for e in exps if e.split == "held"]
     t = time.perf_counter()
-    fit_heldout(model, exps, held, cfg, log=lg)
-    P = {k: v.detach() for k, v in model.prepare().items()}
+    stage = heldout_stage(model, exps, held, cfg, log=lg, tile=20)
     sc = {}
     for e in exps:
         if e.split == "held":
-            m, pv, S = predict_exposure(model, e, P, cfg, tile=20)
-            sc[e.name] = chi2_exposure(e, m, pv, S=S, snr_min=5.0)
+            sc[e.name] = stage["pred"](e)[3]
     t_held = time.perf_counter() - t
+    summ = summarise_scores(sc)
     n = sum(v["n"] for v in sc.values())
     nb = sum(v["n_bright"] for v in sc.values())
     chi2 = sum(v["chi2"] * v["n"] for v in sc.values()) / n
@@ -111,7 +117,8 @@ def main():
         h2.update(legacy[k].detach().cpu().contiguous().numpy().tobytes())
     n_fit = sky.n_fitted() if hasattr(sky, "n_fitted") else sky.A[0].numel()
     res = {"pkg": a.pkg, "sky_form": a.sky_form, "seed": a.seed, "steps": rec["n_steps"], "fit_seconds": rec["seconds"], "s_per_step": rec["s_per_step"],
-           "setup_seconds": t_setup, "heldout_seconds": t_held, "train_loss_log": rec["steps"], "heldout_chi2": chi2, "heldout_chi2_snr5": chi2b,
+           "setup_seconds": t_setup, "heldout_seconds": t_held, "train_loss_log": rec["steps"], "heldout_chi2": chi2, "heldout_chi2_snr5": chi2b, "heldout_summary": summ, "legacy_defaults": bool(a.legacy_defaults),
+           "gauge_ref_inst": cfg.gauge_ref_inst, "kernel_norm_radius": cfg.kernel_norm_radius, "held_xfit": cfg.held_xfit,
            "heldout_n_px": n, "heldout_n_px_snr5": nb, "heldout_per_exposure": sc, "heldout_truth_noise_chi2": noise_floor,
            "sky_fitted_numbers": int(n_fit), "sky_grid_N": N, "state_sha256": h.hexdigest(), "state_sha256_with_legacy_resid": h2.hexdigest(), "registration": reg,
            "total_seconds": time.perf_counter() - T0}

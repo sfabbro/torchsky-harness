@@ -85,7 +85,7 @@ class PatchPool:
 
 
 # ----------------------------------------------------------------------------- losses
-def patch_loss(model, exps, eid, sl, P, cfg, view=None, detach_sky=False, method="fft", quad=None, jitter=None, half=None):
+def patch_loss(model, exps, eid, sl, P, cfg, detach_sky=False, method="fft", quad=None, jitter=None, half=None):
     """Summed loss over the valid pixels of one patch; half = 0 / 1 keeps one of two interleaved 4 x 4 pixel-block halves (validation).
     `eid` is the index of the CUT in exps (== the global exposure id with one tile); the model is addressed by exps[eid].eid."""
     e = exps[eid]
@@ -93,7 +93,7 @@ def patch_loss(model, exps, eid, sl, P, cfg, view=None, detach_sky=False, method
     jit = bool(cfg.render_jitter) if jitter is None else jitter
     if isinstance(quad, dict):
         quad = quad[e.chan]
-    out = model.render(e.eid, pix, P, method=method, view=view, quad=quad, detach_sky=detach_sky, jitter=jit)
+    out = model.render(e.eid, pix, P, method=method, quad=quad, detach_sky=detach_sky, jitter=jit)
     v = pix["valid"]
     if half is not None:
         v = v & ((((pix["row"] // 4) + (pix["col"] // 4)) % 2) == half)
@@ -114,6 +114,35 @@ def noise_floor_values(model):
     """Learned fractional noise floor(s), softplus(floor_raw), one per channel."""
     with torch.no_grad():
         return [round(float(x), 6) for x in F.softplus(model.floor_raw).detach().cpu()]
+
+
+def noise_scale_raw_max(value):
+    """Largest |hs| (model.hs; noise scale exp(h), h = 3 tanh(hs / 3)) that keeps the scale within [1/value, value]; None = no bound
+    (value <= 0, or value so large that the intrinsic bound exp(+-3) is tighter)."""
+    if not value or value <= 0:
+        return None
+    value = max(value, 1.0 / value)
+    L = math.log(value)
+    return None if L >= 3.0 else 3.0 * math.atanh(L / 3.0)
+
+
+def bound_report(model, cfg, rel=1e-4):
+    """Learned noise terms sitting at their bound (--noise-floor-max, --noise-scale-max): {"floor": [(channel, value)], "noise_scale":
+    [("detector/filter", exp(h))]}. Empty lists when nothing is at a bound. Reads the device (call at logged steps only)."""
+    out = {"floor": [], "noise_scale": []}
+    nf_max = float(getattr(cfg, "noise_floor_max", 0.0) or 0.0)
+    if nf_max > 0:
+        out["floor"] = [(c, v) for c, v in enumerate(noise_floor_values(model)) if v >= nf_max * (1 - rel)]
+    hmax = noise_scale_raw_max(float(getattr(cfg, "noise_scale_max", 0.0) or 0.0))
+    if hmax is not None:
+        det_names, fn = model.meta.get("det_names", []), model.fset.names
+        used = sorted({(int(model.e_det[i]), int(model.e_filt[i])) for i in range(model.E)})
+        with torch.no_grad():
+            hs = model.hs.detach().cpu()
+        for d, f in used:
+            if abs(float(hs[d, f])) >= hmax * (1 - rel):
+                out["noise_scale"].append((f"{det_names[d] if d < len(det_names) else d}/{fn[f]}", round(math.exp(3 * math.tanh(float(hs[d, f]) / 3)), 4)))
+    return out
 
 
 def acc_input_chi(model, pix, out, v):
@@ -138,34 +167,30 @@ def pix_loss(model, e, pix, out, cfg, half=None):
     return (nll * vf).sum(), vf.sum().detach(), (z2.detach() * vf).sum()
 
 
-def batch_loss(model, exps, items, P, cfg, pool_mean_valid, view_of=None, detach_sky=False, method="fft", quad=None, half=None, jitter=None):
+def batch_loss(model, exps, items, P, cfg, pool_mean_valid, detach_sky=False, method="fft", quad=None, half=None, jitter=None):
     """Importance-weighted mean loss per pixel of a batch of patches; FFT renders are batched (model.render_batch)."""
     tot, n, chi = 0.0, 0, 0.0
     if method == "quad" or not cfg.batch_render:
         for eid, sl, w in items:
-            view = None if view_of is None else view_of(eid)
-            l, k, c = patch_loss(model, exps, eid, sl, P, cfg, view=view, detach_sky=detach_sky, method=method, quad=quad, half=half, jitter=jitter)
+            l, k, c = patch_loss(model, exps, eid, sl, P, cfg, detach_sky=detach_sky, method=method, quad=quad, half=half, jitter=jitter)
             tot = tot + w * l
             n += k
             chi += c
         return tot / (len(items) * pool_mean_valid), n, chi
     jit = bool(cfg.render_jitter) if jitter is None else jitter
-    by_view = {}
-    for k, (eid, sl, w) in enumerate(items):
-        by_view.setdefault(None if view_of is None else view_of(eid), []).append(k)
-    for view, ks in by_view.items():
-        pixs = [exps[items[k][0]].pix(items[k][1]) for k in ks]
-        outs = model.render_batch([(exps[items[k][0]].eid, px) for k, px in zip(ks, pixs)], P, view=view, detach_sky=detach_sky, jitter=jit)
-        for k, px, out in zip(ks, pixs, outs):
-            l, kk, c = pix_loss(model, exps[items[k][0]], px, out, cfg, half)
-            tot = tot + items[k][2] * l
-            n += kk
-            chi += c
+    ks = list(range(len(items)))
+    pixs = [exps[items[k][0]].pix(items[k][1]) for k in ks]
+    outs = model.render_batch([(exps[items[k][0]].eid, px) for k, px in zip(ks, pixs)], P, detach_sky=detach_sky, jitter=jit)
+    for k, px, out in zip(ks, pixs, outs):
+        l, kk, c = pix_loss(model, exps[items[k][0]], px, out, cfg, half)
+        tot = tot + items[k][2] * l
+        n += kk
+        chi += c
     return tot / (len(items) * pool_mean_valid), n, chi
 
 
 @torch.no_grad()
-def item_losses(model, exps, items, P, cfg, half=None, view_of=None):
+def item_losses(model, exps, items, P, cfg, half=None):
     """Mean loss per valid pixel of each patch (no importance weights): (B,) tensor, for paired comparisons."""
     out = []
     pixs = [exps[eid].pix(sl) for eid, sl, _ in items]
@@ -177,7 +202,7 @@ def item_losses(model, exps, items, P, cfg, half=None, view_of=None):
 
 
 @torch.no_grad()
-def ablation_evidence(model, exps, items, cfg, stats, view_of=None):
+def ablation_evidence(model, exps, items, cfg, stats):
     """Likelihood-ratio evidence per FUNCTION axis (F21): on the same validation patches (half 1), the held-out loss with the axis switched
     off minus with it on; the paired differences are accumulated with exponential forgetting and give z_ab = mean / se. An axis is 'kept'
     while z_ab > --tau-occam-z (switching it off significantly worsens held-out prediction)."""
@@ -204,18 +229,15 @@ def ablation_evidence(model, exps, items, cfg, stats, view_of=None):
         st["delta"] = mean
 
 
-def sky_regs(model, sig_b, cfg, view=None):
+def sky_regs(model, sig_b, cfg):
     if hasattr(model.sky, "opt_groups"):         # item sky (--sky-form items): non-negative by construction, no regulariser
         return 0.0
-    if cfg.sky_neg <= 0 and cfg.sky_tv <= 0:
+    if cfg.sky_neg <= 0:
         return 0.0
-    S = torch.einsum("bk,khw->bhw", model.Phi_band, model.sky.coeffs(view)) / sig_b[:, None, None]
+    S = torch.einsum("bk,khw->bhw", model.Phi_band, model.sky.coeffs()) / sig_b[:, None, None]
     if getattr(model.sky, "ped", None) is not None:         # --sky-positivity-margin: the penalty acts on sky + p
         S = S + (model.Phi_band @ model.sky.ped.to(S))[:, None, None] / sig_b[:, None, None]
-    r = cfg.sky_neg * F.relu(-S).pow(2).mean()
-    if cfg.sky_tv > 0:
-        r = r + cfg.sky_tv * ((S[:, 1:] - S[:, :-1]).abs().mean() + (S[:, :, 1:] - S[:, :, :-1]).abs().mean())
-    return r
+    return cfg.sky_neg * F.relu(-S).pow(2).mean()
 
 
 # ----------------------------------------------------------------------------- warm start of the kernel field (physics only as a start)
@@ -578,6 +600,11 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             f"({int(model.pixgain.obs.sum()) / 1e6:.3f} M observed in training), gauge: {model.pixgain.n_proj} projected monomials per map "
             f"(degree <= {model.pixgain.order}), lr {cfg.lr_gain}, from progress {cfg.pixel_gain_start}")
     opt_fs = (torch.optim.Adam([{"params": [model.fshift], "lr": cfg.lr_filter_shift, "base": cfg.lr_filter_shift}]) if model.fs_on else None)
+    gain_prior = bool(gp) and model.pixgain.prior_mode != "off"
+    n_train_px = float(sum(int(e.hostv("valid").sum()) for e in exps if e.split == "train")) if gain_prior else 1.0
+    if gain_prior:
+        log(f"pixel gain prior: {model.pixgain.prior_mode}, start {model.pixgain.prior_table()}, EM from progress {cfg.pixel_gain_em_start} "
+            f"every {cfg.pixel_gain_em_every} steps, prior weight 1 / {n_train_px:.0f} per pixel (training pixels)")
     learn_tau = opt_tau is not None and len(va) > 0
     k = ts.keys[0] if not ts.multi else ts.draw(trng)
     ts.activate(k)
@@ -586,13 +613,6 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
         f"mean valid px/patch {np.mean([p.mean_valid for p in pools.values() if p.N]):.0f}; tau learned: {learn_tau} ({list(model.tau.raw.keys())})"
         + (f"; {len(ts.keys)} tiles, p = {dict(zip(ts.keys, np.round(ts.p, 3).tolist()))}, visit {cfg.visit_steps} steps, "
            f"{len(ts.shift_groups)} shift component(s), {len(ts.pedestal_groups)} pedestal group(s)" if ts.multi else ""))
-    folds = {}
-    if cfg.xfit > 1:
-        if ts.multi:
-            raise SystemExit("--xfit > 1 is not supported with several tiles")
-        groups = sorted({exps[i].group for i in ts.cut_ids(k, ("train",))})
-        folds = {i: groups.index(exps[i].group) % cfg.xfit for i in ts.cut_ids(k, ("train", "val"))}
-    xfit_on = cfg.xfit > 1
     method = cfg.render
     quad = None
     if method == "quad":
@@ -610,9 +630,14 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     nf_raw_max = float(inv_softplus(torch.tensor(nf_max))) if nf_max > 0 else 0.0
     nf_warn_step = None
     nf_first = torch.full((), -1, dtype=torch.long, device=dev)
+    hs_max = noise_scale_raw_max(float(getattr(cfg, "noise_scale_max", 0.0) or 0.0))
+    bound_first = None
     if nf_max > 0:
         with torch.no_grad():
             model.floor_raw.clamp_(max=nf_raw_max)
+    if hs_max is not None:
+        with torch.no_grad():
+            model.hs.clamp_(-hs_max, hs_max)
     sz_marks = sorted(float(x) for x in str(getattr(cfg, "sky_zero_at", "")).split(",") if x.strip()) \
         if getattr(cfg, "sky_zero", "median") != "median" else []
     while True:
@@ -633,14 +658,9 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
         ts.stats[k]["steps"] += 1
         pool, vpool, opt_sky, sig_b = pools[k], vpools[k], ts.opt_sky[k], ts.sig_b[k]
         set_lr([opt_op, opt_nuis, opt_sky, opt_gain, opt_fs], lr_factor(prog))
-        if xfit_on and prog >= cfg.xfit_frac:
-            model.sky.average_views()
-            xfit_on = False
-            log(f"step {step}: cross-fitting ends, sky views averaged")
-        view_of = (lambda i: folds.get(i, 0)) if xfit_on else None
         skyp = list(model.sky.parameters())
         gain_on = bool(gp) and prog >= cfg.pixel_gain_start
-        params = op + list(nuis.values()) + ([] if xfit_on else skyp) + (gp if gain_on else []) + ([model.fshift] if model.fs_on else [])
+        params = op + list(nuis.values()) + skyp + (gp if gain_on else []) + ([model.fshift] if model.fs_on else [])
         # the operator tables P do not depend on the sky: one evaluation per step serves the sky inner steps (detached copy) and the joint step
         with only_grad(model, params):
             P = model.prepare()
@@ -649,8 +669,8 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
         for _ in range(cfg.inner_sky):
             with only_grad(model, skyp):
                 items = pool.draw(cfg.batch_patches, rng)
-                loss, _, _ = batch_loss(model, exps, items, P_sky, cfg, pool.mean_valid, view_of=view_of, method=method, quad=quad)
-                loss = loss + sum(sky_regs(model, sig_b, cfg, view=v) for v in (range(cfg.xfit) if xfit_on else [None]))
+                loss, _, _ = batch_loss(model, exps, items, P_sky, cfg, pool.mean_valid, method=method, quad=quad)
+                loss = loss + sky_regs(model, sig_b, cfg)
                 opt_sky.zero_grad()
                 loss.backward()
                 opt_sky.step()
@@ -658,12 +678,12 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
         with only_grad(model, params):
             items = pool.draw(cfg.batch_patches, rng)
             model._chi_in = 0.0
-            vo = (lambda i: 1 - folds.get(i, 0)) if xfit_on and cfg.xfit == 2 else view_of
-            loss, npx, chi = batch_loss(model, exps, items, P, cfg, pool.mean_valid, view_of=vo, detach_sky=xfit_on, method=method, quad=quad)
+            loss, npx, chi = batch_loss(model, exps, items, P, cfg, pool.mean_valid, method=method, quad=quad)
             eids = batch_eids(exps, items, dev)
             pri = model.priors(eids) / cfg.prior_pixels
-            gsh = model.shift_gauge(P) if cfg.gauge_shift > 0 else torch.zeros(2, device=dev)
-            tot = loss + pri + cfg.gauge_shift * (gsh / 0.001).pow(2).sum() + (0.0 if xfit_on else sky_regs(model, sig_b, cfg))
+            tot = loss + pri + sky_regs(model, sig_b, cfg)
+            if gain_on and gain_prior:          # prior on log G per pixel, on the scale of the per-pixel mean loss (full objective / N_train)
+                tot = tot + model.pixgain.prior_nll() / n_train_px
             opt_op.zero_grad()
             opt_nuis.zero_grad()
             opt_sky.zero_grad()
@@ -677,17 +697,21 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             if nf_max > 0:                      # projection onto softplus(floor_raw) <= nf_max; Adam moments untouched (as the gauge projections)
                 with torch.no_grad():
                     model.floor_raw.clamp_(max=nf_raw_max)
+            if hs_max is not None:              # same for the learned noise scale exp(h) of every (detector, filter): within [1/value, value]
+                with torch.no_grad():
+                    model.hs.clamp_(-hs_max, hs_max)
             if gain_on:
                 opt_gain.step()
                 model.pixgain.project()
+                if gain_prior and prog >= cfg.pixel_gain_em_start and step % max(1, cfg.pixel_gain_em_every) == 0:
+                    model.pixgain.em_update()           # learned prior widths (--pixel-gain-prior); off by default
             step_rows(opt_nuis, list(nuis.values()), eids, rows=rows_nuis)
             if opt_fs is not None:
                 step_rows(opt_fs, [model.fshift], model.e_pair[eids])      # only the pairs seen in this batch move (no momentum drift of the others)
             model.project_gauges(tr_by_f if cfg.pedestal_gauge else None, eids)
             for g in ts.shift_groups:
                 (model.project_filter_shift if model.fs_on else model.project_shift)(g)
-            if not xfit_on:
-                opt_sky.step()
+            opt_sky.step()
         # (c) variability scales by validation likelihood (half A: nuisances of the validation exposures; half B: tau)
         if learn_tau and prog >= cfg.tau_start and step % cfg.val_every == 0 and vpool is not None and vpool.N:
             with only_grad(model, [nuis[kk] for kk in ("bkg", "affine", "u", "z", "zD", "stripe_rows", "stripe_cols")]):
@@ -695,7 +719,7 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
                     P = model.prepare()
                 for _ in range(cfg.val_nuis_steps):
                     items = vpool.draw(cfg.batch_patches, rng)
-                    la, _, _ = batch_loss(model, exps, items, P, cfg, vpool.mean_valid / 2, view_of=view_of, method=method, quad=quad, half=0)
+                    la, _, _ = batch_loss(model, exps, items, P, cfg, vpool.mean_valid / 2, method=method, quad=quad, half=0)
                     ev = batch_eids(exps, items, dev)
                     opt_nuis.zero_grad()
                     (la + model.priors(ev) / cfg.prior_pixels).backward()
@@ -704,7 +728,7 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             with only_grad(model, taus):
                 P = model.prepare()
                 items = vpool.draw(cfg.batch_patches, rng)
-                lb, _, _ = batch_loss(model, exps, items, P, cfg, vpool.mean_valid / 2, view_of=view_of, method=method, quad=quad, half=1)
+                lb, _, _ = batch_loss(model, exps, items, P, cfg, vpool.mean_valid / 2, method=method, quad=quad, half=1)
                 ltau = lb / cfg.tau_accum
                 ltau.backward()                                  # gradients accumulate over --tau-accum validation evaluations
                 n_val_eval += 1
@@ -726,6 +750,13 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
                 nf_warn_step = rec["noise_floor_first_above"] = int(nf_first)
                 log(f"WARNING: learned fractional noise floor {noise_floor_values(model)} exceeds {NOISE_FLOOR_WARN} first at step {nf_warn_step}; bright "
                     f"pixels lose weight and the model-noise chi2 hides misfit (compare chi2/px(input noise))")
+            if bound_first is None and (nf_max > 0 or hs_max is not None):
+                br = bound_report(model, cfg)
+                if br["floor"] or br["noise_scale"]:
+                    bound_first = rec["noise_bound_first_step"] = step
+                    log(f"WARNING: at step {step} a learned noise term sits at its bound: noise floor {br['floor']} (bound {nf_max}), noise scale "
+                        f"exp(h) {br['noise_scale']} (bound x{getattr(cfg, 'noise_scale_max', 0.0)} and 1/x); the model-noise chi2 is then not a "
+                        f"measure of fit (compare chi2/px(input noise))")
             el = time.perf_counter() - t0
             tt = {kk: round(v["value"], 5) for kk, v in model.tau.table().items()}
             npx, chi = float(npx), float(chi)
@@ -748,17 +779,24 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
         if history is not None:
             history(step, model)
         step += 1
-    if cfg.xfit > 1 and xfit_on:
-        model.sky.average_views()
     rec["n_steps"] = step
     if nf_warn_step is None and int(nf_first) >= 0:
         nf_warn_step = rec["noise_floor_first_above"] = int(nf_first)
         log(f"WARNING: learned fractional noise floor exceeds {NOISE_FLOOR_WARN} first at step {nf_warn_step}")
     rec["noise_floor_final"] = noise_floor_values(model)
+    if nf_max > 0 or hs_max is not None:
+        br = bound_report(model, cfg)
+        rec["noise_at_bound_final"] = br
+        if br["floor"] or br["noise_scale"]:
+            log(f"WARNING: at the end of the fit a learned noise term sits at its bound: noise floor {br['floor']} (bound {nf_max}), noise scale "
+                f"exp(h) {br['noise_scale']} (bound x{getattr(cfg, 'noise_scale_max', 0.0)} and 1/x)")
     if max(rec["noise_floor_final"]) > NOISE_FLOOR_WARN:
         log(f"WARNING: final learned fractional noise floor {rec['noise_floor_final']} exceeds {NOISE_FLOOR_WARN}")
     if gp:
         rec["pixel_gain_gauge"] = model.pixgain.gauge_residual()
+        if gain_prior:
+            rec["pixel_gain_prior"] = model.pixgain.prior_table()
+            log(f"pixel gain prior at the end: {rec['pixel_gain_prior']}")
     rec["seconds"] = time.perf_counter() - t0
     rec["s_per_step"] = rec["seconds"] / max(step, 1)
     if ts.multi:
@@ -771,11 +809,13 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
 
 
 # ----------------------------------------------------------------------------- held-out exposures: per-exposure nuisances only, then predict
-def fit_heldout(model, exps, eids, cfg, log=print, ts=None):
+def fit_heldout(model, exps, eids, cfg, log=print, ts=None, half=None):
     """Only per-exposure nuisances (background, affine, gain u, code z (kernel z_e and distortion zD), stripes) of the held-out exposures are
     fitted (protocol v1). Operator, sky and tau are frozen. `eids` are CUT indices (== exposure ids with one tile). Several tiles: the rows
     are shared by an exposure's cuts, so the fit cycles through the tiles (--held-rounds rounds); tile k gets
-    --held-steps x (its held-out cuts / --held-ref-cuts) steps in total (and the same rule for --held-reg-steps); one Adam over all rows."""
+    --held-steps x (its held-out cuts / --held-ref-cuts) steps in total (and the same rule for --held-reg-steps); one Adam over all rows.
+    half = 0 / 1 (--held-xfit): only the pixels of that half of the interleaved 4 x 4 pixel blocks enter the loss, so the fitted terms never see
+    the other half. Rows absent from a step's batch are not moved (--held-step-rows 1, as in training); 0 = every row moves every step (old)."""
     from .tiles import TileSet
     if not eids:
         return {}
@@ -789,6 +829,7 @@ def fit_heldout(model, exps, eids, cfg, log=print, ts=None):
                             {"params": [nuis["u"], nuis["z"], nuis["zD"]], "lr": cfg.lr_codes},
                             {"params": [nuis["stripe_rows"], nuis["stripe_cols"]], "lr": 0.05 * sb}])
     eset = set(eids)
+    held_rows = bool(getattr(cfg, "held_step_rows", 1))
     by_tile = {k: [c for c in ts.cuts[k] if c in eset] for k in ts.keys}
     by_tile = {k: v for k, v in by_tile.items() if v}
     pools = {k: PatchPool(exps, v, cfg) for k, v in by_tile.items()}
@@ -816,11 +857,14 @@ def fit_heldout(model, exps, eids, cfg, log=print, ts=None):
                     S = n_steps(cfg.held_reg_steps, k)
                     for it in range(S * r // rounds, S * (r + 1) // rounds):
                         items = pool.draw(cfg.batch_patches, rng)
-                        loss, _, _ = batch_loss(model, exps, items, P, cfg, pool.mean_valid)
+                        loss, _, _ = batch_loss(model, exps, items, P, cfg, pool.mean_valid, half=half)
                         opt_r.zero_grad()
                         loss.backward()
                         model.affine.grad[:, :4] = 0
-                        step_scaled(opt_r, [nuis["bkg"]], row_steps(model, cfg, [nuis["bkg"]]))
+                        if held_rows:
+                            step_rows(opt_r, [nuis["affine"], nuis["bkg"]], batch_eids(exps, items, dev), rows=row_steps(model, cfg, [nuis["bkg"]]))
+                        else:
+                            step_scaled(opt_r, [nuis["bkg"]], row_steps(model, cfg, [nuis["bkg"]]))
     with only_grad(model, list(nuis.values())):
         for g in opt.param_groups:
             g.setdefault("base", g["lr"])
@@ -834,21 +878,130 @@ def fit_heldout(model, exps, eids, cfg, log=print, ts=None):
                     for g in opt.param_groups:
                         g["lr"] = g["base"] * (1.0 if it < 0.7 * S else 0.3)
                     items = pool.draw(cfg.batch_patches, rng)
-                    loss, _, _ = batch_loss(model, exps, items, P, cfg, pool.mean_valid)
+                    loss, _, _ = batch_loss(model, exps, items, P, cfg, pool.mean_valid, half=half)
                     ev = batch_eids(exps, items, dev)
                     opt.zero_grad()
                     (loss + model.priors(ev) / cfg.prior_pixels).backward()
-                    step_scaled(opt, [nuis["bkg"], nuis["stripe_rows"], nuis["stripe_cols"]],
-                                row_steps(model, cfg, [nuis["bkg"], nuis["stripe_rows"], nuis["stripe_cols"]]))
-    log(f"held-out nuisance fit: {len(eids)} cuts of {len({exps[c].eid for c in eids})} exposures, {cfg.held_steps} steps"
+                    rws = row_steps(model, cfg, [nuis["bkg"], nuis["stripe_rows"], nuis["stripe_cols"]])
+                    if held_rows:
+                        step_rows(opt, list(nuis.values()), ev, rows=rws)
+                    else:
+                        step_scaled(opt, [nuis["bkg"], nuis["stripe_rows"], nuis["stripe_cols"]], rws)
+    log(f"held-out nuisance fit{'' if half is None else f' on pixel half {half} only'}: {len(eids)} cuts of {len({exps[c].eid for c in eids})} exposures, {cfg.held_steps} steps"
         + (f" (x cuts / {cfg.held_ref_cuts} per tile, {rounds} rounds over {len(pools)} tiles)" if ts.multi else "") + f" ({time.perf_counter() - t0:.1f} s)")
     return P
 
 
+def half_map(e):
+    """(ny, nx) long tensor, 0 / 1: which of the two interleaved 4 x 4 pixel-block halves each pixel of the cut belongs to (detector row and column
+    indices, the rule of the validation split in patch_loss / pix_loss)."""
+    ny, nx = e.shape
+    rr = torch.arange(ny, device=e.d.device) + e.cut0[0]
+    cc = torch.arange(nx, device=e.d.device) + e.cut0[1]
+    return ((rr // 4)[:, None] + (cc // 4)[None, :]) % 2
+
+
+NUIS_KEYS = ("bkg", "affine", "u", "z", "zD", "stripe_rows", "stripe_cols")
+
+
+def snapshot_rows(model, rows):
+    nuis = model.param_groups()[1]
+    return {k: nuis[k].detach()[rows].clone() for k in NUIS_KEYS}
+
+
 @torch.no_grad()
-def predict_exposure(model, e, P, cfg, tile=None):
+def restore_rows(model, rows, snap):
+    nuis = model.param_groups()[1]
+    for k in NUIS_KEYS:
+        nuis[k].data[rows] = snap[k]
+
+
+def make_heldout_predictor(model, cfg, P, rows, snaps, tile=None):
+    """pred(e) -> (m, pv, S, record) for one held-out cut. snaps = {"all": terms fitted on all pixels (the old fit), 0: fitted on half 0, 1: on
+    half 1} (0 and 1 only with --held-xfit 1). With them the returned prediction is cross-fitted: the pixels of half q come from the fit on half
+    1 - q. The record carries the score of the returned prediction against the input noise (chi2, chi2_bright, n, n_bright) and the model noise
+    (chi2_model_noise), and, with cross-fitting, the old all-pixel score under "all_pixel_old". The terms of the all-pixel fit are left in the model."""
+    xf = 0 in snaps and 1 in snaps
+
+    @torch.no_grad()
+    def one(e, key, fit_half=None):
+        restore_rows(model, rows, snaps[key])
+        return predict_exposure(model, e, P, cfg, tile=tile, fit_half=fit_half)
+
+    def score(e, m, pv, S):
+        rec = chi2_exposure(e, m, pv, S=S, snr_min=5.0)
+        with torch.no_grad():
+            rec["chi2_model_noise"] = chi2_exposure(e, m, pv, sigma=model.sigma(model.et(e.eid), S, e.sig))["chi2"]
+        return rec
+
+    def pred(e):
+        res = {}
+        if xf:
+            for h in (0, 1):
+                res[h] = one(e, h, fit_half=h) + (dict(e.extra.get("closed_form_stripes", {})),)
+        mA, pvA, SA = one(e, "all")
+        stA = e.extra.get("closed_form_stripes")
+        recA = score(e, mA, pvA, SA)
+        if stA is not None:
+            recA["closed_form_stripes"] = stA
+        if not xf:
+            return mA, pvA, SA, recA
+        sel = half_map(e) == 1                       # pixels of half 1 were predicted by the fit on half 0, and vice versa
+        m = torch.where(sel, res[0][0], res[1][0])
+        S = torch.where(sel, res[0][2], res[1][2])
+        pv = res[0][1] & res[1][1]
+        rec = score(e, m, pv, S)
+        rec["all_pixel_old"] = {k: v for k, v in recA.items() if k != "closed_form_stripes"}
+        if stA is not None:
+            rec["closed_form_stripes"] = stA
+        rec["closed_form_stripes_half_fits"] = {"fit_half0": res[0][3], "fit_half1": res[1][3]}
+        return m, pv, S, rec
+    return pred
+
+
+def heldout_stage(model, exps, held, cfg, log=print, ts=None, tile=None):
+    """Held-out nuisance fit(s) and the predictor of the held-out cuts. --held-xfit 1 (default): the per-exposure terms are fitted twice, on half 0
+    and on half 1 of the interleaved 4 x 4 pixel blocks, and once on all pixels (the old fit, whose terms stay in the model); predictions come from
+    the fits that did not see the pixel. --held-xfit 0: the old fit only. Returns {"P", "pred", "snaps", "rows"}; pred is None without held-out cuts."""
+    out = {"P": None, "pred": None, "snaps": {}, "rows": None}
+    if not held:
+        return out
+    rows = torch.as_tensor(sorted({exps[c].eid for c in held}), device=model.dev)
+    snaps = {}
+    if getattr(cfg, "held_xfit", 1):
+        snap0 = snapshot_rows(model, rows)
+        for h in (0, 1):
+            restore_rows(model, rows, snap0)
+            fit_heldout(model, exps, held, cfg, log=log, ts=ts, half=h)
+            snaps[h] = snapshot_rows(model, rows)
+        restore_rows(model, rows, snap0)
+    fit_heldout(model, exps, held, cfg, log=log, ts=ts)
+    snaps["all"] = snapshot_rows(model, rows)
+    P = {k: v.detach() for k, v in model.prepare().items()}
+    out.update(P=P, snaps=snaps, rows=rows, pred=make_heldout_predictor(model, cfg, P, rows, snaps, tile=tile))
+    return out
+
+
+def summarise_scores(scores):
+    """Pixel-weighted held-out means over the per-exposure records of heldout_stage: {"written": ..., "all_pixel_old": ...}, each with the input-noise
+    and model-noise chi2 per pixel."""
+    def agg(recs):
+        n = sum(r["n"] for r in recs)
+        if not n:
+            return None
+        return {"chi2_input_noise": sum(r["chi2"] * r["n"] for r in recs) / n, "chi2_model_noise": sum(r["chi2_model_noise"] * r["n"] for r in recs) / n, "n_px": n}
+    out = {"written": agg(list(scores.values()))}
+    if all("all_pixel_old" in r for r in scores.values()) and scores:
+        out["all_pixel_old"] = agg([r["all_pixel_old"] for r in scores.values()])
+    return out
+
+
+@torch.no_grad()
+def predict_exposure(model, e, P, cfg, tile=None, fit_half=None):
     """Full prediction over the exposure's cut (all pixels, valid or not) with the FFT renderer; NIRCam stripes re-solved in closed form on
-    the residual of valid pixels (3 alternations of ivar-weighted row / column means, F25). Returns model (ny, nx), pred_valid (ny, nx)."""
+    the residual of valid pixels (3 alternations of ivar-weighted row / column means, F25). Returns model (ny, nx), pred_valid (ny, nx).
+    fit_half = 0 / 1 (--held-xfit): the closed-form stripes use only the pixels of that half of the interleaved 4 x 4 blocks (a row or column
+    then has about half its pixels in the solution; rows or columns with none get 0), so the other half is predicted by terms that never saw it."""
     ny, nx = e.shape
     tile = tile or max(32, int(round(cfg.patch_arcsec / max(abs(np.linalg.det(np.asarray(e.extra.get("J", [[cfg.pix_default, 0], [0, cfg.pix_default]])))) ** 0.5, 1e-6))))
     m = torch.full((ny, nx), float("nan"), device=e.d.device)
@@ -868,6 +1021,8 @@ def predict_exposure(model, e, P, cfg, tile=None):
     pv = ((e.X + e.shift0[0]).abs() < h) & ((e.Y + e.shift0[1]).abs() < h) & torch.isfinite(m)
     if e.stripes and cfg.stripes:
         v = e.valid & pv
+        if fit_half is not None:
+            v = v & (half_map(e) == fit_half)
         iv = torch.where(v, 1.0 / e.sig ** 2, torch.zeros_like(e.sig))
         r = torch.where(v, e.d - m, torch.zeros_like(m))
         rows = torch.zeros(ny, device=m.device)
@@ -928,6 +1083,36 @@ def nuisance_sizes(model, exps, P=None, radii=(0.5, 1.0, 2.5)):
             p = model.pattern[d] - model.pattern[d].mean()
             pat[det_names[d] if d < len(det_names) else str(d)] = float(p.pow(2).mean().sqrt()) / float(sb[on].median())
         out["detector_pattern_rms_over_sigma"] = pat
+        # audit follow-up (18 Nov 2026): the same pattern read only at the pixels training exposures observe (not at grid nodes no pixel touches),
+        # and the part left after the best degree-2 polynomial (which trades with the per-exposure background shapes), both in sigma units
+        obs, beyond = {}, {}
+        for d in range(model.pattern.shape[0]):
+            on = (model.e_det == d)
+            if not bool(on.any()):
+                continue
+            xs = []
+            for e in exps:
+                if e.split != "train" or int(model.e_det[e.eid]) != d:
+                    continue
+                ny, nx = e.det_shape
+                rr = (torch.arange(e.shape[0], device=e.d.device) + e.cut0[0]).float()[:, None].expand(e.shape)
+                cc = (torch.arange(e.shape[1], device=e.d.device) + e.cut0[1]).float()[None, :].expand(e.shape)
+                v = e.valid
+                xs.append(torch.stack([cc[v] / (nx - 1) * 2 - 1, rr[v] / (ny - 1) * 2 - 1], -1)[:: 7])
+            if not xs:
+                continue
+            xi = torch.cat(xs).to(model.pattern.device)
+            p0 = model.pattern[d] - model.pattern[d].mean()
+            val = F.grid_sample(p0[None, None], xi[None, None], mode="bilinear", padding_mode="border", align_corners=True)[0, 0, 0].double()
+            X, Y = xi[:, 0].double(), xi[:, 1].double()
+            B = torch.stack([torch.ones_like(X), X, Y, X * X, X * Y, Y * Y], -1)
+            res = val - B @ torch.linalg.lstsq(B, val[:, None]).solution[:, 0]
+            name = det_names[d] if d < len(det_names) else str(d)
+            sbd = float(sb[on].median())
+            obs[name] = float(val.pow(2).mean().sqrt()) / sbd
+            beyond[name] = float(res.pow(2).mean().sqrt()) / sbd
+        out["detector_pattern_observed_rms_over_sigma"] = obs
+        out["detector_pattern_beyond_deg2_observed_rms_over_sigma"] = beyond
     if model.pixgain is not None:
         pg = model.pixgain
         out["pixel_gain_log"] = {lab: st(pg.logg[getattr(pg, f"pidx{k}")]) for k, lab in enumerate(pg.labels)}
@@ -986,7 +1171,7 @@ def write_prediction(path, e, m, pv, meta):
     np.savez_compressed(path, model=full, model_valid=val, meta=json.dumps(meta))
 
 
-def predict_merged(model, exps, held, P, cfg, ts, pred_dir=None, meta_fn=None, log=print):
+def predict_merged(model, exps, held, P, cfg, ts, pred_dir=None, meta_fn=None, log=print, pred=None):
     """Predictions of the held-out exposures with several tiles: each held-out CUT is rendered with its tile's sky (predict_exposure), placed
     in the full detector frame, and the cuts of one exposure are merged as stage3_blot merges its tiles: a pixel claimed by several cuts takes
     the cut whose tile centre is nearest (registered position). One file per exposure. Returns per-cut own-mask records."""
@@ -998,9 +1183,12 @@ def predict_merged(model, exps, held, P, cfg, ts, pred_dir=None, meta_fn=None, l
         ts.activate(k)
         for c in cs:
             e = exps[c]
-            m, pv, S = predict_exposure(model, e, P, cfg)
-            recs[f"{e.name}@tile{k}"] = chi2_exposure(e, m, pv, S=S, snr_min=5.0) | {"tile": int(k), "exposure": e.name} \
-                | ({"closed_form_stripes": e.extra["closed_form_stripes"]} if "closed_form_stripes" in e.extra else {})
+            if pred is None:
+                m, pv, S = predict_exposure(model, e, P, cfg)
+                rec0 = chi2_exposure(e, m, pv, S=S, snr_min=5.0) | ({"closed_form_stripes": e.extra["closed_form_stripes"]} if "closed_form_stripes" in e.extra else {})
+            else:
+                m, pv, S, rec0 = pred(e)
+            recs[f"{e.name}@tile{k}"] = rec0 | {"tile": int(k), "exposure": e.name}
             ny, nx = e.det_shape
             y0, x0 = e.cut0
             a, b = e.shape

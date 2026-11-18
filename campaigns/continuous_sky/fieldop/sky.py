@@ -80,11 +80,6 @@ class SkyGrid(nn.Module):
         """Warm start (rebuilt by the registration pre-pass): every view = A0 / preconditioner."""
         self.A.data[:] = (A0 / self.pre)[None]
 
-    @torch.no_grad()
-    def average_views(self):
-        """End of cross-fitting: views averaged."""
-        self.A.data[:] = self.A.data.mean(0, keepdim=True)
-
     def coeffs(self, view=None):
         if view is None:
             return (self.A.mean(0) if self.n_views > 1 else self.A[0]) * self.pre
@@ -488,18 +483,6 @@ class ItemSky(nn.Module):
         self.ang.data[:] = ang.to(dev, dt)[None]
         self.lc.data[:] = torch.log(c.clamp(min=1e-30))[None]
         self.level.copy_(lv.to(dev))
-        self._mut += 1
-
-    @torch.no_grad()
-    def average_views(self):
-        """End of cross-fitting: views averaged PARAMETER-wise (positions, log widths, doubled-angle vectors, linear coefficients). Exact only while item n plays the same role in every view (they start identical); not the average of the two skies."""
-        if self.n_views == 1:
-            return
-        self.pos.data[:] = self.pos.data.mean(0, keepdim=True)
-        self.lw.data[:] = self.lw.data.mean(0, keepdim=True)
-        a2 = 2 * self.ang.data
-        self.ang.data[:] = (0.5 * torch.atan2(torch.sin(a2).mean(0), torch.cos(a2).mean(0)))[None]
-        self.lc.data[:] = torch.log(torch.exp(self.lc.data).mean(0, keepdim=True))
         self._mut += 1
 
     def opt_groups(self, cfg):

@@ -53,6 +53,15 @@ def build_parser():
     g.add_argument("--n-val-groups", type=int, default=1, help="dither groups per filter carved from training for the tau validation likelihood")
     g.add_argument("--epoch-min-days", type=float, default=1.0, help="epoch axes need a training time span at least this long")
     g.add_argument("--epoch-axes", type=int, default=1)
+    g.add_argument("--epoch-per-instrument", type=int, choices=[0, 1], default=1,
+                   help="1: epoch coordinate normalised, and epoch axes decided, per instrument from its own time span (audit finding 12); 0: one span for the whole field (old)")
+    g.add_argument("--field-init", choices=["random", "zero"], default="random",
+                   help="start of the throughput and distortion fields: 'random' (old) or 'zero' = last layers at zero output (audit finding 15; the rms "
+                   "normalisation is singular there: gradients about 1e4 times larger on step 0; not tested on real data)")
+    g.add_argument("--legacy-defaults", action="store_true",
+                   help="set every default changed on 18 Nov 2026 back to its old value: --sky-zero median, --noise-floor-max 0, --noise-scale-max 0, "
+                   "--nuisance-steps mean, --held-xfit 0, --held-step-rows 0, --epoch-per-instrument 0. Options given explicitly win. "
+                   "(The several-instrument rules of audit findings 5 and 9 are not touched: give --gauge-ref-inst -1 --kernel-norm-radius 0 to get the old values.)")
     g.add_argument("--write-pred", type=int, default=1)
     g.add_argument("--pix-default", type=float, default=0.031)
     g = ap.add_argument_group("sky")
@@ -63,9 +72,6 @@ def build_parser():
     g.add_argument("--sky-neg", type=float, default=1.0)
     g.add_argument("--sky-precond", type=float, default=0.02, help="diagonal preconditioner of the sky: 1 + f x (local warm-start S/N), 0 = off")
     g.add_argument("--sky-precond-cap", type=float, default=2000.0)
-    g.add_argument("--sky-tv", type=float, default=0.0)
-    g.add_argument("--xfit", type=int, default=1, help="cross-fitting sky views (1 = off, 2 = two folds)")
-    g.add_argument("--xfit-frac", type=float, default=0.6)
     g.add_argument("--sky-form", choices=["grid", "items"], default="grid", help="sky parametrisation: coefficient grid, or Gaussian items "
                    "rasterised onto that grid (sky.ItemSky)")
     g.add_argument("--item-count", type=int, default=20000, help="items per sky (tile); split over --item-levels lattices in proportion 4^-l")
@@ -93,8 +99,9 @@ def build_parser():
     g.add_argument("--item-lr-coef", type=float, default=0.05, help="Adam step of item log spectral coefficients")
     g = ap.add_argument_group("kernel")
     g.add_argument("--kernel-extent", type=float, default=10.0)
-    g.add_argument("--kernel-norm-radius", type=float, default=0.0,
-                   help="arcsec; > 0: the kernel's unit integral is taken inside this radius only (flux convention F41); 0 = whole support")
+    g.add_argument("--kernel-norm-radius", type=float, default=None,
+                   help="arcsec; > 0: the kernel's unit integral is taken inside this radius only (flux convention F41); 0 = whole support. Unset: 0 with "
+                   "one instrument, 2 arcsec with several (audit finding 9)")
     g.add_argument("--render-pitch", type=float, default=0.0, help="0 = per channel: largest sky_pitch/k <= pixel / --render-os-pix")
     g.add_argument("--render-os-pix", type=float, default=6.0)
     g.add_argument("--interp", choices=["bspline", "keys"], default="bspline")
@@ -122,7 +129,6 @@ def build_parser():
     g.add_argument("--tau0-code", type=float, default=0.3)
     g.add_argument("--tau0-g", type=float, default=0.02)
     g.add_argument("--tau0-D", type=float, default=0.005)
-    g.add_argument("--tau-prior", type=float, default=1e-3)
     g.add_argument("--tau-start", type=float, default=0.35)
     g.add_argument("--val-every", type=int, default=4)
     g.add_argument("--val-nuis-steps", type=int, default=2)
@@ -141,11 +147,12 @@ def build_parser():
     g.add_argument("--em-damp", type=float, default=0.5, help="exponent of the damped EM step of the random-effect scales")
     g = ap.add_argument_group("amplitude / geometry / detector")
     g.add_argument("--amplitude", choices=["unit", "structured", "free"], default="structured")
-    g.add_argument("--gauge-ref-inst", type=int, default=-1)
-    g.add_argument("--gauge-shift", type=float, default=0.0, help="extra penalty on the common learned shift (the exact projection is always on)")
+    g.add_argument("--gauge-ref-inst", type=int, default=None,
+                   help="instrument index whose training exposures define the throughput gauge (the absolute flux scale); -1 = all training exposures. "
+                   "Unset: -1 with one instrument; with several instruments the run refuses to start unless it is given (audit finding 5)")
     g.add_argument("--blur-floor", type=float, default=1.0, help="blur gauge: core m2 of the sharpest kernel class >= this x (sky pitch)^2 / 3 (0 = off)")
     g.add_argument("--pedestal-gauge", type=int, default=1, help="per filter, training background constants (relative to the exposure medians) sum to zero")
-    g.add_argument("--sky-zero", choices=["median", "masked"], default="median",
+    g.add_argument("--sky-zero", choices=["median", "masked"], default="masked",
                    help="reference level of each training exposure for the pedestal gauge (the split between a constant sky and the backgrounds, "
                    "which the data cannot fix): 'median' = median of the exposure's data (sources included; the sky in empty regions then sits "
                    "below zero by the median source light, and positivity turns that into a positive total offset); 'masked' = median of the "
@@ -173,9 +180,9 @@ def build_parser():
                    "file with --rate-wcs cal, else from --rate-photom; the learned throughput terms stay free to correct it")
     g.add_argument("--rate-photom", default="", help="--rate-units sky: JSON table {\"DETECTOR/FILTER\": MJy/sr per DN/s} (and optionally "
                    "{\"DETECTOR/FILTER/area\": nominal pixel area in arcsec^2}); used when the _cal header is not read (--rate-wcs rate or telescope)")
-    g.add_argument("--nuisance-steps", choices=["mean", "exposure"], default="mean",
-                   help="Adam step of the data-unit nuisances (background, stripes): lr x mean pipeline sigma over all exposures ('mean', today) "
-                   "or x each exposure's own median sigma ('exposure'; makes the fit independent of a per-exposure unit constant, e.g. --rate-units sky)")
+    g.add_argument("--nuisance-steps", choices=["mean", "exposure"], default="exposure",
+                   help="Adam step of the data-unit nuisances (background, stripes): lr x mean pipeline sigma over all exposures ('mean', the old "
+                   "default) or x each exposure's own median sigma ('exposure', the default since 18 Nov 2026; makes the fit independent of a per-exposure unit constant, e.g. --rate-units sky)")
     g.add_argument("--loader", choices=["astropy", "torchfits"], default="astropy",
                    help="exposure files read by the prototype's astropy code (default) or by torchsky's field_observation_from_exposure_file "
                    "(torchfits); if that cannot be imported the run falls back to astropy and says so")
@@ -186,6 +193,14 @@ def build_parser():
     g.add_argument("--lr-gain", type=float, default=3e-3, help="Adam step of the log-gain map (F45; chosen on the synthetic field among "
                    "3e-4, 1e-3, 3e-3, 1e-2)")
     g.add_argument("--pixel-gain-start", type=float, default=0.1, help="the gain map is stepped from this fraction of the fit on")
+    g.add_argument("--pixel-gain-prior", choices=["off", "gauss", "mix2"], default="off",
+                   help="zero-mean prior on log G per pixel whose width(s) are learned by EM from the map and its per-pixel information "
+                   "(gauss: one Gaussian; mix2: narrow core + wide tail); off = no prior (today's behaviour)")
+    g.add_argument("--pixel-gain-gauge", choices=["poly", "poly+pattern"], default="poly",
+                   help="gauge of the gain map: 'poly' = monomials of degree <= --pixel-gain-poly projected out (today); 'poly+pattern' = also "
+                   "the bilinear functions of the additive pattern's grid (--pattern-grid), so that gain and pattern share no component")
+    g.add_argument("--pixel-gain-em-start", type=float, default=0.3, help="--pixel-gain-prior: EM updates of the prior from this fraction of the fit on")
+    g.add_argument("--pixel-gain-em-every", type=int, default=25, help="--pixel-gain-prior: steps between EM updates")
     g.add_argument("--filter-shift", choices=["off", "learned"], default="off",
                    help="learned position shift (2 numbers, detector pixels, applied to the pixel coordinates before the pixel-to-sky map) shared by all "
                    "exposures of one (detector, filter) pair; held-out exposures use their pair's fitted shift, fixed. Not available with several "
@@ -199,9 +214,12 @@ def build_parser():
     g.add_argument("--stripes", type=int, default=1)
     g.add_argument("--stripe-l2", type=float, default=1e-3)
     g.add_argument("--floor0", type=float, default=0.01)
-    g.add_argument("--noise-floor-max", type=float, default=0.0,
+    g.add_argument("--noise-floor-max", type=float, default=0.2,
                    help="upper bound of the learned fractional noise floor (softplus(floor_raw)), enforced by clamping floor_raw after every operator "
-                        "step; 0 = no bound (default, the previous behaviour)")
+                        "step; 0 = no bound (the old default)")
+    g.add_argument("--noise-scale-max", type=float, default=2.0,
+                   help="the learned noise scale exp(h) of every (detector, filter) (audit finding 3) is kept within [1/value, value] by clamping its raw "
+                        "parameter after every operator step; 0 = no bound (the old default). A WARNING is logged when a scale or the floor sits at its bound")
     g.add_argument("--loss", choices=["gauss", "huber"], default="huber")
     g.add_argument("--huber-delta", type=float, default=3.0)
     g = ap.add_argument_group("training")
@@ -221,6 +239,15 @@ def build_parser():
     g.add_argument("--is-snr", type=float, default=20.0)
     g.add_argument("--is-refresh", type=int, default=200)
     g.add_argument("--held-steps", type=int, default=150)
+    g.add_argument("--held-xfit", type=int, choices=[0, 1], default=1,
+                   help="1: held-out exposures are scored cross-fitted (audit finding 8): the per-exposure terms (background, affine, gain, codes, stripes) "
+                   "are fitted on one half of the interleaved 4 x 4 pixel blocks and predict the other, then the reverse; the written prediction of "
+                   "every pixel comes from terms that never saw it. The old all-pixel score is also reported. 0: the old all-pixel fit only")
+    g.add_argument("--held-step-rows", type=int, choices=[0, 1], default=1,
+                   help="1: the held-out optimiser steps only the exposures present in the batch (as training does; audit finding 14); 0: all rows every step (old)")
+    g.add_argument("--heldout-only", action="store_true",
+                   help="skip the fit: load --state, run the held-out stage as configured and write predictions and metrics under --method-name and --out")
+    g.add_argument("--state", default="", help="--heldout-only: saved state (fieldop_state.pt) to load; older states load with missing / extra keys reported")
     g.add_argument("--held-reg-steps", type=int, default=100, help="held-out exposures: translation + background pre-fit before the nuisance fit")
     g.add_argument("--reg-prepass-iters", type=int, default=2, help="registration pre-pass: translation-only fits against the warm-start sky")
     g.add_argument("--reg-prepass-steps", type=int, default=150)
@@ -235,8 +262,21 @@ def build_parser():
     return ap
 
 
+LEGACY_DEFAULTS = dict(sky_zero="median", noise_floor_max=0.0, noise_scale_max=0.0, nuisance_steps="mean", held_xfit=0, held_step_rows=0,
+                       epoch_per_instrument=0)
+
+
+def parse_config(argv=None):
+    """Command line -> config; --legacy-defaults replaces the defaults listed in LEGACY_DEFAULTS (explicit options still win)."""
+    ap = build_parser()
+    pre, _ = ap.parse_known_args(argv)
+    if pre.legacy_defaults:
+        ap.set_defaults(**LEGACY_DEFAULTS)
+    return ap.parse_args(argv)
+
+
 def default_config(**kw):
-    a = build_parser().parse_args([])
+    a = parse_config(["--legacy-defaults"] if kw.get("legacy_defaults") else [])
     for k, v in kw.items():
         if not hasattr(a, k):
             raise KeyError(k)
@@ -275,11 +315,11 @@ def make_sky(exps, fset, cfg, half, dev, basis=None):
     if getattr(cfg, "sky_form", "grid") == "items":
         from .sky import ItemSky
         sky = ItemSky(A0, cfg.sky_pitch, basis, cfg.item_count, floor=cfg.item_floor, max_width=cfg.item_max_width, n_levels=cfg.item_levels,
-                      n_views=max(1, cfg.xfit), seed=cfg.seed,
+                      n_views=1, seed=cfg.seed,
                       raster=getattr(cfg, "item_raster", "direct"), impl=getattr(cfg, "item_impl", "prototype"),
                       patch=getattr(cfg, "item_patch", "square") if getattr(cfg, "item_raster", "direct") == "pyramid" else "square")
     else:
-        sky = SkyGrid(A0, cfg.sky_pitch, basis, n_views=max(1, cfg.xfit), precond=pre)
+        sky = SkyGrid(A0, cfg.sky_pitch, basis, n_views=1, precond=pre)
     if ped is not None:
         sky.ped = ped                     # plain attribute (not a buffer: the default state is unchanged)
         if getattr(cfg, "sky_form", "grid") == "items":
@@ -300,13 +340,110 @@ def filt_info_of(exps, fset, insts):
     return out
 
 
+STRUCTURE_OPTIONS = ("sky_form sky_pitch item_count item_levels spec_k n_lambda level_nh level_factor level_overlap kernel_extent render_pitch render_os_pix "
+                     "k_hidden k_layers dh enc_r0 enc_nrad enc_mmax filter_input amplitude distortion pattern_grid stripes pixel_gain pixel_gain_poly filter_shift "
+                     "nonlin tau_mode k_space k_time k_lambda k_exp epoch_axes epoch_per_instrument input_level kernel_norm_radius gauge_ref_inst blur_floor "
+                     "field_init item_raster item_patch item_impl rate_units loader").split()
+
+
+def plain_config(cfg):
+    """The launch configuration as a plain dict of numbers, strings, booleans, None and lists (anything else as its string)."""
+    def p(v):
+        if v is None or isinstance(v, (bool, int, float, str)):
+            return v
+        if isinstance(v, (list, tuple)):
+            return [p(x) for x in v]
+        return str(v)
+    return {k: p(v) for k, v in vars(cfg).items()}
+
+
+def config_differences(stored, cfg, names=STRUCTURE_OPTIONS):
+    """{option: (stored, now)} over the options that change the model's structure and differ between a state's stored launch configuration and cfg."""
+    now = plain_config(cfg)
+    return {k: (stored[k], now[k]) for k in names if k in stored and k in now and stored[k] != now[k]}
+
+
+def state_for_saving(model, skies, cfg=None):
+    """The saved state: every model tensor except the sky's, "skies" {tile: sky state}, and with cfg the launch configuration as a plain dict under
+    "launch_config" (older loaders, and load_saved_state without it, ignore the key)."""
+    st = {k: v.detach().cpu() for k, v in model.state_dict().items() if not k.startswith("sky.")}
+    if cfg is not None:
+        st["launch_config"] = plain_config(cfg)
+    st["skies"] = {k: {kk: vv.detach().cpu() for kk, vv in s_.state_dict().items()} for k, s_ in skies.items()}
+    return st
+
+
+def _neutral_value(model, key, like):
+    """Neutral value of a parameter a saved state does not contain: the per-exposure terms and the noise scales at zero, the noise floor at its
+    starting value; None = no rule (the parameter keeps the starting value of the new model, reported as such)."""
+    zero_keys = {"hs", "u", "zD", "affine", "stripe_rows", "stripe_cols", "codes.z", "pattern", "pixgain.logg", "fshift"}
+    if key in zero_keys:
+        return torch.zeros_like(like)
+    if key == "floor_raw":
+        return torch.full_like(like, float(torch.log(torch.expm1(torch.tensor(float(model.cfg.floor0))))))
+    return None
+
+
+def _load_tolerant(module, sd, label, log, neutral=None, skip_prefix=()):
+    own = module.state_dict()
+    extra = sorted(k for k in sd if k not in own)
+    bad = sorted(k for k in sd if k in own and tuple(own[k].shape) != tuple(sd[k].shape))
+    missing = sorted(k for k in own if k not in sd and not k.startswith(tuple(skip_prefix)))
+    merged = {k: v.clone() for k, v in own.items()}
+    for k, v in sd.items():
+        if k in own and k not in bad:
+            merged[k] = v.to(own[k].dtype)
+    neutral_set, kept = [], []
+    for k in missing:
+        nv = neutral(k, own[k]) if neutral is not None else None
+        if nv is None:
+            kept.append(k)
+        else:
+            merged[k] = nv.to(own[k].dtype)
+            neutral_set.append(k)
+    module.load_state_dict(merged)
+    rep = {"missing": missing, "set_to_neutral": neutral_set, "kept_starting_value": kept, "extra_ignored": extra, "shape_mismatch_ignored": bad}
+    log(f"state load [{label}]: {len(sd) - len(extra) - len(bad)} of {len(own)} tensors loaded; missing {missing} (set to neutral values: {neutral_set}; "
+        f"kept at the new model's starting value: {kept}); extra keys ignored {extra}; shape mismatches ignored {bad}")
+    return rep
+
+
+def load_saved_state(model, skies, st, log=print, cfg=None):
+    """--heldout-only: load a state written by state_for_saving (this or an older version of the package). Keys the state lacks are set to their
+    neutral value (or kept at the starting value of the new model when there is no neutral rule), keys the model lacks (for instance the removed
+    all-zero sky.resid) and tensors of another shape are ignored; every such key is logged and returned."""
+    st = dict(st)
+    sk = st.pop("skies", {})
+    st.pop("pixel_gain_meta", None)
+    stored = st.pop("launch_config", None)
+    diff = None
+    if stored is None:
+        log("state load: no stored launch configuration in this state (older version); the options of this run are used as given")
+    elif cfg is not None:
+        diff = config_differences(stored, cfg)
+        if diff:
+            log("WARNING: options that change the model's structure differ from the stored launch configuration of the state (stored, now): " + "; ".join(
+                f"--{k.replace('_', '-')} {a!r} -> {b!r}" for k, (a, b) in diff.items()))
+        else:
+            log("state load: structure options equal the stored launch configuration")
+    rep = {"config_differences": diff, "model": _load_tolerant(model, st, "model", log, neutral=lambda k, like: _neutral_value(model, k, like), skip_prefix=("sky.",)), "skies": {}}
+    for k, s_ in skies.items():
+        if k not in sk:
+            log(f"state load [sky tile {k}]: the state has no sky for this tile; the warm-start sky is kept")
+            rep["skies"][k] = {"missing_tile": True}
+            continue
+        rep["skies"][k] = _load_tolerant(s_, sk[k], f"sky tile {k}", log)
+    return rep
+
+
 def main(argv=None):
     from . import APPROXIMATIONS, __version__
     from . import data as _data
     from .data import load_field, make_patches
-    from .model import FieldOperator
-    from .train import noise_floor_values, nuisance_sizes, chi2_exposure, fit, fit_heldout, predict_exposure, predict_merged, register_prepass, warm_kernel, write_prediction
-    cfg = build_parser().parse_args(argv)
+    from .model import FieldOperator, resolve_instrument_options
+    from .train import (heldout_stage, noise_floor_values, nuisance_sizes, fit, predict_merged, register_prepass, summarise_scores, warm_kernel,
+                        write_prediction)
+    cfg = parse_config(argv)
     _data.DQ_IGNORE_BITS = int(cfg.dq_ignore_bits)
     _data.RATE_WCS = cfg.rate_wcs
     _data.LOADER = getattr(cfg, "loader", "astropy")
@@ -336,7 +473,11 @@ def main(argv=None):
         log("  " + s)
     if not cfg.splits:
         cfg.splits = os.path.join(cfg.protocol_root, f"splits_{cfg.field}.json")
+    if cfg.heldout_only and not (cfg.state and os.path.exists(cfg.state)):
+        raise SystemExit("--heldout-only needs --state FILE (a fieldop_state.pt written by an earlier run)")
     exps, fset, meta, info = load_field(cfg, dev, log=log)
+    resolve_instrument_options(cfg, len(info["insts"]), log=log)         # audit findings 5 and 9: refuses several instruments without --gauge-ref-inst
+    log(f"instruments {info['insts']}; --gauge-ref-inst {cfg.gauge_ref_inst}; --kernel-norm-radius {cfg.kernel_norm_radius} arcsec; legacy defaults {cfg.legacy_defaults}")
     log(f"loaded {info['n_exposures']} exposures ({info['n_cuts']} cuts in {len(info['tiles'])} tile(s) {info['tiles']}, {info['host_gb']:.2f} GB of pixels): "
         f"{info['n_by_split']}; filters {info['filters']}; detectors {info['dets']}; epoch span {info['epoch_span_days']:.3f} d; "
         f"registration shifts applied to {info['shifts_applied']}")
@@ -373,6 +514,8 @@ def main(argv=None):
             log(f"pixel gain map {lab}: box {pg.boxes[k]} (r0, c0, rows, cols), {int(ob_.sum())} observed pixels, training cuts per pixel "
                 f"median {np.median(cn_[ob_]):.0f} (min {cn_[ob_].min():.0f}, max {cn_[ob_].max():.0f}), information limit of log G per pixel "
                 f"(1 / sqrt(sum (d / sig)^2 - 1), F44) median {np.median(nl):.4f}, 10-90 % {np.percentile(nl, 10):.4f}-{np.percentile(nl, 90):.4f}")
+    if pg is not None and getattr(cfg, "pixel_gain_prior", "off") != "off":
+        pg.set_prior(cfg.pixel_gain_prior)
     fs_labels = model.attach_filter_shift(exps, cfg, fset_names=fset.names, det_names=info["dets"])
     ts = TileSet(model, exps, skies, cfg, log=log)
     if fs_labels is not None:
@@ -391,19 +534,34 @@ def main(argv=None):
         make_patches(e, max(16, int(round(cfg.patch_arcsec / pix))))
     log(f"patches: {sum(len(e.patches) for e in exps)}; parameters: operator {sum(p.numel() for p in model.param_groups()[0]) / 1e3:.1f} k, "
         f"sky {sky.n_fitted() * sky.n_views / 1e6:.2f} M x {len(skies)}")
-    winfo = warm_kernel(model, cfg, filt_info_of(exps, fset, info["insts"]), log=log)
-    reg = register_prepass(model, exps, cfg, log=log, ts=ts)
-    rec = fit(model, exps, cfg, log=log, ts=ts)
+    load_report = None
+    if cfg.heldout_only:
+        load_report = load_saved_state(model, skies, torch.load(cfg.state, map_location="cpu", weights_only=False), log=log, cfg=cfg)
+        winfo, reg, rec = {}, {}, {"heldout_only": True, "state": cfg.state}
+    else:
+        winfo = warm_kernel(model, cfg, filt_info_of(exps, fset, info["insts"]), log=log)
+        reg = register_prepass(model, exps, cfg, log=log, ts=ts)
+        rec = fit(model, exps, cfg, log=log, ts=ts)
     held = [e.cid for e in exps if e.split == "held"]
-    fit_heldout(model, exps, held, cfg, log=log, ts=ts)
-    P = {k: v.detach() for k, v in model.prepare().items()}
+    stage = heldout_stage(model, exps, held, cfg, log=log, ts=ts)
+    P = stage["P"] if stage["P"] is not None else {k: v.detach() for k, v in model.prepare().items()}
     pred_dir = Path(cfg.protocol_root) / "pred" / cfg.field / cfg.method_name / cfg.split
     if cfg.write_pred:
         pred_dir.mkdir(parents=True, exist_ok=True)
 
+    def fold_terms(e):
+        if 0 not in stage["snaps"]:
+            return None
+        r = int((stage["rows"] == e.eid).nonzero()[0, 0])
+        return {f"fit_half{h}": {"affine": (stage["snaps"][h]["affine"][r] * model.aff_scale).tolist(), "u": float(stage["snaps"][h]["u"][r]),
+                                 "bkg": stage["snaps"][h]["bkg"][r].tolist()} for h in (0, 1)}
+
     def meta_of(e):
         i = e.eid
-        return {"fitted_on_heldout": ["background quadratic", "affine (4 matrix + 2 shift)", "gain u_e", "code z_e (kernel) and zD_e (distortion)",
+        return {"heldout_xfit": cfg.held_xfit, "heldout_fold_terms": fold_terms(e),
+                "heldout_note": ("cross-fitted: the model of each pixel comes from the per-exposure terms (and closed-form stripes) fitted on the other half "
+                                 "of the interleaved 4 x 4 pixel blocks; affine / u / bkg below are the all-pixel fit's" if cfg.held_xfit else "all-pixel fit"),
+                "fitted_on_heldout": ["background quadratic", "affine (4 matrix + 2 shift)", "gain u_e", "code z_e (kernel) and zD_e (distortion)",
                                       "NIRCam row/column stripes"], "method": cfg.method_name, "affine": (model.affine[i] * model.aff_scale).tolist(),
                 "u": float(model.u[i]), "bkg": model.bkg[i].tolist(),
                 "units": "rate" if cfg.input_level == "rate" else "cal",
@@ -412,18 +570,18 @@ def main(argv=None):
                 else "cal: MJy/sr, as SCI of the _cal file", "pixel_gain": cfg.pixel_gain}
     scores = {}
     if ts.multi:
-        scores = predict_merged(model, exps, held, P, cfg, ts, pred_dir=pred_dir if cfg.write_pred else None, meta_fn=meta_of, log=log)
+        scores = predict_merged(model, exps, held, P, cfg, ts, pred_dir=pred_dir if cfg.write_pred else None, meta_fn=meta_of, log=log, pred=stage["pred"])
     else:
         for i in held:
             e = exps[i]
-            m, pv, S = predict_exposure(model, e, P, cfg)
-            scores[e.name] = chi2_exposure(e, m, pv, S=S, snr_min=5.0)
-            if "closed_form_stripes" in e.extra:
-                scores[e.name]["closed_form_stripes"] = e.extra["closed_form_stripes"]
+            m, pv, S, scores[e.name] = stage["pred"](e)
             if cfg.write_pred:
                 write_prediction(pred_dir / f"{e.name}.npz", e, m, pv, meta_of(e))
-            log(f"held-out {e.name}: chi2/N (pipeline ERR, own mask, no offset) {scores[e.name]['chi2']:.3f} on {scores[e.name]['n']} px; "
-                f"model S/N>5 {scores[e.name].get('chi2_bright', float('nan')):.3f} ({scores[e.name].get('n_bright', 0)} px)")
+            r = scores[e.name]
+            old = r.get("all_pixel_old")
+            log(f"held-out {e.name}: chi2/N (pipeline ERR, own mask, no offset) {r['chi2']:.3f} on {r['n']} px; model S/N>5 {r.get('chi2_bright', float('nan')):.3f} "
+                f"({r.get('n_bright', 0)} px); model noise {r['chi2_model_noise']:.3f}"
+                + (f" [{'cross-fitted' if old else 'all-pixel'}]" + (f"; old all-pixel fit: {old['chi2']:.3f} (model noise {old['chi2_model_noise']:.3f})" if old else "")))
     with torch.no_grad():
         effv = model.effective_variability(P)
         gauges = model.gauge_report(P=P)
@@ -431,31 +589,43 @@ def main(argv=None):
     log(f"effective variability (output space): {({k: round(v, 5) for k, v in effv.items()})}")
     log(f"sizes of the learned terms that can absorb a modelling error (audit 17 Nov 2026): {json.dumps(nsz, default=str)}")
     log(f"gauges: {gauges}")
+    summ = summarise_scores(scores)
+    if summ["written"] is not None:
+        log("held-out summary (pixel-weighted): " + ("cross-fitted (written) " if "all_pixel_old" in summ else "all-pixel (written) ")
+            + f"chi2/px input noise {summ['written']['chi2_input_noise']:.4f}, model noise {summ['written']['chi2_model_noise']:.4f}"
+            + (f"; old all-pixel input noise {summ['all_pixel_old']['chi2_input_noise']:.4f}, model noise {summ['all_pixel_old']['chi2_model_noise']:.4f}"
+               if "all_pixel_old" in summ else ""))
+    with torch.no_grad():
+        ithr = model.instrument_mean_log_throughput(P, info["insts"])
+    if len(info["insts"]) > 1 and ithr:
+        log(f"mean log-throughput per instrument (reference --gauge-ref-inst {cfg.gauge_ref_inst}; the gauge sets the reference set's to 0): "
+            + "; ".join(f"{k}: {v['mean_log_g']:+.4f} ({v['n_train_exposures']} train exposures)" for k, v in ithr.items()))
     nf = noise_floor_values(model)
     ho_n = sum(v["n"] for v in scores.values())
     ho_in = {"chi2_input_noise": (sum(v["chi2"] * v["n"] for v in scores.values()) / ho_n) if ho_n else None, "n_px": ho_n,
              "note": "mean squared residual / input sigma^2 (file sigma x load-time factors; no learned floor or noise scale), own mask, held-out exposures"}
     log(f"final learned noise floor {nf} (bound {getattr(cfg, 'noise_floor_max', 0.0)}); held-out chi2/px (input noise) {ho_in['chi2_input_noise']}")
     metrics = {"config": vars(cfg), "info": info, "noise_floor_final": nf, "noise_floor_first_above_0.2_step": rec.get("noise_floor_first_above"),
-               "heldout_input_noise": ho_in, "fit": rec, "warm_kernel": winfo, "registration_prepass": reg, "tau": model.tau.table(), "heldout_own": scores,
+               "heldout_input_noise": ho_in, "heldout_summary": summ, "instrument_mean_log_throughput": ithr, "state_load_report": load_report, "fit": rec, "warm_kernel": winfo, "registration_prepass": reg, "tau": model.tau.table(), "heldout_own": scores,
                "effective_variability": effv, "gauges": gauges, "nuisance_sizes": nsz, "tiles": ts.summary() if ts.multi else None,
                "approximations": APPROXIMATIONS, "sources_sha256_16": shas, "pred_dir": str(pred_dir), "seconds": time.perf_counter() - T0}
     if model.fs_on:
         metrics["filter_shift"] = {"unit": "detector pixels (x = column, y = row); position of pixel p is W(p + s)", "pairs": model.filter_shift_table(),
                                    "training_exposures_per_pair": dict(zip(model.fs_labels, model.fs_ntrain))}
     json.dump(metrics, open(out / "metrics.json", "w"), indent=1, default=str)
-    st = {k: v.detach().cpu() for k, v in model.state_dict().items() if not k.startswith("sky.")}
-    st["skies"] = {k: {kk: vv.detach().cpu() for kk, vv in s_.state_dict().items()} for k, s_ in skies.items()}
+    st = state_for_saving(model, skies, cfg)
     if model.pixgain is not None:
         pg = model.pixgain
         st["pixel_gain_meta"] = {"mode": cfg.pixel_gain, "labels": pg.labels, "boxes": pg.boxes, "offsets": [int(o) for o in pg.off],
                                  "poly_order": pg.order, "input_level": cfg.input_level, "det_names": info["dets"], "filters": info["filters"],
+                                 **({"prior": pg.prior_table()} if pg.prior_mode != "off" else {}),
                                  "gauge": pg.gauge_residual(), "note": "pixgain.logg: flat log-gain values, map k = logg[off_k : off_k + rows x cols] "
                                  "reshaped (rows, cols), detector rows r0.., cols c0.. (box = (r0, c0, rows, cols)); pixgain.obs / count / info: "
                                  "observed in training, training cuts per pixel, sum of max(d^2/sig^2 - 1, 0)"}
         metrics["pixel_gain"] = {k: v for k, v in st["pixel_gain_meta"].items() if k != "note"}
         json.dump(metrics, open(out / "metrics.json", "w"), indent=1, default=str)
-    torch.save(st, out / "fieldop_state.pt")
+    if not cfg.heldout_only:
+        torch.save(st, out / "fieldop_state.pt")
     log(f"done; predictions in {pred_dir}")
     return metrics
 

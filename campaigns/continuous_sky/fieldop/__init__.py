@@ -82,8 +82,7 @@ APPROXIMATIONS = [
     "over the field's time span; epoch axes off when the training span < --epoch-min-days (SMACS: one day, so off)",
     "F28 kernel warm start (physics only as a start): l fitted to log[0.85 N(sigma) + 0.15 Moffat(2 sigma, beta 1.5)], sigma^2 = (0.42 lambda/D)^2 + "
     "p^2/12, on random continuous offsets, with every variability term at zero; no PSF library, no STPSF",
-    "F29 cross-fitting (--xfit 2, optional): two sky views by dither-group fold, the operator reads the other fold's sky (detached), views averaged "
-    "after --xfit-frac",
+    "F29 (removed 18 Nov 2026): sky cross-fitting by dither-group fold (--xfit); the sky keeps its leading view axis of length 1 so saved states keep their shapes",
     "F31 batched rendering (--batch-render): the patches of a step are rendered together per channel with ONE window size per level (the largest of "
     "the batch) and one random level-0 phase per batch; identical to the per-patch render to 5e-7 (values) / 3e-5 (gradients)",
     "F30 instruments: the loader maps JWST NIRCam detectors; HST _flt/_flc loading through this package is not implemented yet",
@@ -126,8 +125,7 @@ APPROXIMATIONS = [
     "per cent), spacing 2 half / m, width half the spacing (>= floor), random angle, fine-level remainder on a Halton set; coefficients = level "
     "share x item area x max(warm-start coefficients smoothed at the item width, 1e-3 x their median peak); reseeded when the registration "
     "pre-pass rebuilds the warm start; Adam groups: positions --item-lr-pos x pitch, log widths, angles, log coefficients (their own steps, "
-    "untuned, from the image-only experiment); cross-fitting views "
-    "averaged PARAMETER-wise (not the average of the two skies); the rasterised grid is cached while no sky parameter requires a gradient",
+    "untuned, from the image-only experiment); the rasterised grid is cached while no sky parameter requires a gradient",
     "F40 item pyramid rasteriser (--item-raster pyramid, 13 Nov 2026; default direct, bit-identical to F38): Gaussian semigroup. Level l has "
     "pitch p_l = 2^l p (level 0 = the sky grid); level l is carried to level l-1 by a fixed separable upsample-and-blur (stride-2 transposed "
     "convolution with a discretely normalised Gaussian of width s_l = p_l, taps +-5 s_l, flux conserved), so a level-l node arrives on the sky "
