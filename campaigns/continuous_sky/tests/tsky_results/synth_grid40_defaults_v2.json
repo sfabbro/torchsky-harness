@@ -157,5 +157,11 @@
     6.970127767138842
    ]
   }
- }
+ },
+ "before_sky_zero_px": {
+  "state_sha256": "579e2b1c1d6490dc5b85d59c1f48f8797d114b3a77c921e2d38da44d1872473f",
+  "state_sha256_with_legacy_resid": "579e2b1c1d6490dc5b85d59c1f48f8797d114b3a77c921e2d38da44d1872473f",
+  "heldout_chi2": 7.320529686517952
+ },
+ "sky_zero_px_note": "18 Nov build B: default --sky-zero-px 20000; every exposure of this synthetic field has fewer pixels, so all are rendered and the hash is unchanged (re-run, identical)"
 }

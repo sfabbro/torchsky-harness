@@ -85,7 +85,7 @@ def render_truth(truth, inst, filt, X, Y, xi, n_dense=24, epoch_effect=0.0):
 
 def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="cpu", insts=None, epochs=(0.0, 1.0),
                shift_rms=0.03, rot_choices=(0, 1), epoch_effect=0.0, centre_range=0.35, patch_px=64, truth_half=1.5,
-               pix_gain_rms=0.0, bkg_mean=5.0, pair_shift_px=None):
+               pix_gain_rms=0.0, bkg_mean=5.0, pair_shift_px=None, inst_shift=None, n_pts=14):
     """Exposures (header WCS without the true offsets), FilterSet, meta, truth and per-exposure true offsets.
 
     pix_gain_rms > 0 injects a per-pixel gain (flat field) per detector: G = exp(g), g white Gaussian of rms pix_gain_rms (from its own random
@@ -94,9 +94,14 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
 
     pair_shift_px (optional) {(instrument name, filter name): (dx, dy)}: a position shift in DETECTOR PIXELS shared by every exposure of that pair
     (training, validation and held out): the sky is sampled at W(p + s) = header position + J_e s (J_e = R_e x pixel), the header positions
-    handed to the model are unchanged. None (default) leaves the field exactly as before."""
+    handed to the model are unchanged. None (default) leaves the field exactly as before.
+
+    inst_shift (optional) {instrument name: (lo, hi)}: every exposure of that instrument gets an extra translation of random direction and a length
+    uniform in [lo, hi] arcsec (tangent plane, the same sign as the model's translation: the sky is sampled at header position + shift), drawn from
+    its own random stream; stored in extra["inj_shift"]. n_pts: number of point sources of the truth (default 14). Defaults reproduce the field exactly."""
     rng = np.random.default_rng(seed)
     grng = np.random.default_rng(10007 + seed)
+    srng = np.random.default_rng(20011 + seed)
     if insts is None:
         insts = [SynthInstrument("A", 0.06, 40, 6.5, 0.05, 1.5, space_grad=0.12, chromatic=1.0, flat_grad=0.06,
                                  filters=[("A1", 1.0, 1.3), ("A2", 1.6, 2.1)]),
@@ -106,7 +111,7 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
         for name, lo, hi in ins.filters:
             filters.append(box_filter(name, ins.name, lo, hi, Q))
     fset = FilterSet(filters)
-    truth = make_truth(rng, half=truth_half)
+    truth = make_truth(rng, half=truth_half, n_pts=n_pts)
     truth.gain = {}
     exps, dets, chans = [], [], []
     k = 0
@@ -136,6 +141,12 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
                 sky_shift = true_shift
                 if pair_shift_px:
                     sky_shift = true_shift + (Rm * ins.pixel) @ np.asarray(pair_shift_px.get((ins.name, name), (0.0, 0.0)), np.float64)
+                inj = np.zeros(2)
+                if inst_shift and ins.name in inst_shift:
+                    lo, hi = inst_shift[ins.name]
+                    ang = srng.uniform(0, 2 * math.pi)
+                    inj = srng.uniform(lo, hi) * np.array([math.cos(ang), math.sin(ang)])
+                    sky_shift = sky_shift + inj
                 clean = render_truth(truth, ins, fset.filters[f], Xh.reshape(-1) + float(sky_shift[0]), Yh.reshape(-1) + float(sky_shift[1]), xi,
                                      epoch_effect=eff).view(n, n)
                 bk = float(rng.normal(bkg_mean, 1.0))
@@ -149,7 +160,7 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
                              d=d.to(dev), sig=torch.full((n, n), noise, device=dev), valid=torch.ones(n, n, dtype=torch.bool, device=dev),
                              X=Xh.to(dev), Y=Yh.to(dev), R=Rm, split=split, group=f"{name}_{j}", stripes=False, bkg0=float(d.median()),
                              Jpix=torch.tensor(np.broadcast_to(Rm * ins.pixel, (n, n, 2, 2)).copy(), dtype=torch.float32, device=dev),
-                             extra={"J": (Rm * ins.pixel).tolist(), "true_shift": true_shift.tolist(), "clean": clean.to(dev), "bkg_true": bk,
+                             extra={"J": (Rm * ins.pixel).tolist(), "true_shift": true_shift.tolist(), "inj_shift": inj.tolist(), "clean": clean.to(dev), "bkg_true": bk,
                                     "diameter_m": ins.diameter_m, **({} if gmap is None else {"gain_true": gmap.to(dev)})})
                 e.eid = k
                 exps.append(e)

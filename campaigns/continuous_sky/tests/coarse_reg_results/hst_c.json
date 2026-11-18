@@ -1,0 +1,212 @@
+[
+ {
+  "file": "iczgz5cdq_flt.fits",
+  "filter": "F140W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": -412.371946016713,
+  "tY_mas": 488.62027996984756,
+  "peak": 0.5614959871948138,
+  "ratio": 99.0,
+  "n_overlap": 880770.9999999994,
+  "archive_minus_apriori_X_mas": -421.40835321758243,
+  "archive_minus_apriori_Y_mas": 494.73790460446793,
+  "field_centre_pixel": [
+   383.12468279596783,
+   439.85933804016696
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 9.036407200869405,
+  "diff_Y_mas": -6.11762463462037,
+  "visit": "iczgz5"
+ },
+ {
+  "file": "iczgz5ceq_flt.fits",
+  "filter": "F140W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": -414.58473000268987,
+  "tY_mas": 486.99043642004705,
+  "peak": 0.5986578043986053,
+  "ratio": 99.0,
+  "n_overlap": 880855.9999999995,
+  "archive_minus_apriori_X_mas": -432.8453805280641,
+  "archive_minus_apriori_Y_mas": 498.3956926727675,
+  "field_centre_pixel": [
+   381.1606104653627,
+   444.38433238320255
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 18.260650525374217,
+  "diff_Y_mas": -11.405256252720449,
+  "visit": "iczgz5"
+ },
+ {
+  "file": "iczgz5d4q_flt.fits",
+  "filter": "F140W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": -414.0829455741129,
+  "tY_mas": 491.2252345134128,
+  "peak": 0.5976861555254386,
+  "ratio": 99.0,
+  "n_overlap": 879205.9999999995,
+  "archive_minus_apriori_X_mas": -430.39645600106286,
+  "archive_minus_apriori_Y_mas": 498.9721333638918,
+  "field_centre_pixel": [
+   387.66962083125543,
+   444.8571832392492
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 16.31351042694996,
+  "diff_Y_mas": -7.746898850479056,
+  "visit": "iczgz5"
+ },
+ {
+  "file": "iczgz2nxq_flt.fits",
+  "filter": "F160W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 165.05422120615887,
+  "tY_mas": 472.60281386688314,
+  "peak": 0.601752783609736,
+  "ratio": 99.0,
+  "n_overlap": 816591.9999999994,
+  "archive_minus_apriori_X_mas": 162.82774749406914,
+  "archive_minus_apriori_Y_mas": 467.7300272193674,
+  "field_centre_pixel": [
+   498.0123838079497,
+   380.77139005378274
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 2.226473712089728,
+  "diff_Y_mas": 4.872786647515738,
+  "visit": "iczgz2"
+ },
+ {
+  "file": "iczgz2nzq_flt.fits",
+  "filter": "F160W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 161.84216228061132,
+  "tY_mas": 471.37537042707726,
+  "peak": 0.6128011345005793,
+  "ratio": 99.0,
+  "n_overlap": 835956.9999999993,
+  "archive_minus_apriori_X_mas": 152.79879588389875,
+  "archive_minus_apriori_Y_mas": 475.7862699549183,
+  "field_centre_pixel": [
+   447.3307835300149,
+   378.38076567541066
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 9.043366396712571,
+  "diff_Y_mas": -4.410899527841025,
+  "visit": "iczgz2"
+ },
+ {
+  "file": "iczgz4kjq_flt.fits",
+  "filter": "F160W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 156.79745860980344,
+  "tY_mas": 482.98678381464185,
+  "peak": 0.618360884784564,
+  "ratio": 99.0,
+  "n_overlap": 837073.9999999995,
+  "archive_minus_apriori_X_mas": 154.23166699173584,
+  "archive_minus_apriori_Y_mas": 485.81907929770085,
+  "field_centre_pixel": [
+   443.8134764850966,
+   373.344014842484
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 2.565791618067607,
+  "diff_Y_mas": -2.8322954830589993,
+  "visit": "iczgz4"
+ },
+ {
+  "file": "iczgz4klq_flt.fits",
+  "filter": "F160W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 155.84527996126482,
+  "tY_mas": 490.1946235119899,
+  "peak": 0.6109194662334654,
+  "ratio": 99.0,
+  "n_overlap": 819477.9999999995,
+  "archive_minus_apriori_X_mas": 153.718549864765,
+  "archive_minus_apriori_Y_mas": 485.986623975806,
+  "field_centre_pixel": [
+   491.8345546738423,
+   375.7442904007557
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 2.126730096499813,
+  "diff_Y_mas": 4.207999536183877,
+  "visit": "iczgz4"
+ },
+ {
+  "file": "iczgzbmaq_flt.fits",
+  "filter": "F160W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 241.58199820825175,
+  "tY_mas": 332.58877139189275,
+  "peak": 0.6161395739968664,
+  "ratio": 99.0,
+  "n_overlap": 883084.9999999988,
+  "archive_minus_apriori_X_mas": 215.44172026069955,
+  "archive_minus_apriori_Y_mas": 330.79431163976494,
+  "field_centre_pixel": [
+   410.1276228880358,
+   609.7557953157916
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 26.140277947552192,
+  "diff_Y_mas": 1.794459752127807,
+  "visit": "iczgzb"
+ },
+ {
+  "file": "iczgzbmbq_flt.fits",
+  "filter": "F160W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 243.453190250855,
+  "tY_mas": 331.1355392020931,
+  "peak": 0.6225915404602125,
+  "ratio": 99.0,
+  "n_overlap": 880513.9999999991,
+  "archive_minus_apriori_X_mas": 215.34645688585394,
+  "archive_minus_apriori_Y_mas": 334.63805197353065,
+  "field_centre_pixel": [
+   412.0856180088238,
+   605.275242423154
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 28.10673336500105,
+  "diff_Y_mas": -3.502512771437523,
+  "visit": "iczgzb"
+ },
+ {
+  "file": "iczgzbmgq_flt.fits",
+  "filter": "F160W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 240.79372083004154,
+  "tY_mas": 330.6418988135964,
+  "peak": 0.6188463297313074,
+  "ratio": 99.0,
+  "n_overlap": 883272.9999999991,
+  "archive_minus_apriori_X_mas": 218.74473990006624,
+  "archive_minus_apriori_Y_mas": 337.4317024473876,
+  "field_centre_pixel": [
+   405.60389281146246,
+   604.8085847867079
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 22.0489809299753,
+  "diff_Y_mas": -6.789803633791166,
+  "visit": "iczgzb"
+ }
+]

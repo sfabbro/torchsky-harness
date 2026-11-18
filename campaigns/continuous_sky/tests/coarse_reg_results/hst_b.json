@@ -1,0 +1,191 @@
+[
+ {
+  "file": "iczgz4kiq_flt.fits",
+  "filter": "F125W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 171.0514731276697,
+  "tY_mas": 502.46801192418934,
+  "peak": 0.533217308515401,
+  "ratio": 99.0,
+  "n_overlap": 831248.9999999992,
+  "archive_minus_apriori_X_mas": 167.43231160745214,
+  "archive_minus_apriori_Y_mas": 508.596468407563,
+  "field_centre_pixel": [
+   443.81143159639424,
+   373.3414428260295
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 3.619161520217574,
+  "diff_Y_mas": -6.128456483373668,
+  "visit": "iczgz4"
+ },
+ {
+  "file": "iczgz4kmq_flt.fits",
+  "filter": "F125W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 169.22255094614232,
+  "tY_mas": 515.2113325262136,
+  "peak": 0.5434569271106796,
+  "ratio": 99.0,
+  "n_overlap": 813939.9999999997,
+  "archive_minus_apriori_X_mas": 162.53907326688542,
+  "archive_minus_apriori_Y_mas": 508.0119013674008,
+  "field_centre_pixel": [
+   491.8345098889632,
+   375.74192605509813
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 6.683477679256896,
+  "diff_Y_mas": 7.199431158812786,
+  "visit": "iczgz4"
+ },
+ {
+  "file": "iczgzaj1q_flt.fits",
+  "filter": "F125W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 204.5215934429706,
+  "tY_mas": 361.4628218752692,
+  "peak": 0.6166300369902064,
+  "ratio": 99.0,
+  "n_overlap": 864280.9999999986,
+  "archive_minus_apriori_X_mas": 184.20108944707027,
+  "archive_minus_apriori_Y_mas": 364.3840999251006,
+  "field_centre_pixel": [
+   402.0591190177271,
+   599.0758244250046
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 20.32050399590034,
+  "diff_Y_mas": -2.9212780498314146,
+  "visit": "iczgza"
+ },
+ {
+  "file": "iczgzaj2q_flt.fits",
+  "filter": "F125W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 203.91566983463446,
+  "tY_mas": 361.4426555996705,
+  "peak": 0.6239141075699771,
+  "ratio": 99.0,
+  "n_overlap": 862597.9999999992,
+  "archive_minus_apriori_X_mas": 179.93256755304617,
+  "archive_minus_apriori_Y_mas": 360.2482950180907,
+  "field_centre_pixel": [
+   404.0165868059806,
+   594.5924148894607
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 23.983102281588287,
+  "diff_Y_mas": 1.194360581579815,
+  "visit": "iczgza"
+ },
+ {
+  "file": "iczgzaj4q_flt.fits",
+  "filter": "F125W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 199.2766071981537,
+  "tY_mas": 359.69493874100493,
+  "peak": 0.6193106665558841,
+  "ratio": 99.0,
+  "n_overlap": 864124.9999999983,
+  "archive_minus_apriori_X_mas": 176.3021576964266,
+  "archive_minus_apriori_Y_mas": 362.0407404546875,
+  "field_centre_pixel": [
+   397.53279617685615,
+   594.1245628250267
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 22.974449501727094,
+  "diff_Y_mas": -2.34580171368259,
+  "visit": "iczgza"
+ },
+ {
+  "file": "iczgz2npq_flt.fits",
+  "filter": "F140W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 165.85125178273296,
+  "tY_mas": 475.03992127868986,
+  "peak": 0.5610332634085684,
+  "ratio": 99.0,
+  "n_overlap": 834914.9999999991,
+  "archive_minus_apriori_X_mas": 163.9945929274825,
+  "archive_minus_apriori_Y_mas": 474.9974812861595,
+  "field_centre_pixel": [
+   443.82106238719575,
+   373.33826606947866
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 1.8566588552504584,
+  "diff_Y_mas": 0.042439992530376,
+  "visit": "iczgz2"
+ },
+ {
+  "file": "iczgz2nuq_flt.fits",
+  "filter": "F140W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 170.54191187203702,
+  "tY_mas": 482.38129370837925,
+  "peak": 0.5766867353110255,
+  "ratio": 99.0,
+  "n_overlap": 815818.9999999993,
+  "archive_minus_apriori_X_mas": 161.45084972610272,
+  "archive_minus_apriori_Y_mas": 481.664181326293,
+  "field_centre_pixel": [
+   494.5090594924348,
+   375.73284465287264
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 9.091062145934302,
+  "diff_Y_mas": 0.7171123820862704,
+  "visit": "iczgz2"
+ },
+ {
+  "file": "iczgz4kbq_flt.fits",
+  "filter": "F140W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 166.62877965478606,
+  "tY_mas": 491.1556646998281,
+  "peak": 0.5620521940899994,
+  "ratio": 99.0,
+  "n_overlap": 813519.9999999994,
+  "archive_minus_apriori_X_mas": 162.31559566040968,
+  "archive_minus_apriori_Y_mas": 483.41563162926934,
+  "field_centre_pixel": [
+   498.01979712299067,
+   380.7663934900896
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 4.313183994376374,
+  "diff_Y_mas": 7.740033070558752,
+  "visit": "iczgz4"
+ },
+ {
+  "file": "iczgz4kgq_flt.fits",
+  "filter": "F140W",
+  "ok": true,
+  "reason": null,
+  "tX_mas": 167.50865454408458,
+  "tY_mas": 492.8209323881317,
+  "peak": 0.5777333443905435,
+  "ratio": 99.0,
+  "n_overlap": 833025.9999999994,
+  "archive_minus_apriori_X_mas": 155.52750394765852,
+  "archive_minus_apriori_Y_mas": 494.28371875774303,
+  "field_centre_pixel": [
+   447.3376120819009,
+   378.37419998050564
+  ],
+  "inside_fraction": 1.0,
+  "diff_X_mas": 11.981150596426062,
+  "diff_Y_mas": -1.4627863696113081,
+  "visit": "iczgz4"
+ }
+]

@@ -158,6 +158,9 @@ def build_parser():
     g.add_argument("--gauge-ref-inst", type=int, default=None,
                    help="instrument index whose training exposures define the throughput gauge (the absolute flux scale); -1 = all training exposures. "
                    "Unset: -1 with one instrument; with several instruments the run refuses to start unless it is given (audit finding 5)")
+    g.add_argument("--dilation-stop", type=float, default=0.0,
+                   help="end the fit cleanly, with a message, at the first step where the common-blur dilation exceeds this value (0 = off; real fits stay at 1.0 to 1.4; "
+                   "WARNING lines are logged at 2 and 10 regardless)")
     g.add_argument("--blur-floor", type=float, default=1.0, help="blur gauge: core m2 of the sharpest kernel class >= this x (sky pitch)^2 / 3 (0 = off)")
     g.add_argument("--pedestal-gauge", type=int, default=1, help="per filter, training background constants (relative to the exposure medians) sum to zero")
     g.add_argument("--sky-zero", choices=["median", "masked"], default="masked",
@@ -166,8 +169,27 @@ def build_parser():
                    "below zero by the median source light, and positivity turns that into a positive total offset); 'masked' = median of the "
                    "DATA (not the residual) over the pixels where the current model's sky signal S satisfies |S| < --sky-zero-snr x the pixel sigma, "
                    "re-evaluated at --sky-zero-at fractions of the fit: the sky is zero, by convention, where the model sees no source")
+    g.add_argument("--coarse-reg", choices=["off", "xcorr"], default="off",
+                   help="coarse registration of exposures that start far (several pixels) from the sky, before the pre-pass: masked normalised cross-correlation "
+                   "of each selected exposure's high-passed pixels with the starting sky (built from the reference instrument's exposures only) rendered "
+                   "through its warm-start kernel; sets its starting translation (fieldop/coarse_reg.py). No catalogue, no source detection")
+    g.add_argument("--coarse-reg-radius", type=float, default=1.0, help="--coarse-reg: search radius [arcsec]")
+    g.add_argument("--coarse-reg-inst", "--coarse-reg-instruments", dest="coarse_reg_instruments", default="",
+                   help="--coarse-reg: instruments to register, comma list of names or indices, or 'all'; default (empty): every instrument except the "
+                   "reference instrument of --gauge-ref-inst")
+    g.add_argument("--coarse-reg-min-peak", type=float, default=0.05, help="--coarse-reg: an exposure whose correlation peak is below this is refused")
+    g.add_argument("--coarse-reg-min-ratio", type=float, default=1.5,
+                   help="--coarse-reg: an exposure whose peak is less than this times the second-highest local maximum is refused (ambiguous)")
+    g.add_argument("--coarse-reg-block", type=float, default=0.6, help="--coarse-reg: background block [arcsec] of the high-pass")
+    g.add_argument("--coarse-reg-smooth", type=float, default=0.1, help="--coarse-reg: Gaussian width [arcsec] smoothing the high-passed images")
     g.add_argument("--sky-zero-snr", type=float, default=0.3, help="--sky-zero masked: a pixel counts as source-free when |S| < this x its sigma")
     g.add_argument("--sky-zero-smooth", type=float, default=1.5, help="--sky-zero masked: Gaussian width [detector pixels] of the smoothing of S before the threshold")
+    g.add_argument("--sky-zero-px", "--sky-zero-pixels", dest="sky_zero_pixels", type=int, default=20000,
+                   help="--sky-zero masked: the sky signal is rendered on a fixed pseudo-random subset of render patches (chosen once per exposure cut, seeded by "
+                   "--seed and the exposure) covering about this many pixels per EXPOSURE (all its cuts together); an exposure with fewer pixels is rendered whole; "
+                   "0 = every pixel of every exposure (the earlier full evaluation, exactly)")
+    g.add_argument("--sky-zero-patch", type=int, default=0,
+                   help="--sky-zero masked: side [pixels] of the lattice patches; 0 = the render patch of the held-out prediction (at least 32 pixels)")
     g.add_argument("--sky-zero-at", default="0,0.1,0.25,0.5,0.75", help="--sky-zero masked: fit progress fractions at which the levels are re-evaluated")
     g.add_argument("--sky-positivity-margin", type=float, default=0.0,
                    help="positivity (grid penalty, item exponentials) applies to sky + p instead of the sky, p = this x the noise of the warm-start "
@@ -564,7 +586,11 @@ def main(argv=None):
         winfo, reg, rec = {}, {}, {"heldout_only": True, "state": cfg.state}
     else:
         winfo = warm_kernel(model, cfg, filt_info_of(exps, fset, info["insts"]), log=log)
+        from .coarse_reg import coarse_register
+        coarse = coarse_register(model, exps, cfg, log=log, ts=ts, inst_names=info["insts"])
         reg = register_prepass(model, exps, cfg, log=log, ts=ts)
+        if coarse:
+            reg = dict(reg, coarse=coarse)
         rec = fit(model, exps, cfg, log=log, ts=ts)
     held = [e.cid for e in exps if e.split == "held"]
     stage = heldout_stage(model, exps, held, cfg, log=log, ts=ts)

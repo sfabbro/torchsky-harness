@@ -362,6 +362,8 @@ def register_prepass(model, exps, cfg, log=print, ts=None):
 
 
 # ----------------------------------------------------------------------------- main fit
+DILATION_WARN2 = 10.0        # second, louder warning level
+DILATION_WARN = 2.0          # blur dilation above which a WARNING is logged (real fits: 1.0 to 1.4)
 EM_AXES = ("k_exp", "g_exp", "D_exp")
 
 
@@ -531,6 +533,25 @@ def smooth_image(img, w, s_px):
     return conv(img * wf) / conv(wf).clamp(min=1e-6)
 
 
+def _pred_tile(e, cfg):
+    """Side [detector pixels] of the square render patches of predict_exposure (same rule)."""
+    return max(32, int(round(cfg.patch_arcsec / max(abs(np.linalg.det(np.asarray(e.extra.get("J", [[cfg.pix_default, 0], [0, cfg.pix_default]])))) ** 0.5, 1e-6))))
+
+
+def _lattice_slices(e, cfg, max_px):
+    """Render patches of exposure cut e (the patches of predict_exposure, same order) kept for the zero-level refresh: all of them when
+    max_px <= 0 or the cut has no more than max_px pixels, else a fixed pseudo-random subset (seeded by the run seed and the cut, drawn without replacement) of about max_px / tile^2 patches, always at least 4."""
+    ny, nx = e.shape
+    tile = int(getattr(cfg, "sky_zero_patch", 0) or 0) or _pred_tile(e, cfg)
+    sls = [(y0, min(ny, y0 + tile), x0, min(nx, x0 + tile)) for y0 in range(0, ny, tile) for x0 in range(0, nx, tile)]
+    if max_px <= 0 or ny * nx <= max_px:
+        return sls
+    n_keep = min(len(sls), max(4, int(round(max_px / float(tile * tile)))))
+    rng = np.random.default_rng([int(getattr(cfg, "seed", 0)), 20181118, abs(int(e.cid if e.cid >= 0 else e.eid))])      # fixed per exposure cut: the same patches at every refresh
+    idx = np.sort(rng.choice(len(sls), size=n_keep, replace=False))
+    return [sls[i] for i in idx]
+
+
 @torch.no_grad()
 def sky_zero_refresh(model, exps, cfg, ts, log=print):
     """--sky-zero masked: reference level of every training exposure = median of its DATA over the valid pixels where the current model's sky
@@ -539,35 +560,82 @@ def sky_zero_refresh(model, exps, cfg, ts, log=print):
     that noise in S, which is correlated with the pixel's own noise, does not bias the median; sources are positive). These levels replace the
     exposure medians in the pedestal gauge (model.bkg0), and the gauge is applied at once. The data, not the residual d - S, are used: a tie to
     the residual is satisfied by any constant sky layer (it moves with the layer) and so does not fix the split; a tie to the data is not.
-    Convention: the sky is zero on the pixels the model calls source-free (its faint, unmodelled sources stay in the median). Single tile only.
-    Returns a record (per exposure: level, fraction of valid pixels used)."""
+    Convention: the sky is zero on the pixels the model calls source-free (its faint, unmodelled sources stay in the median).
+
+    Cost (--sky-zero-pixels N): S is rendered, in batches of --pred-batch patches as in the fit, only on a fixed pseudo-random subset of render patches
+    covering about N pixels per EXPOSURE (shared between its cuts in proportion to their pixel counts; N <= 0, or a cut with fewer pixels than
+    its share: every pixel, which is the earlier full evaluation exactly). The smoothing and the threshold act inside each patch (normalised
+    convolution, so a patch edge only means fewer neighbours). Several tiles: one level per exposure from the source-free pixels of ALL its cuts
+    in all tiles (each tile's sky is made active in turn; the operator tables do not depend on the sky and are prepared once).
+    Returns a record (per exposure: level, fraction of the rendered valid pixels used); the counts of the last call are in
+    sky_zero_refresh.last_summary."""
     if getattr(cfg, "sky_zero", "median") == "median":
         return None
-    if ts is not None and ts.multi:
-        raise SystemExit("--sky-zero masked is implemented for a single tile only")
+    t_start = time.perf_counter()
     P = {k: v.detach() for k, v in model.prepare().items()}
     t = float(cfg.sky_zero_snr)
-    out = {}
-    for e in exps:
-        if e.split != "train":
-            continue
-        _, pv, S = predict_exposure(model, e, P, cfg)
-        v0 = e.valid & pv & torch.isfinite(S)
-        Ss = smooth_image(torch.where(v0, S, torch.zeros_like(S)), v0, float(cfg.sky_zero_smooth))
-        v = v0 & (Ss.abs() < t * e.sig)     # symmetric: a pixel whose S is pulled up OR down by its own noise is dropped alike (no selection bias)
-        n0, n = int(v0.sum()), int(v.sum())
+    cap = float(getattr(cfg, "sky_zero_pixels", 0) or 0)
+    tr_cuts = [e for e in exps if e.split == "train"]
+    npx_by_eid = {}
+    for e in tr_cuts:
+        npx_by_eid[e.eid] = npx_by_eid.get(e.eid, 0) + e.shape[0] * e.shape[1]
+    vals, n0s, ns, rendered = {}, {}, {}, 0
+    keys = ts.keys if ts is not None else [None]
+    for k in keys:
+        if ts is not None:
+            ts.activate(k)
+        for e in tr_cuts:
+            if ts is not None and e.tile != k:
+                continue
+            share = cap * e.shape[0] * e.shape[1] / max(npx_by_eid[e.eid], 1) if cap > 0 else 0
+            sls = _lattice_slices(e, cfg, share)
+            ny, nx = e.shape
+            full = len(sls) == len(_lattice_slices(e, cfg, 0))
+            Sc = torch.full((ny, nx), float("nan"), device=e.d.device)      # the rendered signal (NaN where not rendered)
+            Mc = torch.full((ny, nx), float("nan"), device=e.d.device)
+            for b0 in range(0, len(sls), max(1, cfg.pred_batch)):
+                chunk = sls[b0:b0 + max(1, cfg.pred_batch)]
+                pixs = [e.pix(sl) for sl in chunk]
+                outs = model.render_batch([(e.eid, px) for px in pixs], P) if cfg.batch_render else [model.render(e.eid, px, P) for px in pixs]
+                for sl, out in zip(chunk, outs):
+                    Sc[sl[0]:sl[1], sl[2]:sl[3]] = out["S"].view(sl[1] - sl[0], sl[3] - sl[2])
+                    Mc[sl[0]:sl[1], sl[2]:sl[3]] = out["m"].view(sl[1] - sl[0], sl[3] - sl[2])
+                    rendered += (sl[1] - sl[0]) * (sl[3] - sl[2])
+            h = model.sky.half_extent - cfg.pred_margin
+            pv = ((e.X + e.shift0[0]).abs() < h) & ((e.Y + e.shift0[1]).abs() < h) & torch.isfinite(Mc)
+            # every pixel rendered: smooth the whole image (the earlier full evaluation exactly); a subsample: inside each rendered patch
+            for sl in ([(0, ny, 0, nx)] if full else sls):
+                S = Sc[sl[0]:sl[1], sl[2]:sl[3]]
+                v0 = e.valid[sl[0]:sl[1], sl[2]:sl[3]] & pv[sl[0]:sl[1], sl[2]:sl[3]] & torch.isfinite(S)
+                Ss = smooth_image(torch.where(v0, S, torch.zeros_like(S)), v0, float(cfg.sky_zero_smooth))
+                v = v0 & (Ss.abs() < t * e.sig[sl[0]:sl[1], sl[2]:sl[3]])     # symmetric: a pixel pulled up OR down by its own noise is dropped alike
+                vals.setdefault(e.eid, []).append(e.d[sl[0]:sl[1], sl[2]:sl[3]][v])
+                n0s[e.eid] = n0s.get(e.eid, 0) + int(v0.sum())
+                ns[e.eid] = ns.get(e.eid, 0) + int(v.sum())
+    out, bad = {}, []
+    names = {e.eid: e.name for e in tr_cuts}
+    for eid in sorted(vals):
+        n0, n = n0s[eid], ns[eid]
         if n < max(100, 0.05 * n0):
-            log(f"sky zero: exposure {e.name}: only {n} of {n0} pixels source-free; reference level kept")
+            bad.append((n / max(n0, 1), names[eid], n, n0))
             continue
-        lvl = float(e.d[v].median())
-        model.bkg0[e.eid] = lvl
-        out[e.name] = [lvl, n / max(n0, 1)]
+        lvl = float(torch.cat(vals[eid]).median())
+        model.bkg0[eid] = lvl
+        out[names[eid]] = [lvl, n / max(n0, 1)]
     tr_by_f = {f: v.to(model.dev) for f, v in (ts.pedestal_groups.items() if ts is not None else {})}
     if cfg.pedestal_gauge and tr_by_f:
         model.project_gauges(tr_by_f)
     fr = [v[1] for v in out.values()]
-    log(f"sky zero (masked): {len(out)} exposures re-referenced, source-free fraction {np.min(fr) if fr else float('nan'):.3f} to "
-        f"{np.max(fr) if fr else float('nan'):.3f}, mean level {np.mean([v[0] for v in out.values()]) if out else float('nan'):.5f}")
+    secs = time.perf_counter() - t_start
+    sky_zero_refresh.last_summary = {"n_exposures": len(out), "pixels_rendered": rendered, "pixels_per_exposure": rendered / max(len(vals), 1),
+                                     "pixels_source_free": int(sum(ns.values())), "seconds": secs, "n_too_few": len(bad)}
+    log(f"sky zero (masked): {len(out)} exposures re-referenced, {len(bad)} fell back to their earlier level, {rendered} pixels rendered ({rendered / max(len(vals), 1):.0f} per exposure, "
+        f"{sum(ns.values())} source-free used), source-free fraction {np.min(fr) if fr else float('nan'):.3f} to "
+        f"{np.max(fr) if fr else float('nan'):.3f}, mean level {np.mean([v[0] for v in out.values()]) if out else float('nan'):.5f}, {secs:.1f} s")
+    if bad:
+        bad.sort()
+        log(f"sky zero (masked): {len(bad)} exposures with too few source-free pixels, reference level kept; worst three: "
+            + ", ".join(f"{b[1]} ({b[2]} of {b[3]})" for b in bad[:3]))
     return out
 
 
@@ -629,6 +697,7 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     nf_max = float(getattr(cfg, "noise_floor_max", 0.0) or 0.0)
     nf_raw_max = float(inv_softplus(torch.tensor(nf_max))) if nf_max > 0 else 0.0
     nf_warn_step = None
+    dil_max = 1.0
     nf_first = torch.full((), -1, dtype=torch.long, device=dev)
     hs_max = noise_scale_raw_max(float(getattr(cfg, "noise_scale_max", 0.0) or 0.0))
     bound_first = None
@@ -648,6 +717,7 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             while sz_marks and prog >= sz_marks[0]:
                 sz_marks.pop(0)
             rec.setdefault("sky_zero", []).append([step, sky_zero_refresh(model, exps, cfg, ts, log)])
+            rec.setdefault("sky_zero_summary", []).append([step, dict(sky_zero_refresh.last_summary)])
         if ts.multi and visit_left <= 0:
             k = ts.draw(trng)
             if ts.activate(k):
@@ -665,6 +735,23 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
         with only_grad(model, params):
             P = model.prepare()
         P_sky = {kk: (v.detach() if torch.is_tensor(v) else v) for kk, v in P.items()}
+        if P.get("dil") is not None:       # blur dilation guard (build C): observation, and with --dilation-stop a clean end of the fit; the rule itself is unchanged
+            dn = float(P["dil"])
+            dil_max = max(dil_max, dn)
+            if dn > DILATION_WARN and "dilation_first_above" not in rec:
+                rec["dilation_first_above"] = step
+                log(f"WARNING: blur dilation {dn:.3g} at step {step} exceeds {DILATION_WARN:g} (real fits stay at 1.0 to 1.4): the kernel is "
+                    f"being learned sharper than one sky node allows and the dilation rule is compensating; the fit may be diverging")
+            if dn > DILATION_WARN2 and "dilation_first_above_10" not in rec:
+                rec["dilation_first_above_10"] = step
+                log(f"WARNING: blur dilation {dn:.3g} at step {step} exceeds {DILATION_WARN2:g}: the common-blur dilation has run away (the kernel "
+                    f"network's gradient is then zero); results from this fit are not trustworthy")
+            dstop = float(getattr(cfg, "dilation_stop", 0.0) or 0.0)
+            if dstop > 0 and dn > dstop:
+                rec["dilation_stopped_at"] = step
+                log(f"STOP: blur dilation {dn:.3g} at step {step} exceeds --dilation-stop {dstop:g}; the fit ends here (steps 0 to {step - 1} done) and the "
+                    f"held-out stage, if any, uses the state as it is. Rerun with a lower kernel learning rate or a larger --blur-floor, or check the data.")
+                break
         # (a) sky inner steps: sky only, operator fixed
         for _ in range(cfg.inner_sky):
             with only_grad(model, skyp):
@@ -765,6 +852,8 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             with torch.no_grad():
                 gsh = model.shift_gauge(P)
             dl = P.get("dil")
+            dil_now = 1.0 if dl is None else float(dl)       # blur dilation guard (build C): observation only, nothing is changed
+            dil_max = max(dil_max, dil_now)
             mem = (f" dil {float(dl):.3f}" if dl is not None else " dil 1") + f" Mref {float(model.blur_moment(1.0 if dl is None else float(dl))) * 1e6:.0f}e-6 floor {model.blur_floor * 1e6:.0f}e-6"
             mem += (f" cuda peak {torch.cuda.max_memory_allocated() / 2 ** 30:.2f} GB" if dev.type == "cuda" else "")
             if ts.multi:
@@ -780,6 +869,13 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             history(step, model)
         step += 1
     rec["n_steps"] = step
+    with torch.no_grad():
+        dl_end = model.dilation()
+    dil_end = 1.0 if dl_end is None else float(dl_end)
+    dil_max = max(dil_max, dil_end)
+    rec["dilation_max"], rec["dilation_final"] = dil_max, dil_end       # maximum over the logged steps and the end of the fit
+    if dil_max > DILATION_WARN:
+        log(f"WARNING: blur dilation reached {dil_max:.3g} (above {DILATION_WARN:g}; final {dil_end:.3g}); real fits stay at 1.0 to 1.4")
     if nf_warn_step is None and int(nf_first) >= 0:
         nf_warn_step = rec["noise_floor_first_above"] = int(nf_first)
         log(f"WARNING: learned fractional noise floor exceeds {NOISE_FLOOR_WARN} first at step {nf_warn_step}")

@@ -456,7 +456,7 @@ def load_field(cfg, dev, log=print):
                               Jpix=host["Jpix"],
                               extra={"file": e["file"], "path": path, "J": r["J"].tolist(), "detector": det, "filter": e["filter"], "pixar_a2": r["pixar_a2"],
                                      "photmjsr": r.get("photmjsr", float("nan")), "diameter_m": ins.diameter_m, "instrument": ins.key,
-                                     "rootname": e["rootname"], "chip": r.get("chip", 1), "to_sky": r.get("to_sky", 1.0), "sci_unit": r.get("sci_unit", "")},
+                                     "rootname": e["rootname"], "visit_key": str(e.get("visit_key", "")) or str(e["dither_group"]), "chip": r.get("chip", 1), "to_sky": r.get("to_sky", 1.0), "sci_unit": r.get("sci_unit", "")},
                               tile=tile, c0=c0s[tile], host=host if multi else None)
                 ee.eid = gid.setdefault(ee.name, len(gid))       # one exposure per chip (rootname + _sci<chip> for a file of several chips)
                 cuts.append(ee)

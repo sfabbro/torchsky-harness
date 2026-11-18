@@ -2,6 +2,36 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 18 Nov 2026, 09:20 UTC: the new defaults on real data: better for the grid sky, worse for the item sky on bright pixels; three ablations launched
+
+Collection by a Haiku agent; flux checks by me. Both fits: SMACS, 200 minutes, package `fieldop-tsky-90ff3b37`, cross-fitted held-out scoring, no scorer offset. The comparison at equal scoring is with the re-scored old fits.
+
+| Signal-to-noise | Pipeline | Grid, old defaults | Grid, new defaults | Items, old defaults | Items, new defaults |
+|---|---|---|---|---|---|
+| headline (5 and above) | 1.822 | 1.768 | 1.692 | 1.733 | 2.026 |
+| 1 to 5 | 1.094 | 1.098 | 1.146 | 0.976 | 0.977 |
+| 5 to 20 | 1.174 | 1.259 | 1.308 | 1.092 | 1.089 |
+| 20 to 50 | 1.237 | 1.325 | 1.349 | 1.169 | 1.161 |
+| 50 to 200 | 6.70 | 3.35 | 2.86 | 6.87 | 8.90 |
+| above 200 | 92 | 127 | 97 | 83 | 138 |
+
+- **Grid sky: the new defaults help**, -0.076 [-0.090, -0.063] in the headline, all of it on bright pixels (50 to 200: -0.49; above 200: -30); slightly worse at 1 to 50 (+0.02 to +0.05). 9,708 steps. Final noise floor 4.4% and 1.6%; noise scales 0.71 to 0.91 (two long-wavelength scales sat at the bound of 2 early on, not at the end). The zero-level rule fell back to the old median from the second refresh on, so for the grid this is the effect of the other defaults.
+- **Item sky: the new defaults hurt**, +0.292 [+0.148, +0.435] in the headline, all of it on bright pixels (50 to 200: +2.0 [+1.1, +3.2]; above 200: +56); identical below 50. Against the pipeline the new item fit is now worse in the headline (+0.20 [+0.01, +0.39]) while still better at 1 to 50.
+  - Things that differ from the old item fit and could cause it, not yet separated: 3,131 steps instead of about 4,400 (3.83 s per step against 2.7; the zero-level refresh takes about 10 minutes of the 200, the rest is unexplained); the spatial variation of the kernel was kept this time (its scale ended at 1.5, where every earlier fit pruned it); final noise floor 9.0% and 4.4% (not reported for the old fit); the zero-level rule itself (active here: 75 to 86 of 86 exposures re-referenced at each refresh).
+  - Flux of the new item sky against the official mosaic at 1 arcsec: 0.98 to 1.00 in the three short-wavelength filters, but 1.15 to 1.17 in the three long-wavelength ones (the old item fit: 0.98 to 1.00 in all six). So the long-wavelength amplitude is off by 16%, which fits a bright-pixel loss.
+  - Its sky in empty regions is at 0.002 to 0.004 MJy/sr (the mosaic's own background level there is 0.012 to 0.037): the zero convention does what it says.
+- **So the defaults approved on synthetic evidence are not a clear gain on real data.** Three 200-minute ablations of the item fit were launched at 09:00 to 09:10 on the same package to find which default does it: (1) all old defaults with cross-fitted scoring (`onesky_items004w_legacy`; should reproduce 1.733 if nothing else in the package changed); (2) new defaults with the old zero-level rule (`onesky_items004w_v2_zmed`); (3) new defaults without the noise bounds (`onesky_items004w_v2_nobound`). Until they are read, I treat `--sky-zero masked` and the noise bounds as provisional for the item sky.
+
+### Builds finished while the fits ran (Sonnet, `BUILD_2026-11-18B.md`; not yet in the archive used by the running fits)
+
+- Zero-level refresh on a subset of pixels (`--sky-zero-px`, default 20,000 per exposure; 0 = all), several tiles supported. On CPU 2.4 times faster at the default on a field of 40,000-pixel cuts; levels differ from the all-pixel ones by 0.007 noise units (sampling alone predicts 0.007). No GPU timing yet.
+- **Catalogue-free coarse registration (`--coarse-reg xcorr`)**: each exposure of a non-reference instrument is cross-correlated against the starting sky made from the reference instrument alone. Synthetic: injected shifts of 0.27 to 0.48 arcsec recovered to 7 mas (0.06 pixel). Real files: 28 HST exposures against two JWST exposures give shifts of 409 to 662 mas, which agree with the archive's Gaia-aligned solution to 15 mas (x) and 9 mas (y) rms without using any catalogue. The synthetic held-out comparison after the coarse step is inconclusive (unconverged fits). This replaces the `--hst-wcs archive` shortcut in the next joint fit.
+- Guard on the blur dilation: warnings above 2 and 10, the maximum in the metrics, `--dilation-stop`. The agent's two-instrument synthetic field also ran away in the dilation (171 in 60 steps), so that fault is not confined to the truth problem.
+
+### Queue at 09:20 UTC
+
+- g0123: joint JWST + HST fit (ends about 09:40), LMC tile 7 grid twin (started 08:56), ablations 1 and 2. g0126: LMC tile 7 item fit (ends about 10:15). g0125: ablation 3 (slow node yesterday; speed to check).
+
 ## 18 Nov 2026, 06:15 UTC: how much the old held-out scores were flattered; first joint JWST + HST run; where the new zero-level rule works
 
 ### Decision 3 measured on real data: re-scoring the two saved SMACS fits with cross-fitted held-out terms
