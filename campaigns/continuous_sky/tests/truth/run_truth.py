@@ -39,6 +39,8 @@ def cmd_fit(a):
         cfg_over["blur_floor"] = a.blur_floor
     if a.item_count:
         cfg_over["item_count"] = a.item_count
+    if a.minimal:                             # the --minimal preset under the harness's standard settings: the harness's explicit options still win
+        cfg_over.update(minimal=True, legacy_defaults=False)
     for kv in a.set or []:                    # generic configuration override, e.g. --set sky_zero=minimal (value parsed as a number when it is one)
         k, v = kv.split("=", 1)
         try:
@@ -47,11 +49,16 @@ def cmd_fit(a):
             pass
         cfg_over[k] = v
     cfg = tp.base_config(a.form, steps=a.steps, seed=a.seed, **cfg_over)
+    if a.minimal:
+        from fieldop.cli import apply_sky_module_options
+        apply_sky_module_options(cfg)         # --item-buckets coarse is module state, set by cli.main in a real run
     tp.KERNEL_STEPS = a.kernel_steps
     logs = []
     model, res = tp.run_fit(exps, fset, meta, cfg, freeze_kernel=bool(a.freeze_kernel), sky_half=a.sky_half, log=lambda s: logs.append(s))
     res["log_tail"] = [l for l in logs if l.startswith("step")][-1:]
-    res["config"] = {k: getattr(a, k) for k in ("form", "n_train", "seed", "steps", "freeze_kernel", "sky_neg", "blur_floor", "kernel_steps", "npix", "item_count", "set")}
+    res["warnings"] = [l for l in logs if "WARNING" in l or l.startswith("STOP")]     # blur-dilation and noise-bound lines
+    res["dilation_in_log"] = [float(l.split(" dil ")[1].split()[0]) for l in logs if l.startswith("step") and " dil " in l]
+    res["config"] = {k: getattr(a, k) for k in ("form", "n_train", "seed", "steps", "freeze_kernel", "sky_neg", "blur_floor", "kernel_steps", "npix", "item_count", "set", "minimal")}
     res["loss_curve"] = [[int(r[0]), round(float(r[1]), 1), round(float(r[2]), 4), round(float(r[3]), 4)] for r in res["loss_curve"]]
     if a.measure:
         tr = [e for e in exps if e.split == "train"]
@@ -114,6 +121,7 @@ def main():
     f.add_argument("--npix", type=int, default=44)
     f.add_argument("--sky-half", type=float, default=2.5)
     f.add_argument("--max-sources", type=int, default=0)
+    f.add_argument("--minimal", type=int, default=0, help="1: the --minimal preset (explicit options of the harness still win)")
     f.add_argument("--set", action="append", help="configuration override key=value (repeatable)")
     f.add_argument("--measure", type=int, default=1)
     f.add_argument("--save-sky", type=int, default=1)

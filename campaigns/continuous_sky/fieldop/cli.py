@@ -66,6 +66,10 @@ def build_parser():
                    help="set every default changed on 18 Nov 2026 back to its old value: --sky-zero median (already the default since 19 Nov), --noise-floor-max 0, --noise-scale-max 0, "
                    "--nuisance-steps mean, --held-xfit 0, --held-step-rows 0, --epoch-per-instrument 0. Options given explicitly win. "
                    "(The several-instrument rules of audit findings 5 and 9 are not touched: give --gauge-ref-inst -1 --kernel-norm-radius 0 to get the old values.)")
+    g.add_argument("--minimal", action="store_true",
+                   help="the minimal model (MINIMAL_PRESET_2026-11-18.md): replace the defaults listed in cli.MINIMAL_DEFAULTS (item sky with the settings of the reference "
+                   "fits; kernel variation across the detector, with time and with wavelength, throughput fields, distortion, detector pattern, non-linearity, the masked "
+                   "zero rule and the variability-evidence machinery all off). Options given explicitly win. Not combined with --legacy-defaults.")
     g.add_argument("--write-pred", type=int, default=1)
     g.add_argument("--pix-default", type=float, default=0.031)
     g = ap.add_argument_group("sky")
@@ -138,6 +142,14 @@ def build_parser():
     g.add_argument("--warm-kernel-steps", type=int, default=400)
     g = ap.add_argument_group("variability scales")
     g.add_argument("--tau-mode", choices=["fixed", "learned"], default="learned")
+    g.add_argument("--variability-evidence", type=int, choices=[0, 1], default=1,
+                   help="1 (default): the variability scales of the function axes are fitted by the validation likelihood (validation dither groups, gradients of the "
+                   "scales, likelihood-ratio checks, caps, at-cap reports). 0: none of that: --n-val-groups is ignored (every exposure is a training exposure), "
+                   "and only the damped EM step of the scales of the random effects (kernel code, gain) runs, at the cadence of the validation evaluations it replaces "
+                   "(every --val-every x --tau-accum steps from --tau-start on)")
+    g.add_argument("--g-fields", choices=["default", "off"], default="default",
+                   help="throughput fields across the detector (g_space) and with time (g_time), --amplitude structured only: 'default' = as --tau-mode, 'off' = absent "
+                   "from the model (their scales are 'off', their networks are in no optimiser group); the per-exposure gain is not affected")
     g.add_argument("--tau0-code", type=float, default=0.3)
     g.add_argument("--tau0-g", type=float, default=0.02)
     g.add_argument("--tau0-D", type=float, default=0.005)
@@ -295,6 +307,9 @@ def build_parser():
     g.add_argument("--pred-margin", type=float, default=0.3)
     g.add_argument("--log-every", type=int, default=25)
     g.add_argument("--seed", type=int, default=0)
+    g.add_argument("--train-half", type=int, choices=[-1, 0, 1], default=-1,
+                   help="keep only half of the training exposures: per filter, the dither groups (sorted by name) of even (0) or odd (1) rank; "
+                        "-1 = all (default). For the half-difference uncertainty estimator (fieldop/uncertainty.py)")
     g.add_argument("--device", default="auto")
     g.add_argument("--ckpt-kernel", type=int, default=0, help="activation checkpointing of the kernel field (GPU memory)")
     g.add_argument("--batch-render", type=int, default=1, help="batched FFT rendering of the patches of a step")
@@ -307,17 +322,58 @@ LEGACY_DEFAULTS = dict(sky_zero="median", noise_floor_max=0.0, noise_scale_max=0
                        epoch_per_instrument=0)
 
 
+# --minimal (MINIMAL_PRESET_2026-11-18.md): the small model of the end-to-end plan, selected inside this prototype. Same mechanism as LEGACY_DEFAULTS: it replaces
+# defaults, options given explicitly still win. Values that equal today's default are listed on purpose, so that the preset does not change when a default does.
+MINIMAL_DEFAULTS = dict(
+    # sky: items only, the settings of the reference fits (--item-chunk stays at its default)
+    sky_form="items", item_count=60000, item_levels=3, item_raster="pyramid", item_patch="sheared", item_buckets="coarse", item_max_width=2.56,
+    # kernel: variation across the detector, with time and extra variation with wavelength off (absent: their scales are 'off'); per-exposure code kept
+    k_space="off", k_time="off", k_lambda="off", k_exp="learned", tau_mode="learned", filter_input="curve",
+    # throughput per (instrument, filter) and per-exposure gain kept; throughput fields across the detector and with time off
+    amplitude="structured", g_fields="off",
+    # geometry: header positions plus the per-exposure affine kept; distortion fields and codes off, learned filter shift off
+    distortion=0, filter_shift="off", affine_prior=0.01,
+    # detector terms: background constant and quadratic shape, stripes where declared kept; pattern, non-linearity, pixel gain map, count-rate path off
+    stripes=1, pattern_grid=0, nonlin=0, pixel_gain="off", input_level="cal", rate_units="dn",
+    # noise and loss
+    noise_scale_max=2.0, noise_floor_max=0.2, loss="huber", huber_delta=3.0,
+    # gauges: median zero rule (no masked rule, no refresh, no positivity margin), blur convention with its guard, kernel flux within 2 arcsec for every fit
+    sky_zero="median", sky_positivity_margin=0.0, pedestal_gauge=1, blur_floor=1.0, kernel_norm_radius=2.0,
+    # rendering: nested levels through the FFT with jitter; no per-pixel quadrature, no Keys interpolation
+    render="fft", interp="bspline", render_jitter=1,
+    # fit machinery
+    batch_patches=5, inner_sky=2, is_frac=0.5, em_damp=0.5, nuisance_steps="exposure", held_xfit=1, held_step_rows=1, epoch_per_instrument=1,
+    # variability evidence off: no validation dither groups, no gradients of the scales, no likelihood-ratio checks (EM of the random-effect scales stays)
+    variability_evidence=0, n_val_groups=0, ab_every=0,
+)
+
+
 def parse_config(argv=None):
-    """Command line -> config; --legacy-defaults replaces the defaults listed in LEGACY_DEFAULTS (explicit options still win)."""
+    """Command line -> config; --legacy-defaults replaces the defaults listed in LEGACY_DEFAULTS, --minimal those of MINIMAL_DEFAULTS (explicit options still win)."""
     ap = build_parser()
     pre, _ = ap.parse_known_args(argv)
+    if pre.legacy_defaults and pre.minimal:
+        ap.error("--minimal and --legacy-defaults cannot be combined (the old defaults are the opposite of the small model)")
     if pre.legacy_defaults:
         ap.set_defaults(**LEGACY_DEFAULTS)
+    if pre.minimal:
+        ap.set_defaults(**MINIMAL_DEFAULTS)
     return ap.parse_args(argv)
 
 
+def apply_sky_module_options(cfg):
+    """Module-level settings of the item rasteriser read from the options (--item-chunk, --item-buckets coarse); called by main before the sky is made.
+    Plain module state, never reset: a process that wants the other value sets it again."""
+    from . import sky as _sky
+    if cfg.item_chunk > 0:
+        _sky.ITEM_CHUNK = int(cfg.item_chunk)
+    if cfg.item_buckets == "coarse":
+        _sky.ITEM_HALF = (2, 4, 8, 16, 32, 64, 128)
+        _sky.PYR_HALF = _sky.ITEM_HALF + (256, 512)
+
+
 def default_config(**kw):
-    a = parse_config(["--legacy-defaults"] if kw.get("legacy_defaults") else [])
+    a = parse_config((["--legacy-defaults"] if kw.get("legacy_defaults") else []) + (["--minimal"] if kw.get("minimal") else []))
     for k, v in kw.items():
         if not hasattr(a, k):
             raise KeyError(k)
@@ -388,7 +444,7 @@ def filt_info_of(exps, fset, insts):
 STRUCTURE_OPTIONS = ("sky_form sky_pitch item_count item_levels spec_k n_lambda level_nh level_factor level_overlap kernel_extent render_pitch render_os_pix "
                      "k_hidden k_layers dh enc_r0 enc_nrad enc_mmax filter_input amplitude distortion pattern_grid stripes pixel_gain pixel_gain_poly filter_shift "
                      "nonlin tau_mode k_space k_time k_lambda k_exp epoch_axes epoch_per_instrument input_level kernel_norm_radius gauge_ref_inst blur_floor "
-                     "field_init item_raster item_patch item_impl rate_units loader spec_k_rule spectral_domain hst_wcs").split()
+                     "field_init item_raster item_patch item_impl rate_units loader spec_k_rule spectral_domain hst_wcs g_fields variability_evidence").split()
 
 
 def plain_config(cfg):
@@ -496,12 +552,7 @@ def main(argv=None):
     _ins.HST_WCS = getattr(cfg, "hst_wcs", "apriori")
     _data.RATE_WCS = cfg.rate_wcs
     _data.LOADER = getattr(cfg, "loader", "astropy")
-    from . import sky as _sky
-    if cfg.item_chunk > 0:
-        _sky.ITEM_CHUNK = int(cfg.item_chunk)
-    if cfg.item_buckets == "coarse":
-        _sky.ITEM_HALF = (2, 4, 8, 16, 32, 64, 128)
-        _sky.PYR_HALF = _sky.ITEM_HALF + (256, 512)
+    apply_sky_module_options(cfg)
     out = Path(cfg.out)
     out.mkdir(parents=True, exist_ok=True)
     logf = open(out / "fieldop.log", "a")
@@ -532,7 +583,7 @@ def main(argv=None):
             log(f"instrument {k_}: {i_.telescope}, aperture {i_.diameter_m} m, pixel scale {i_.pixel_scale} arcsec, data-quality bits kept "
                 f"{i_.dq_ignore_bits()} (rejects: {', '.join(i_.dq_reject_names())}), stripes {i_.stripes}, units {i_.sci_units}")
     resolve_instrument_options(cfg, len(info["insts"]), log=log)         # audit findings 5 and 9: refuses several instruments without --gauge-ref-inst
-    log(f"instruments {info['insts']}; --gauge-ref-inst {cfg.gauge_ref_inst}; --kernel-norm-radius {cfg.kernel_norm_radius} arcsec; legacy defaults {cfg.legacy_defaults}")
+    log(f"instruments {info['insts']}; --gauge-ref-inst {cfg.gauge_ref_inst}; --kernel-norm-radius {cfg.kernel_norm_radius} arcsec; legacy defaults {cfg.legacy_defaults}; minimal preset {cfg.minimal}")
     log(f"loaded {info['n_exposures']} exposures ({info['n_cuts']} cuts in {len(info['tiles'])} tile(s) {info['tiles']}, {info['host_gb']:.2f} GB of pixels): "
         f"{info['n_by_split']}; filters {info['filters']}; detectors {info['dets']}; epoch span {info['epoch_span_days']:.3f} d; "
         f"registration shifts applied to {info['shifts_applied']}")

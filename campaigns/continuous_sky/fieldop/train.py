@@ -488,7 +488,7 @@ def make_optimizers(model, cfg, sig_sky):
                                {"params": [model.hs, model.floor_raw], "lr": 1e-2, "base": 1e-2}])
     opt_nuis = torch.optim.Adam([{"params": [nuis["bkg"]], "lr": cfg.lr_bkg * sb, "base": cfg.lr_bkg * sb},
                                  {"params": [nuis["affine"]], "lr": cfg.lr_affine, "base": cfg.lr_affine},
-                                 {"params": [nuis["u"], nuis["z"], nuis["zD"]], "lr": cfg.lr_codes, "base": cfg.lr_codes},
+                                 {"params": model.exposure_effects(nuis), "lr": cfg.lr_codes, "base": cfg.lr_codes},
                                  {"params": [nuis["stripe_rows"], nuis["stripe_cols"]], "lr": 0.05 * sb, "base": 0.05 * sb}])
     opt_sky = sky_optimizer(model.sky, cfg, sig_sky)
     opt_tau = torch.optim.Adam([{"params": taus, "lr": cfg.lr_tau, "base": cfg.lr_tau}]) if taus else None
@@ -673,7 +673,9 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     if gain_prior:
         log(f"pixel gain prior: {model.pixgain.prior_mode}, start {model.pixgain.prior_table()}, EM from progress {cfg.pixel_gain_em_start} "
             f"every {cfg.pixel_gain_em_every} steps, prior weight 1 / {n_train_px:.0f} per pixel (training pixels)")
-    learn_tau = opt_tau is not None and len(va) > 0
+    learn_tau = opt_tau is not None and len(va) > 0 and bool(getattr(cfg, "variability_evidence", 1))
+    em_only = opt_tau is not None and not getattr(cfg, "variability_evidence", 1)      # --variability-evidence 0: the damped EM step of the random-effect scales only
+    n_em_eval = 0
     k = ts.keys[0] if not ts.multi else ts.draw(trng)
     ts.activate(k)
     nb = pools[k].refresh(model)
@@ -826,6 +828,10 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
                     opt_tau.zero_grad()
                     em_update(model, tr, cfg)
             rec["val"].append([step, float(lb)] + ([k] if ts.multi else []))
+        if em_only and prog >= cfg.tau_start and step % cfg.val_every == 0:      # same cadence as the validation evaluations it replaces; no data, no gradient
+            n_em_eval += 1
+            if n_em_eval % cfg.tau_accum == 0:
+                em_update(model, tr, cfg)
         if step % cfg.is_refresh == 0 and step > 0:
             pool.refresh(model)
         if nf_warn_step is None:             # first step above the warning level, tracked on the device and read at logged steps only
@@ -922,7 +928,7 @@ def fit_heldout(model, exps, eids, cfg, log=print, ts=None, half=None):
     nuis = model.param_groups()[1]
     sb = float(model.e_sigbar.mean())
     opt = torch.optim.Adam([{"params": [nuis["bkg"]], "lr": cfg.lr_bkg * sb}, {"params": [nuis["affine"]], "lr": cfg.lr_affine},
-                            {"params": [nuis["u"], nuis["z"], nuis["zD"]], "lr": cfg.lr_codes},
+                            {"params": model.exposure_effects(nuis), "lr": cfg.lr_codes},
                             {"params": [nuis["stripe_rows"], nuis["stripe_cols"]], "lr": 0.05 * sb}])
     eset = set(eids)
     held_rows = bool(getattr(cfg, "held_step_rows", 1))
@@ -1227,6 +1233,8 @@ def nuisance_sizes(model, exps, P=None, radii=(0.5, 1.0, 2.5)):
         out["nonlinearity_max_fraction"] = nl
     caps = {"g_space": model.cfg.tau_g_max, "g_time": model.cfg.tau_g_max, "D_static": model.cfg.tau_d_max, "D_drift": model.cfg.tau_d_max}
     caps.update({k: model.cfg.tau_code_max for k in ("k_space", "k_time", "k_lambda", "k_exp")})
+    if not getattr(model.cfg, "variability_evidence", 1):       # no caps are applied without the evidence rule, so there is nothing to report
+        caps = {}
     out["tau_at_cap"] = {k: bool(model.tau.mode.get(k) == "learned" and model.tau.value(k) >= 0.999 * c) for k, c in caps.items() if k in model.tau.mode}
     # far wings of the kernel: fraction of its integral beyond each radius, at the detector centre of one training exposure per filter (a flat
     # far pedestal is degenerate with the background terms, F41)

@@ -41,6 +41,9 @@ def parse():
     ap.add_argument("--gauge-ref-inst", type=int, default=None, help="two instruments: must be given (the package refuses otherwise)")
     ap.add_argument("--kernel-norm-radius", type=float, default=None)
     ap.add_argument("--held-xfit", type=int, default=None, help="override of the held-out cross-fitting default of the chosen defaults")
+    ap.add_argument("--minimal", type=int, default=0, help="1: the --minimal preset (MINIMAL_PRESET_2026-11-18.md): the explicit tau_mode / pattern_grid / stripes of this script "
+                    "are dropped so that the preset's values hold, no validation exposure is made (n_val 0), and the item sky takes the preset's raster (the size-reducing "
+                    "options of this script, including --item-count, stay)")
     ap.add_argument("--out", required=True)
     return ap.parse_args()
 
@@ -57,7 +60,7 @@ def main():
     torch.manual_seed(a.seed)
     insts = [SynthInstrument("A", 0.10, 40, 6.5, 0.07, 1.5, space_grad=0.15, chromatic=1.0, flat_grad=0.08, filters=[("A1", 1.0, 1.3), ("A2", 1.6, 2.1)]),
              SynthInstrument("B", 0.12, 34, 6.5, 0.10, 2.4, space_grad=0.15, chromatic=1.0, flat_grad=0.08, filters=[("B1", 2.0, 2.8)])]
-    exps, fset, meta, truth, _ = make_field(seed=3 + a.seed, n_per_filter=8, n_val=1, n_held=1, insts=insts, shift_rms=0.03, centre_range=0.6,
+    exps, fset, meta, truth, _ = make_field(seed=3 + a.seed, n_per_filter=8, n_val=0 if a.minimal else 1, n_held=1, insts=insts, shift_rms=0.03, centre_range=0.6,
                                             rot_choices=(0, 1, 2, 3), patch_px=20, truth_half=1.6)
     # smaller than tests_ref/test_fieldop_synth.py to fit the 4-minute rule on a shared CPU: kernel extent 1.2" (was 1.5"), 12 level nodes
     # (was 16), 4 patches per step (was 6), variability scales FIXED at their starting values (no validation steps), short held-out fit
@@ -71,9 +74,18 @@ def main():
         if a.item_impl:
             kw.update(item_impl=a.item_impl)
     kw.update(legacy_defaults=bool(a.legacy_defaults), gauge_ref_inst=a.gauge_ref_inst, kernel_norm_radius=a.kernel_norm_radius)
+    if a.minimal:
+        for k in ("tau_mode", "pattern_grid", "stripes"):
+            kw.pop(k)
+        kw["minimal"] = True
+        if a.kernel_norm_radius is None:
+            kw.pop("kernel_norm_radius")
     if a.held_xfit is not None:
         kw["held_xfit"] = a.held_xfit
     cfg = default_config(**kw)
+    if a.minimal:
+        from fieldop.cli import apply_sky_module_options
+        apply_sky_module_options(cfg)                  # --item-buckets coarse is module state, set by cli.main in a real run
     spec = None
     if os.path.exists(os.path.join(os.path.abspath(a.pkg), "fieldop", "instruments.py")):   # through the instrument interface (18 Nov 2026): domain, curve grid, K
         from fieldop.instruments import spectral_setup
@@ -126,6 +138,12 @@ def main():
            "heldout_n_px": n, "heldout_n_px_snr5": nb, "heldout_per_exposure": sc, "heldout_truth_noise_chi2": noise_floor,
            "sky_fitted_numbers": int(n_fit), "sky_grid_N": N, "state_sha256": h.hexdigest(), "state_sha256_with_legacy_resid": h2.hexdigest(), "registration": reg, "spectral_setup": spec,
            "total_seconds": time.perf_counter() - T0}
+    if a.minimal:
+        res["minimal"] = True
+        res["fit_record"] = {k: rec.get(k) for k in ("dilation_max", "dilation_final", "noise_floor_final", "noise_at_bound_final")}
+        res["tau"] = model.tau.table()
+        res["n_val_exposures"] = sum(e.split == "val" for e in exps)
+        res["n_train_exposures"] = sum(e.split == "train" for e in exps)
     if a.truth_eval:
         res["sky_error"] = sky_error(model, exps, fset, truth)
     json.dump(res, open(a.out, "w"), indent=1, default=str)

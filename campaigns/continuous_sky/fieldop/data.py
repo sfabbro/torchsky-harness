@@ -417,11 +417,20 @@ def load_field(cfg, dev, log=print):
     # validation carve-out: per filter one TRAINING dither group (deterministic; global over the selected boxes)
     rng = np.random.default_rng(cfg.seed)
     val_groups = set()
-    if cfg.n_val_groups > 0:
+    if cfg.n_val_groups > 0 and getattr(cfg, "variability_evidence", 1):       # --variability-evidence 0: nothing is set aside, every exposure trains
         for f in filters:
             gs = sorted({e["dither_group"] for e in ex if e["filter"] == f and e["rootname"] in train})
             if len(gs) > 3:
                 val_groups.update(rng.choice(gs, size=min(cfg.n_val_groups, len(gs) - 3), replace=False).tolist())
+    if getattr(cfg, "train_half", -1) in (0, 1):     # --train-half: drop the other half of the training dither groups (uncertainty.py)
+        from .uncertainty import alternate_groups
+        keep = set()                                   # (filter, dither group) pairs: the halves are chosen per filter
+        for f in filters:
+            keep |= {(f, g) for g in alternate_groups([e["dither_group"] for e in ex if e["filter"] == f and e["rootname"] in train
+                                                         and e["dither_group"] not in val_groups], cfg.train_half)}
+        n0 = len(ex)
+        ex = [e for e in ex if not (e["rootname"] in train and e["dither_group"] not in val_groups) or (e["filter"], e["dither_group"]) in keep]
+        log(f"--train-half {cfg.train_half}: kept {len(keep)} training dither groups; dropped {n0 - len(ex)} training exposures")
     mjds = np.array([e["mjd"] for e in ex])
     jobs = []
     for e in ex:

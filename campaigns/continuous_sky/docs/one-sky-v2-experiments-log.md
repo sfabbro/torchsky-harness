@@ -2,6 +2,53 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 18 Nov 2026, 23:20 UTC: toward the end-to-end torchsky — uncertainty tool, plan, minimal model, library prerequisites; four seeds read
+
+Seb's direction of 18 Nov: one end-to-end path in torchsky, exposures in, sky plus trusted uncertainty out, no resampling, no intermediate products, catalogues allowed for geometry and calibration.
+
+**1. Uncertainty (Opus build; `fieldop/uncertainty.py`, `UNCERTAINTY_2026-11-18.md`, 11 tests).** The product is a sky per band at a stated resolution with a per-pixel standard deviation. With the response held at its fitted value and the per-exposure background terms marginalised, the standard deviation is the square root of the diagonal of the inverse of
+
+$$
+F = J^\top W J + \mu\,R, \qquad W = \mathrm{diag}\big(\min(1, \delta/|z_i|)/\sigma_i^2\big),
+$$
+
+where $J$ is the derivative of the predicted pixels with respect to the sky, $z_i$ the normalised residuals, $\delta = 3$ the Huber threshold and $\mu R$ the weak prior. It is solved by conjugate gradients (cost about 75 renders, 1.2 fits, with a Fourier approximation for the diagonal). A second, independent estimate is the half-difference of two fits on disjoint halves of the exposures (`--train-half {0,1}`).
+
+On the truth problem (6 noise realisations, both sky forms):
+
+| Sky used | Region | Pull mean | Pull rms |
+|---|---|---|---|
+| fit plus one Gauss–Newton step ("product") | empty, inner | about 0 | 1.10 (grid), 1.02 (items) |
+| fit plus one Gauss–Newton step | sources | — | 0.88 to 1.19 |
+| the optimiser's own sky | empty | +1.5 to +1.6 | — |
+
+The two estimators agree for the product (ratio 1.00 ± 0.03). For the optimiser's own sky the half-difference understates the error by a factor of 2 (empty-sky pulls 2.8 to 3.1). So the trusted product is the Gauss–Newton solve given the learned response, and that is what the end-to-end path will output. Supported resolution on the truth problem: 0.111 arcsec (√2 times the response width).
+
+Approximations: response, registration, gain and noise terms held fixed (their uncertainty is not propagated); six large-scale sky modes are tied to the background convention; the Fourier diagonal assumes uniform coverage. Not yet run on real data: two half fits are running for that.
+
+**2. Plan (Opus; `claude/torchsky-end-to-end-plan.md`).** A minimal model read off 13 finished fits (items only; kernel network with per-exposure code; throughput per instrument and filter; per-exposure gain, affine, background, stripes; bounded noise terms; Huber loss; median zero rule), 9 public names in a new `torchsky.map.exposure_fit`, ordered steps with pass rules, and 8 decisions for Seb. I chose a faster route than the plan's re-implementation: prune the prototype to the minimal model, checked bit for bit, then move the pruned package into torchsky behind the same 9 names.
+
+**3. Minimal preset (Sonnet; `MINIMAL_PRESET_2026-11-18.md`).** `--minimal` fixes 47 options. Default 150-step run unchanged to the hash; reference hash and three golden-step files recorded under `tests/oracle/`. 118 tests pass. Two seeds launched on SMACS at 23:14 UTC. Pass rule: within 0.02 of the reference at signal-to-noise 5 to 50, fluxes 0.98 to 1.01.
+
+**4. torchsky prerequisites (two Sonnet builds, in the working tree).** Loader and data-quality fixes (8 of 8, each with a test that fails on the old code; real JWST, WFC3/IR and both ACS chips load) and a functional item renderer `render_gaussian_items` (pixels in, pixels out, 12 planes per call; agrees with the prototype to 5e-15, gradients to 7e-14). Caveats: the HST data-quality bit names were written without the handbooks at hand, and I removed one I believe was wrong (ACS warm pixel at 32); the renderer's default patch cap of 128 truncates long thin items (use 512 to match the prototype).
+
+**5. Four seeds of the reference item fit on SMACS** (200 minutes, cross-fitted, no scorer offset; Haiku collection):
+
+| Bin (signal-to-noise) | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Mean ± standard deviation | Pipeline |
+|---|---|---|---|---|---|---|
+| headline (≥ 5) | 1.607 | 1.773 | 1.767 | 1.564 | 1.68 ± 0.11 | 1.822 |
+| 1 to 5 | 0.978 | 0.977 | 0.978 | 0.983 | 0.979 ± 0.003 | 1.094 |
+| 5 to 20 | 1.093 | 1.088 | 1.092 | 1.094 | 1.092 ± 0.003 | 1.174 |
+| 20 to 50 | 1.143 | 1.155 | 1.153 | 1.143 | 1.149 ± 0.006 | 1.237 |
+| 50 to 200 | 5.86 | 7.47 | 6.91 | 5.87 | 6.53 ± 0.80 | 6.70 |
+| above 200 | 64 | 84 | 95 | 48 | 73 ± 21 | 92 |
+
+Fluxes over the mosaic at 1 arcsec: 0.98 to 1.02 in all six bands, seeds 2 and 3. Reading: the gain over the pipeline below signal-to-noise 50 is 7% to 11% and repeats to 0.006; above 50 the fit is level with the pipeline within a scatter that is as large as the difference.
+
+**Running:** two half fits (22:04, 22:10), the joint JWST + HST fit with the median rule (22:13; the first attempt stopped at step 2300 without an error message), two minimal fits (23:14).
+
+**Not pushed.** The cloud route refuses both of Seb's repositories and the linked computer has no key in the sandbox.
+
 ## 18 Nov 2026, 17:25 UTC: seed scatter measured; my 13:00 claim about the zero rule was too strong; catalogue-free registration works on a real fit
 
 Collection by a Haiku agent. Item sky on SMACS, 200 minutes each, cross-fitted, no scorer offset; pipeline 1.822.

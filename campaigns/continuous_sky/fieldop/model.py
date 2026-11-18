@@ -471,7 +471,8 @@ class FieldOperator(nn.Module):
             "k_exp": (km(cfg.k_exp), cfg.tau0_code),
         }
         if cfg.amplitude == "structured":
-            spec.update({"g_space": (glob, cfg.tau0_g), "g_time": (glob if multi_epoch else "off", cfg.tau0_g), "g_exp": (glob, cfg.tau0_g)})
+            gf = getattr(cfg, "g_fields", "default") == "off"      # --g-fields off: no throughput field across the detector or with time
+            spec.update({"g_space": ("off" if gf else glob, cfg.tau0_g), "g_time": ("off" if gf or not multi_epoch else glob, cfg.tau0_g), "g_exp": (glob, cfg.tau0_g)})
         if cfg.distortion:
             spec.update({"D_static": (glob, cfg.tau0_D), "D_drift": (glob if multi_epoch else "off", cfg.tau0_D), "D_exp": (glob, cfg.tau0_D)})
         return spec
@@ -951,7 +952,7 @@ class FieldOperator(nn.Module):
         """Random-effect priors (N(0, I) codes, gains and per-exposure distortion), mean over the given exposures."""
         z = self.codes.z[eids].pow(2).sum(-1).mean() * 0.5
         u = self.u[eids].pow(2).mean() * 0.5
-        zd = self.zD[eids].pow(2).sum(-1).mean() * 0.5
+        zd = self.zD[eids].pow(2).sum(-1).mean() * 0.5 if self.tau("D_exp") is not None else 0.0     # no per-exposure distortion code: no term (it would add exactly 0)
         aff = (self.affine[eids, :4] * 1e-3).pow(2).sum(-1).mean() * 0.5 / self.cfg.affine_prior ** 2
         st = (self.stripe_rows[eids].pow(2).mean() + self.stripe_cols[eids].pow(2).mean()) / (self.e_sigbar[eids].mean() ** 2) * self.cfg.stripe_l2
         return z + u + zd + aff + st
@@ -1063,8 +1064,38 @@ class FieldOperator(nn.Module):
         self.tau.mode.update(saved)
         return out
 
+    def inactive_parameters(self):
+        """Parameters of the terms that are ABSENT from the forward model with the current options: the throughput fields (scale 'off'), the kernel variation
+        across the detector and with time (scale 'off'), the distortion fields (--distortion 0 or scale 'off'), the non-linearity (--nonlin 0). The tensors
+        still exist (a state saved with them loads into a model that has them) but no optimiser group holds them and no gradient reaches them (param_groups).
+        The per-exposure distortion code zD sits in the nuisance dict; see exposure_effects. The detector pattern and the per-pixel gain are None when off."""
+        t = self.tau
+        mods = []
+        if t("g_space") is None:
+            mods += [self.gdet, self.g_det_emb]
+        if t("g_time") is None:
+            mods += [self.gep]
+        if t("D_static") is None:
+            mods += [self.Dst]
+        if t("D_drift") is None:
+            mods += [self.Ddr]
+        if t("D_static") is None and t("D_drift") is None:
+            mods += [self.D_det]
+        if t("k_space") is None:
+            mods += [self.codes.hdet, self.codes.det]
+        if t("k_time") is None:
+            mods += [self.codes.hep]
+        if self.nonlin is None:
+            mods += [self.nl_chan]
+        return [p for m in mods for p in m.parameters()]
+
+    def exposure_effects(self, nuis):
+        """The per-exposure random-effect tensors that share one optimiser group (gain u, kernel code z, distortion code zD); zD only when the per-exposure
+        distortion axis exists."""
+        return [nuis["u"], nuis["z"]] + ([nuis["zD"]] if self.tau("D_exp") is not None else [])
+
     def param_groups(self):
-        """Operator (global) vs per-exposure nuisance vs sky vs tau parameters."""
+        """Operator (global) vs per-exposure nuisance vs sky vs tau parameters. The parameters of absent terms (inactive_parameters) are in none of the groups."""
         nuis = {"bkg": self.bkg, "affine": self.affine, "u": self.u, "z": self.codes.z, "zD": self.zD, "stripe_rows": self.stripe_rows, "stripe_cols": self.stripe_cols}
         nuis_ids = {id(p) for p in nuis.values()}
         tau_ids = {id(p) for p in self.tau.parameters()}
@@ -1072,7 +1103,8 @@ class FieldOperator(nn.Module):
         gain_ids = {id(self.pixgain.logg)} if self.pixgain is not None else set()
         if self.fs_on:
             gain_ids = gain_ids | {id(self.fshift)}      # the pair shift has its own Adam (train.fit), not the operator's     # the gain map has its own Adam (train.fit)
-        op = [p for p in self.parameters() if id(p) not in nuis_ids | tau_ids | sky_ids | gain_ids]
+        off_ids = {id(p) for p in self.inactive_parameters()}
+        op = [p for p in self.parameters() if id(p) not in nuis_ids | tau_ids | sky_ids | gain_ids | off_ids]
         return op, nuis, list(self.tau.parameters()), list(self.sky.parameters())
 
 
