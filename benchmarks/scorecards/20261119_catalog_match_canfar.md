@@ -61,3 +61,38 @@ calibration):
   genuinely larger, non-Gaussian offsets; a single global error model is too coarse there
   (magnitude / crowding dependent calibration is the next step).
 - N-way MAP agrees with pairwise on 98.8-99.6 % of rows; certified residual 0.
+
+## Later runs (same day)
+
+### CPU 1e8, 16 threads (subject `359c3ff7`: kernel-side query vectors)
+
+| layout | best | all |
+|---|---|---|
+| sparse | 10.9 s vs 75.8 s (7.0x), RSS 22.6 vs 14.0 GB | 15.7 s vs 179.9 s (11.5x), RSS 23.4 vs 44.5 GB |
+| dense | 13.0 s vs 81.9 s (6.3x), RSS 22.6 vs 14.0 GB | 19.5 s vs 176.1 s (9.1x), RSS 35.0 vs 49.8 GB |
+
+### CUDA 1e7 (subject `36332b92`: chord^2 ordering, no pair-sized gathers)
+
+Every row OK, including crowded `all` (1.67e8 pairs): 3.06 s vs 34.7 s
+(11.3x); sparse/dense best 14.7-15.5x, all 33.6-36.3x, knn2 8.0x; crowded
+best 5.0x, knn2 3.4x.
+
+### Real data, runs 3-4 (`833de488` blend-binned calibration; `780e905d` + pair-colour terms)
+
+| field | CatWISE compl. | CatWISE d^2 mean / tail90 | 2MASS d^2 mean / tail90 |
+|---|---|---|---|
+| north pole | 0.886 | 2.13 / 0.134 | 1.98 / 0.110 |
+| south pole | 0.696 | 1.82 / 0.111 | 1.98 / 0.116 |
+| RA wrap | 0.843 | 1.93 / 0.117 | 1.96 / 0.098 |
+| Pleiades | 0.738 | 1.86 / 0.114 | 2.00 / 0.104 |
+| Barnard's star | 0.622 | 1.54 / 0.073 | 1.93 / 0.094 |
+| LMC bar | 0.044 | 0.99 / 0.002 | 1.53 / 0.060 |
+| Baade's window | 0.022 | 1.01 / 0.000 | 1.59 / 0.060 |
+
+Theory (truncated chi^2_2 for true pairs): mean 2.00, tail90 0.10. Run 3
+crashed in the north-pole field (an exp overflow in the calibration fit; fixed
+with bounded parameters). In run 4 every field passes and the uncrowded fields are calibrated for both
+catalogues; Barnard's star and all > 200 mas/yr stars are recovered. In the
+two crowded fields every WISE source has dozens of Gaia stars in its beam,
+so blend-count bins collapse to one; the colour term (W1 - G) raises CatWISE
+matches by 8-10 % there, and the error scale stays inflated (4-8.5x).
