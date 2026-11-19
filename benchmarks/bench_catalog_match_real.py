@@ -19,7 +19,9 @@ association must satisfy:
   the truncated chi^2_2. Mean and tail fractions are reported against the theory.
 - **completeness:** the maximum-likelihood fit per catalogue, in the
   exclusive (default) model; Gaia x CatWISE also in the independent model
-  (``gaia_catwise_indep``).
+  (``gaia_catwise_indep``). In crowded fields (Baade, LMC bar) CatWISE is
+  also matched with the per-W1 calibration of an uncrowded reference field
+  held fixed (``gaia_catwise_transfer``).
 - **high proper motion:** Gaia stars above 200 mas/yr recovered with posterior
   > 0.9, compared with a naive 2 arcsec nearest match without propagation.
 - **N-way:** consistency of N-way with pairwise MAP matches, and the certified
@@ -173,7 +175,13 @@ def _calibration(res, k2: float) -> dict[str, float]:
     }
 
 
-def run_field(name: str, root: Path, ra: float, dec: float, r: float) -> dict[str, Any]:
+CROWDED = ("baade_window", "lmc_bar")
+REFERENCE = "ra_wrap"  # uncrowded field whose CatWISE calibration is transferred
+W1_EDGES = torch.tensor([0.0, 11.0, 12.5, 13.5, 14.5, 15.5, 30.0], dtype=D)
+
+
+def run_field(name: str, root: Path, ra: float, dec: float, r: float,
+              transfer: dict[str, torch.Tensor] | None = None) -> dict[str, Any]:
     row: dict[str, Any] = {"case": name, "library": "torchsky", "ra": ra, "dec": dec, "radius_deg": r}
     t0 = time.perf_counter()
     gtab, gp = _cone_tables(root / "gaia" / "dr3", ra, dec, r, GAIA_COLS, "ra", "dec")
@@ -222,7 +230,7 @@ def run_field(name: str, root: Path, ra: float, dec: float, r: float) -> dict[st
     g2c_mag = associate(
         gaia, cw, epoch="right", motion_prior=prior, max_radius_arcsec=60.0,
         assign="optimal", calibrate="scale_floor", calibrate_by=cw.columns["w1"],
-        calibrate_edges=torch.tensor([0.0, 11.0, 12.5, 13.5, 14.5, 15.5, 30.0], dtype=D),
+        calibrate_edges=W1_EDGES,
         terms=(HistogramRatio(cw.columns["w1"], colour_edges, left_values=gaia.columns["g"]),),
     )
     # Variant: the independent (nway) posterior model, for comparison with the
@@ -236,8 +244,27 @@ def run_field(name: str, root: Path, ra: float, dec: float, r: float) -> dict[st
         exclusive=False,
     )
     row["gaia_catwise_indep_s"] = time.perf_counter() - t1
-    for key, res in (("gaia_2mass", g2t), ("gaia_catwise", g2c), ("gaia_catwise_magbins", g2c_mag),
-                     ("gaia_catwise_indep", g2c_ind)):
+    variants = [("gaia_2mass", g2t), ("gaia_catwise", g2c), ("gaia_catwise_magbins", g2c_mag),
+                ("gaia_catwise_indep", g2c_ind)]
+    if transfer is not None:
+        # Calibration transfer: in crowded fields a single Gaussian error scale is
+        # not identifiable (Gaia stars cluster around blended CatWISE detections),
+        # so the per-W1 calibration of an uncrowded field is applied fixed.
+        t1 = time.perf_counter()
+        g2c_tr = associate(
+            gaia, cw, epoch="right", motion_prior=prior, max_radius_arcsec=60.0,
+            assign="optimal", calibrate_by=cw.columns["w1"], calibrate_edges=W1_EDGES,
+            right_scale=transfer["scale"], floor_mas2=transfer["floor"],
+            terms=(HistogramRatio(cw.columns["w1"], colour_edges, left_values=gaia.columns["g"]),),
+        )
+        row["gaia_catwise_transfer_s"] = time.perf_counter() - t1
+        row["transfer_from"] = REFERENCE
+        variants.append(("gaia_catwise_transfer", g2c_tr))
+    row["_magbins_calibration"] = {
+        "scale": torch.as_tensor(g2c_mag.right_scale).reshape(-1).tolist(),
+        "floor": torch.as_tensor(g2c_mag.floor_mas2).reshape(-1, 2, 2).tolist(),
+    }
+    for key, res in variants:
         row[key] = {
             "completeness": res.completeness, "matched": int(res.match.sum()), "capped": res.n_capped,
             "fitted_right_error_scale": res.right_scale.tolist() if isinstance(res.right_scale, torch.Tensor) else res.right_scale,
@@ -288,10 +315,19 @@ def main() -> int:
     p.add_argument("--json-out", type=Path, default=DEFAULT_OUTPUT_DIR / "catalog_match_real.json")
     args = p.parse_args()
     rows = []
-    for name in args.fields.split(","):
+    names = args.fields.split(",")
+    # Uncrowded fields first, so crowded ones can use the reference calibration.
+    names = [n for n in names if n not in CROWDED] + [n for n in names if n in CROWDED]
+    if any(n in CROWDED for n in names) and REFERENCE not in names:
+        names.insert(0, REFERENCE)
+    transfer: dict[str, torch.Tensor] | None = None
+    for name in names:
         ra, dec, r = FIELDS[name]
         try:
-            row = run_field(name, args.hats_root, ra, dec, r)
+            row = run_field(name, args.hats_root, ra, dec, r, transfer if name in CROWDED else None)
+            cal = row.pop("_magbins_calibration", None)
+            if name == REFERENCE and cal is not None:
+                transfer = {"scale": torch.tensor(cal["scale"], dtype=D), "floor": torch.tensor(cal["floor"], dtype=D)}
         except Exception as exc:  # recorded, not swallowed: the row fails
             row = {"case": name, "library": "torchsky", "status": "FAIL", "reason": f"{type(exc).__name__}: {exc}"}
         row["subject_version"] = torchsky.__version__
