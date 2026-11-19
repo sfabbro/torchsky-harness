@@ -1,0 +1,212 @@
+{
+ "name": "corner100",
+ "args": {
+  "name": "corner100",
+  "variants": "restrict_orth,filter_orth",
+  "bkg_basis": "raw",
+  "iters": 100,
+  "sw_npix": 60,
+  "lw_npix": 30,
+  "threads": 1,
+  "det2048": 1,
+  "box": 0.0
+ },
+ "mu": 0.00039157130126704127,
+ "bb_cond_max": 43511087433.19333,
+ "bb_cond_sorted": [
+  2263989304.531408,
+  2290008174.8332276,
+  25715577736.459053,
+  25744152654.224606,
+  27905407486.27484,
+  33746850579.046974,
+  33942386231.56498,
+  43511087433.19333
+ ],
+ "n_pix": 15621,
+ "checks": {
+  "F_symmetry": 8.202115535776861e-11,
+  "P_symmetry": 4.101587296899448e-11,
+  "F_positive": 0.5571452116550921,
+  "P_positive": 2853.5910611744985,
+  "q_null": 1.002775806718409,
+  "P_null": 0.9996600142867598,
+  "F_background_positive": 542.3916904331811,
+  "background_block_condition_max": 43511087433.19333,
+  "background_blocks_above_1e7": 15,
+  "failed": []
+ },
+ "variants": {
+  "restrict_orth": {
+   "residual": {
+    "1": 0.4392205604176957,
+    "5": 0.15066597470545728,
+    "10": 0.05946774077862659,
+    "15": 0.01754982298145006,
+    "20": 0.006389457737547494,
+    "25": 0.002670125740108861,
+    "30": 0.0020086777179488275,
+    "40": 0.0004568030726593384,
+    "60": 4.789919613684836e-05,
+    "100": 4.5923701309501057e-07
+   },
+   "breakdown": "",
+   "ritz": [
+    0.039109494746022336,
+    17.107720354947894
+   ],
+   "modes": {
+    "top": {
+     "ritz": 17.107720354947894,
+     "sky_share": 0.9999995699620757,
+     "background_share": 4.300379242705432e-07,
+     "background_top_exposures": [
+      "F090W#2: 0.000",
+      "F090W#1: 0.000",
+      "F090W#0: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.9804,
+      0.0177,
+      0.0008,
+      0.0009,
+      0.0001,
+      0.0001
+     ]
+    },
+    "bottom": {
+     "ritz": 0.03910949474602147,
+     "sky_share": 0.9999938591378571,
+     "background_share": 6.140862142900438e-06,
+     "background_top_exposures": [
+      "F444W#14: 0.000",
+      "F444W#13: 0.000",
+      "F356W#11: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.0003,
+      0.0037,
+      0.0328,
+      0.2363,
+      0.41,
+      0.3169
+     ]
+    }
+   }
+  },
+  "filter_orth": {
+   "residual": {
+    "1": 0.23152869321607678,
+    "5": 0.08921515439662837,
+    "10": 0.04439752371001535,
+    "15": 0.0194456269238944,
+    "20": 0.007339699083165836,
+    "25": 0.00343790645794491,
+    "30": 0.0011006742871049009,
+    "40": 0.0003008853053015364,
+    "60": 2.6634302944295405e-05,
+    "100": 1.8228572119081084e-07
+   },
+   "breakdown": "",
+   "ritz": [
+    0.03289845443415833,
+    10.830663500197867
+   ],
+   "modes": {
+    "top": {
+     "ritz": 10.83066350019788,
+     "sky_share": 0.9999999999892613,
+     "background_share": 1.0738743227989289e-11,
+     "background_top_exposures": [
+      "F090W#2: 0.000",
+      "F090W#1: 0.000",
+      "F090W#0: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.1178,
+      0.5091,
+      0.3427,
+      0.012,
+      0.0142,
+      0.0011,
+      0.0026,
+      0.0,
+      0.0003,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "bottom": {
+     "ritz": 0.03289845443415764,
+     "sky_share": 0.999998475759407,
+     "background_share": 1.524240592964965e-06,
+     "background_top_exposures": [
+      "F090W#0: 0.000",
+      "F090W#2: 0.000",
+      "F150W#3: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.054,
+      0.248,
+      0.201,
+      0.0517,
+      0.0924,
+      0.1604,
+      0.1225,
+      0.0393,
+      0.0155,
+      0.0097,
+      0.0044,
+      0.001
+     ]
+    }
+   }
+  }
+ },
+ "n_bkg_dropped": 44,
+ "log": [
+  "uncertainty plan: 15 tiles of up to 64 x 64 detector pixels, 15621 training pixels (37800 rendered), 6 batches per pass (largest 10800 pixels; budget 16000, by budget tiles per batch)",
+  "background basis: 15 exposures x 6 terms, orthonormalised over each exposure's weighted pixels; 44 directions dropped (singular value below 0.0001 of the largest; held at the fit); block condition numbers before: max 4.351e+10",
+  "first pass (forward only, the weights): 1.3 s for 6 batches; a full application (forward + adjoint) is expected to take about 2.3 s",
+  "first full application (forward + adjoint, per-filter coverage): 2.2 s",
+  "preconditioner 'filter': probe nodes (row, column) per filter {'F090W': (27, 23), 'F150W': (29, 30), 'F200W': (27, 33), 'F277W': (27, 27), 'F356W': (27, 27), 'F444W': (27, 27)} ([1, 1, 1, 1, 1, 1] probes per filter averaged, window +-8 nodes); coverage of the box centre relative to each filter's probe {'F090W': 0.6426, 'F150W': 0.4448, 'F200W': 0.7601, 'F277W': 1.0, 'F356W': 1.0, 'F444W': 1.0} (0 = the filter does not reach the centre); 8 coverage regions (nodes per region [176, 704, 130, 957, 211, 127, 506, 325]; mean relative coverage per filter [[0.0, 0.01, 0.05, 0.08, 0.16, 0.17], [0.73, 0.77, 0.62, 0.88, 0.93, 0.85], [0.01, 0.28, 0.5, 0.64, 0.68, 0.57], [0.0, 0.0, 0.0, 0.0, 0.01, 0.01], [0.11, 0.15, 0.07, 0.28, 0.39, 0.46], [0.0, 0.01, 0.42, 0.57, 0.67, 0.53], [0.29, 0.34, 0.5, 0.74, 0.82, 0.75], [0.0, 0.0, 0.01, 0.02, 0.05, 0.07]]; 0 without data)",
+  "uncertainty operator: 15 tiles, 15621 training pixels (2149 with Huber weight < 1), 15 exposures; coefficients 37632, background terms 90; node noise (median, coefficient units) 5.054; prior rho 10.0 -> mu 0.0003916; preconditioner 'filter' 27.3 s (13 applications + 1 forward-only)",
+  "operator checks (precision mixed): F_symmetry 8.202e-11, P_symmetry 4.102e-11, F_positive 5.571e-01, P_positive 2.854e+03, q_null 1.003e+00, P_null 9.997e-01, F_background_positive 5.424e+02, background_block_condition_max 4.351e+10, background_blocks_above_1e7 15; ALL PASSED",
+  "restricted preconditioner (Schwarz, from the base's probe kernels, no application): 8 regions on 29 x 29 coarse nodes",
+  "restricted operator: band images of 6 filters on 29 x 29 nodes at 0.0800 arcsec (5046 unknowns instead of 37632); preconditioner G^-1 B^T P^-1 B G^-1 with the base 'filter'"
+ ],
+ "seconds": 457.5179946422577
+}

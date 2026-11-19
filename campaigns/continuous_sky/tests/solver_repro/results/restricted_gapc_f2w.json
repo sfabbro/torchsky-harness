@@ -1,0 +1,89 @@
+{
+ "name": "gapc_f2w",
+ "args": {
+  "name": "gapc_f2w",
+  "factor": 2,
+  "base": "filter",
+  "precision": "mixed",
+  "gap_centre_filter": "F090W",
+  "maxiter": 100,
+  "threads": 1
+ },
+ "mu": 0.00012285321383344853,
+ "checks_full": {
+  "F_symmetry": 8.635100493936272e-11,
+  "P_symmetry": 1.1246610068721142e-09,
+  "F_positive": 0.4454856367114063,
+  "P_positive": 6530.205886656205,
+  "q_null": 1.0099193587436543,
+  "P_null": 0.9985452297674129,
+  "F_background_positive": 375.1794083788124,
+  "background_block_condition_max": 44.902325606382526,
+  "background_blocks_above_1e7": 0,
+  "failed": []
+ },
+ "lift_adjoint_error": 4.957572344259917e-17,
+ "checks_restricted": {
+  "F_symmetry": 7.730879852341035e-10,
+  "P_symmetry": 5.225446092947278e-18,
+  "F_positive": 3.627947259971542,
+  "P_positive": 301.6624873149853,
+  "F_background_positive": 326.86403895261617,
+  "background_block_condition_max": 44.902325606382526,
+  "background_blocks_above_1e7": 0,
+  "failed": []
+ },
+ "polish": {
+  "history_every10": [
+   0.8932523062596743,
+   0.060142681279481545,
+   0.01559185289211255,
+   0.005491599311533839,
+   0.0022755768724099954,
+   0.0009022674480748617,
+   0.00028631639131457547,
+   0.0001580397730768168,
+   5.063042838912356e-05,
+   3.0415857941772875e-05
+  ],
+  "final": 1.0713483077510796e-05,
+  "iterations": 100,
+  "ritz": [
+   0.016205038910306613,
+   11.56276041675145
+  ],
+  "breakdown": "",
+  "applications": 101
+ },
+ "draw": {
+  "history_every10": [
+   0.7825618812036667,
+   0.14550696344564265,
+   0.053119215637564644,
+   0.019796866820473113,
+   0.008112147116159991,
+   0.002798137139553208,
+   0.0016067954793605582,
+   0.0004381876093043998,
+   0.000184759498964491,
+   9.287461988975546e-05
+  ],
+  "final": 3.259536611626313e-05,
+  "ritz": [
+   0.016588945652701293,
+   11.562760120927594
+  ]
+ },
+ "log": [
+  "uncertainty plan: 15 tiles of up to 64 x 64 detector pixels, 17054 training pixels (37800 rendered), 6 batches per pass (largest 10800 pixels; budget 16000, by budget tiles per batch)",
+  "first pass (forward only, the weights): 1.1 s for 6 batches; a full application (forward + adjoint) is expected to take about 2.0 s",
+  "first full application (forward + adjoint, per-filter coverage): 1.8 s",
+  "preconditioner 'filter': probe nodes (row, column) per filter {'F090W': (23, 33), 'F150W': (29, 30), 'F200W': (28, 32), 'F277W': (27, 27), 'F356W': (27, 27), 'F444W': (27, 27)} ([1, 1, 1, 1, 1, 1] probes per filter averaged, window +-8 nodes); coverage of the box centre relative to each filter's probe {'F090W': 0.0003, 'F150W': 0.45, 'F200W': 0.9019, 'F277W': 1.0, 'F356W': 1.0, 'F444W': 1.0} (0 = the filter does not reach the centre); 8 coverage regions (nodes per region [116, 837, 878, 175, 233, 382, 418, 97]; mean relative coverage per filter [[0.01, 0.02, 0.05, 0.07, 0.14, 0.19], [0.0, 0.0, 0.0, 0.0, 0.0, 0.01], [0.78, 0.54, 0.65, 0.77, 0.86, 0.77], [0.75, 0.01, 0.44, 0.5, 0.66, 0.51], [0.24, 0.13, 0.09, 0.27, 0.39, 0.4], [0.0, 0.0, 0.0, 0.01, 0.03, 0.05], [0.0, 0.55, 0.63, 0.78, 0.89, 0.81], [0.04, 0.0, 0.02, 0.04, 0.12, 0.1]]; 0 without data)",
+  "uncertainty operator: 15 tiles, 17054 training pixels (2463 with Huber weight < 1), 15 exposures; coefficients 37632, background terms 90; node noise (median, coefficient units) 9.022; prior rho 10.0 -> mu 0.0001229; preconditioner 'filter' 23.7 s (13 applications + 1 forward-only)",
+  "operator checks (precision mixed): F_symmetry 8.635e-11, P_symmetry 1.125e-09, F_positive 4.455e-01, P_positive 6.530e+03, q_null 1.010e+00, P_null 9.985e-01, F_background_positive 3.752e+02, background_block_condition_max 4.490e+01, background_blocks_above_1e7 0; ALL PASSED",
+  "restricted preconditioner (Schwarz, from the base's probe kernels, no application): 8 regions on 29 x 29 coarse nodes",
+  "restricted operator: band images of 6 filters on 29 x 29 nodes at 0.0800 arcsec (5046 unknowns instead of 37632); preconditioner G^-1 B^T P^-1 B G^-1 with the base 'filter'",
+  "operator checks (precision mixed): F_symmetry 7.731e-10, P_symmetry 5.225e-18, F_positive 3.628e+00, P_positive 3.017e+02, F_background_positive 3.269e+02, background_block_condition_max 4.490e+01, background_blocks_above_1e7 0; ALL PASSED"
+ ],
+ "seconds": 461.4016783237457
+}

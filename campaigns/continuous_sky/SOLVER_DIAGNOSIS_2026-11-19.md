@@ -409,3 +409,302 @@ Next, in order:
 3. The kernel-centroid gauge in the fit (section 7), then the decisive run of section 7.
 4. A sigma-calibrated stopping rule (the product error in sigma units, section 3d) instead of a relative residual.
 5. Recalibrate the polished product on the truth problem with the new preconditioner. It should not change: same estimator, converged.
+
+## 10. Second part (19 Nov, after the real-data run with the new preconditioner)
+
+### 10a. What the real run showed, and what the negative Lanczos values mean
+
+Both halves, `--unc-precond filter`, 100 iterations, 57 to 59 s per application. Half 0: relative residual 1.35 to 1.92, rising. Half 1:
+0.85 to 0.82 with the iterate frozen (the product changed by 7e-8 sigma over the last 10 iterations). Lanczos "spectrum" -1.5e9 to +1.5e9
+(half 0) and -1.1e10 to +7e9 (half 1). The per-band sigma of the two halves now agree (F090W 0.0025 and 0.0020), so the single-probe fault
+in sigma is gone, but the step did not converge (reported as such; SKY not polished).
+
+Reading. For a symmetric positive operator and preconditioner, every Lanczos value lies between the extreme eigenvalues of P^{-1}F and is
+positive. The values are the eigenvalues of the tridiagonal matrix built from 1/alpha_j, alpha_j = r.z / p.Fp. Values of +-1e9 to 1e10,
+nearly symmetric about zero, mean that some alpha_j were tiny or negative: p.Fp (or r.P^{-1}r) came out near zero or negative. That is
+a **breakdown of CG in finite precision, not a spectrum**: the frozen iterate of half 1 is the same thing (alpha near 0), and a residual that
+rises (half 0) is CG continuing after a negative alpha. Loss of orthogonality alone does not produce negative Lanczos values. Something
+**as applied** is not positive on the search directions. Three candidates, all specific to the real problem, none present on the reproducer:
+
+1. **float32 cannot resolve the prior against the data curvature.** mu is about 3; the data curvature reaches about 1e9 (bright, low-noise
+   pixels, weights of order 1e6). The computed F p carries a round-off error of about 6e-8 x 1e9 = 60 per unit vector in the large
+   directions, larger than mu. In the directions only the prior constrains (spatial frequencies above what the LW data see, the spectral
+   null space of six filters reading twelve coefficients, uncovered margins), u.Fu can then come out at or below zero.
+2. **The background blocks.** They are built in float32 and inverted as inv(Bb + 1e-9 I). The box (24.5 arcsec) covers part of a 63 arcsec
+   SW detector and about a fifth of the 129 arcsec LW detector, so the 6 Legendre terms are nearly collinear there. A block with a condition
+   number above about 1e7 cannot be inverted in float32 with an absolute 1e-9 regulariser: the inverse can be indefinite, and then
+   r.P^{-1}r < 0. On the reproducer the condition numbers are at most 47, because its detectors lie inside the box.
+3. **float32 accumulation of the adjoint over about 400 batches** (smaller than 1, but in the same direction).
+
+I cannot tell from the logs which one dominates. The new start-up checks (10b) measure all three on the actual problem, and the lab (10d)
+compares them side by side.
+
+### 10b. What changed in `fieldop/uncertainty.py`
+
+* **Mixed precision** (`--unc-precision mixed`, now the command-line default; `float32` = 18 Nov). The renders stay float32. The adjoint of
+  each batch is computed alone and added to a float64 sum. The background blocks are accumulated in float64 and inverted by an eigenvalue
+  pseudo-inverse with a relative floor (1e-12 of the block's largest eigenvalue). The solver's vectors, inner products and right-hand sides are
+  float64. The class default stays float32, so library callers and the truth calibration are unchanged.
+* **Start-up checks** (`operator_checks`; `--unc-check 1` default; 4 applications, 3 more for the restricted operator). Symmetry
+  |u.Fv - v.Fu| / (|u| |Fv|) and the same for P^{-1}. Positivity on random vectors. **q_null** = u.Fu / (mu u.u) for u in the filters' spectral
+  null space (exactly >= 1: below 0.5 means the operator as applied does not resolve the prior). Positivity of the background block, and
+  the blocks' condition numbers (the largest, and how many exceed 1e7). One log line. If any check fails, the run **aborts before the
+  solve** with the reasons (exit status non-zero; no product written).
+* **Breakdown detection in CG**: p.Fp <= 0 or r.P^{-1}r <= 0 stops the solve with the reason (`info['breakdown']`); the log says
+  CONJUGATE-GRADIENT BREAKDOWN; the step is not applied; a draw that breaks down is discarded. A run that never breaks down is unchanged.
+* **The restricted formulation** (`--unc-restrict 0.08`, `RestrictedOperator`; section 10c).
+* **The solver lab** (`--unc-cmd lab`, `run_lab`; section 10d).
+
+### 10c. The restricted formulation
+
+Unknowns: y = band images of the F observed filters on a coarse node grid of pitch q = 0.08 arcsec (twice the sky pitch), plus the
+background terms. The sky coefficients are
+
+```latex
+x = B\,y = (E \otimes B_1 \otimes B_1)\,y, \qquad
+E = W\Phi^{\mathsf T}(\Phi W\Phi^{\mathsf T})^{-1},\ W = (D^{\mathsf T}D + 10^{-3} I)^{-1}\ \ (\Phi E = I:\ \text{every band reproduced exactly, smoothest spectrum}),
+```
+
+with B_1 the coarse tent of half-width q on the fine grid (a partition of unity). The solve is for
+
+```latex
+(B^{\mathsf T} F B)\,\delta y = B^{\mathsf T} g, \qquad A_{\rm pol} = A_{\rm fit} + B\,\delta y, \qquad
+\operatorname{Cov}(y) = (B^{\mathsf T} F B)^{-1},\quad B^{\mathsf T}FB = B^{\mathsf T}J^{\mathsf T}WJB + \mu B^{\mathsf T}B .
+```
+
+**Estimator.** The Gauss-Newton step and the posterior of the sky restricted to "band images at 0.08 arcsec": the weighted least-squares
+correction to the fit within range(B), with every direction outside it (spatial structure finer than the coarse tent, the spectral directions
+no filter reads, beyond the smooth interpolation E) **held at the fit's values**, the response held as before. Its sigma is the posterior
+sigma of the band image **conditional on those directions**, not marginalised over them. Today's full-coefficient sigma "at resolution s" is
+the marginal sigma of the full-resolution sky smoothed by g_s. The two agree when the finer directions do not leak into the smoothed product,
+which holds at s >= the supported resolution. The restricted sigma is the smaller of the two (conditioning removes variance), most at s close
+to q. Positivity and the prior play almost no part: the restricted problem is data-dominated except in a band's gaps and the margin.
+
+**Cost.** The same applications as before (one application of B^T F B = one of F plus two cheap separable maps). Set-up: none beyond the base
+operator's (the 'filter' set-up must have run). The restricted preconditioner is built on the host from the base's per-filter probe kernels;
+the base keeps them (host memory 4 K^2 N^2 bytes per filter, 1.3 GB at SMACS size). Unknowns: 6 x 307^2 = 0.57 million instead of 4.5
+million.
+
+**Preconditioner.** The base's 'filter' construction rebuilt on the coarse grid. For a translation-invariant F, B^T F B is translation
+invariant by one coarse node, with kernel
+
+```latex
+G^{y}_f(D) = E^{\mathsf T}\,\big[(G_f * c_2)(qD)\big]\,E, \qquad c_2 = \text{autocorrelation of } B_1\text{'s tent profile (separable)},
+```
+
+and the prior has the symbol mu (E^T E) c^(w_y) c^(w_x). Regions, region weights and per-filter coverage are the base's, read under the coarse
+nodes. Per region, C_r = Pr^{1/2}(I + S)Pr^{1/2}, where S = Pr^{-1/2} D Pr^{-1/2} has its eigenvalues clamped at zero (a one-probe data
+symbol can dip below zero, and folding the prior into the same kernel let such a dip cancel it). Then
+P_y^{-1} = M^{-1/2}[sum_r a_r^{1/2} M_r^{1/2} C_r^{-1} M_r^{1/2} a_r^{1/2}]M^{-1/2}, as in the base. A first version, G^{-1}B^T P^{-1} B G^{-1}
+with the full-space P, converged badly (6.8e-2 at 100 iterations, largest Lanczos value 1,000): range(B) is not invariant under P, and the
+coarse tent leaks fine-grid high frequencies, where P^{-1} has its 1/mu gain. It remains available (`precond_kind="projected"`).
+Its cheap sigma (`--unc-method circulant`) uses the same approximation in the restricted space (`RestrictedOperator.circulant_sigma`),
+read at the nearest coarse node.
+
+**Results.**
+
+*Reproducer* (56 x 56 nodes, `tests/solver_repro/run_restricted.py`; base 'filter', mixed precision; factor 2, i.e. 6 band images on
+29 x 29 coarse nodes). Gauss-Newton step, relative residual at iterations 10, 20, ..., 100:
+- all features: 5.7e-1, 7.3e-2, 1.6e-2, 5.5e-3, 2.1e-3, **7.2e-4** (50), 4.2e-4, 1.9e-4, 1.0e-4, 4.5e-5; final 1.4e-5. Lanczos range 0.020 to 20;
+  no breakdown. Draw: 1e-3 at about 70 iterations, 1.3e-4 at 100;
+- F090W's gap on the probe (run before the tent-profile fix of 10c, which matters only for even N): 1e-3 at about 50 iterations, 1.1e-5 at 100,
+  Lanczos 0.016 to 12.
+
+The full-coefficient 'filter' solve reached 1e-3 in 63 to 71 iterations on the same fields. Checks on both fields: q_null = 1.008 and 1.010,
+symmetry below 1e-15 in mixed precision, background-block condition numbers at most 47.
+
+*Truth problem* (`tests/solver_repro/truth_restricted.py`: grid sky, 8 exposures, the saved fits of noise realisations 0, 1, 2; base 'filter'
+in mixed precision; band image on 0.10 arcsec nodes, twice the sky pitch; 2 restricted draws per realisation, pooled (6); sigma averaged over
+0.25 arcsec as in the calibration). Step: 1e-5 in 120 to 122 iterations (Lanczos 0.41 to 224, no breakdown); draws 135 to 137 iterations.
+Pulls at s = 0.111 arcsec (mean, rms), against the full-coefficient product of the 18 Nov calibration:
+
+| region | restricted | full-coefficient product (18 Nov, section 4) |
+|---|---|---|
+| empty positions, total | +0.25, 1.06 | +0.32, 1.27 |
+| inner region, total | -0.41, 1.11 | -0.41, 1.10 |
+| inner region, best quadratic removed | 0.00, 0.97 | 0, 0.96 |
+| sources S/N 0.3-1 / 1-3 / 3-10 / 10-30 / 30-100 | rms 1.19 / 1.00 / 1.29 / 0.92 / 0.90 (means -0.41, +0.26, -0.46, +0.01, -0.50) | rms 1.19 / 1.07 / 1.11 / 0.93 / 1.03 |
+
+At s = 0.15 and 0.20 the inner pulls with the quadratic removed are 0.94 and 0.90; the inner totals (1.29, 1.56) carry the six
+background-degenerate sky modes, as in the 18 Nov calibration (1.27, 1.51). Restricted sigma at 0.111 arcsec: inner median 0.1339, against
+0.1324 for the exact full-coefficient sigma at the centre. The restricted cheap sigma agrees with the restricted draws to 1.3, 0.6 and 0.9 per
+cent at s = 0.111, 0.15 and 0.20. With 6 pooled draws the sigma map has a sampling error of about 30 per cent per node before the 0.25 arcsec
+averaging; the pull statistics carry it.
+
+So the restricted estimator is calibrated on the truth problem as well as the full one, and at these resolutions its sigma is the same to 1
+per cent. On this one-filter field it is not faster to solve: 120 iterations to 1e-5, where the full form reached about 1e-3 in 60 iterations
+(9.76e-4 for realisation 0).
+Its point is numerical robustness on the real field, not speed on this one.
+
+
+### 10d. The solver lab (one short GPU job)
+
+`python -m fieldop.uncertainty --unc-cmd lab` builds the operator on the training pixels within +-`--unc-lab-box` arcsec of the box
+centre (default 2: the chip-gap cross and the bright central galaxy; about 3 per cent of the pixels, so an application takes seconds). It
+then runs `--unc-lab-iters` CG iterations of the Gauss-Newton step with each variant: no preconditioner, Jacobi, 'filter' in float32,
+'filter' in mixed precision, the restricted solve, the 18 Nov 'fourier' preconditioner in float32, and 'filter' and restricted without the
+floor-dominated pixels. For each operator it runs the checks in float32 and in mixed precision; for each variant it reports the residual
+at iterations 1, 2, 5, 10, 15, 20, the Lanczos range, any breakdown and the time. One operator is held on the device at a time. Records go
+to `solver_lab.json` next to the output pattern. Caveat: in a 4 arcsec patch the 6 background terms are much more collinear than over the
+full box, so the background-block condition numbers of the lab overstate those of the full run (the full run's checks print the real ones).
+
+UNC_ARGS for the job wrapper (which adds `--unc-band ... --unc-out .../sky_{band}_uncertainty.fits`; `--unc-config` and `--device cuda` as
+usual; fit `onesky_smacs_items004w_half1_s0`):
+
+```
+--unc-cmd lab --unc-lab-box 2.0 --unc-lab-iters 20 --unc-max-minutes 19 --unc-batch-px 16000
+```
+
+Expected time: data and model 1.5 min; three operator set-ups of 14 passes each, at a few seconds per pass, plus about 1 minute of host work for
+each 'filter' set-up; 8 checks per operator; 8 variants of 21 passes. About 300 passes in all; at 2 to 3 s each, 12 to 16 minutes. The
+budget skips the remaining variants cleanly (logged) if the passes are slower. How to read it:
+* `q_null` below 0.5 in float32 and about 1 in mixed: explanation 1 (precision); the mixed variants should then not break down;
+* background blocks above 1e7 with a float32 breakdown that mixed avoids: explanation 2;
+* 'filter' mixed breaking down or stalling while restricted converges: the prior-only directions are the problem, and the restricted
+  formulation is the answer;
+* everything breaking down, including mixed and restricted, with the checks passing: something I have not identified (send me the log).
+
+### 10e. Verified, expected, and the next full run
+
+Verified (CPU): mixed precision gives the same operator as float32 to 1e-5, with float64 vectors; the checks pass on sound operators and
+catch a non-symmetric operator, a negative preconditioner and failing prior resolution, and the command line aborts on them; breakdown is
+detected on an indefinite operator; the restricted operator is exactly B^T F B (adjoint to 5e-17, its step equal to the dense restricted
+solution in the energy norm); its preconditioner is symmetric positive; the lab runs every variant and every check. Tests:
+`tests/test_uncertainty_restricted.py`, 9 tests; with the earlier 28, 37 pass (174 s on two loaded cores). The 18 Nov path is still
+bit-identical to the saved truth calibration after this change set (`tests/check_uncertainty_rerun.py`, realisation 0, part 1: draw and polished
+coefficients differ by 0.0).
+
+Not verified: that any of this converges on SMACS. The lab is designed to decide that cheaply before another two-hour run.
+
+Recommended next full half run, **after** the lab shows that the restricted variant converges and passes its checks:
+
+```
+--unc-precond filter --unc-precision mixed --unc-restrict 0.08 --unc-check 1 --unc-method circulant --unc-polish 1 \
+--unc-maxiter 100 --unc-tol 1e-4 --unc-accept-tol 1e-3 --unc-resolution 0.08 --unc-batch-px 16000 --unc-max-minutes 150
+```
+
+Cost: set-up 14 passes plus 7 for the checks, at most 101 for the step: at most about 122 passes, about 2 h. Device memory as in the 19 Nov
+run plus less than 0.2 GB; host memory plus 1.3 GB for the kept probe kernels. If the lab instead shows that mixed precision alone fixes the
+full-space solve, drop `--unc-restrict` to get today's marginal "sigma at resolution s".
+
+## 11. Third part (19 Nov): the solver lab, the background terms, the prior weight
+
+### 11a. Reading of the lab log (`u_lab1.log`: half 1, +-2 arcsec box, 20 iterations per variant)
+
+All the checks passed (symmetry 4e-13 to 7e-11; positivity; q_null 1.04 and 1.10). Corrections and confirmations of the reading sent with it:
+
+* **The lab's 'filter' operators had a wrong prior weight: mu = 6.1e-10** (node noise 4042), against mu = 7.4e-4 for the 'fourier' operator
+  on the same pixels. The cause is my code. In 'filter' mode the median node information was taken over "covered" nodes: coverage above
+  1e-3 of the 90th percentile of all nodes with any coverage. With kernel wings to 10 arcsec, that is nearly the whole 613^2 grid, while
+  the data fill a 4 arcsec patch. The median was then a wing value about 1e6 times too small. Nodes the preconditioner treats as
+  prior-only but that the wings reach then have P^{-1}F of about (wing information)/mu, enormous. That is why filter64 stalled with every
+  explored Lanczos value above 6e5. The full 19 Nov runs had mu 3.0 to 3.6 and were not affected by this artefact. **Fixed**: mu (and the
+  reference coverage) are now taken over the data footprint (nodes within one node of a training pixel, from the weight splat).
+* **(b) is not what the lab shows.** filter32 and fourier32 have identical curves and identical Lanczos ranges (5e11 to 4e15). The two
+  operators share only the float32 background inverse, inv(Bb + 1e-9 I), with block condition numbers up to 6e9. The preconditioner's
+  positivity value differs by 40 times between float32 and mixed for the same operator, and only the background inverse differs between
+  those two. So the 4e15 is the float32 background inverse, not the Fourier model. filter64's stall is the mu artefact above.
+* **(a), the top direction.** none64, jacobi64 and restrict64 share the same 9.76e8. These variants share only two things: the background
+  treatment (raw Legendre terms, pseudo-inverted blocks with condition numbers up to 6e9, the gauge projection applied after the inverse)
+  and the operator with mu = 6e-10. The CPU analogue (11c) gives the background blocks the same conditioning (up to 4.4e10) and shows
+  that the extreme Ritz vectors of the raw-basis solves are background: 100 per cent of the top mode with no sky preconditioner, 97 per cent
+  with Jacobi (two F444W exposures, the constant and y terms), 99 per cent of the bottom mode of the restricted solve. With the orthonormal
+  basis (11b) every extreme mode is 100 per cent sky. The analogue's top values are 4 to 61, not 1e9. I attribute the size of 9.76e8 to the
+  background mode coupled to sky directions that only mu = 6e-10 held, but **that is not shown**: the new lab prints the composition of the
+  top and bottom Ritz vectors of every variant, which will show it.
+* (c) Jacobi and the restricted solve do make progress (0.48 and 0.39 at 20 iterations); both were held back by the same two problems.
+
+### 11b. Changes
+
+1. **Orthonormal background basis** (`bkg_basis="orth"`, `--unc-bkg-basis orth`, the command-line default with mixed precision). For each
+   exposure, the six Legendre functions (times the gain) are orthonormalised over its own weighted valid pixels. The float64 block is
+   factored, $B_e = V\Lambda V^{\mathsf T}$, and the solver's background coordinates are $c_e$ with $b_e = T_e c_e$,
+   $T_e = V\Lambda^{-1/2}$, so the background block of F is exactly the identity. Directions with $\sqrt{\lambda_j/\lambda_{\max}}$ below
+   `--unc-bkg-rcond` (default 1e-4) are dropped: held at the fit, their slot zeroed by the gauge, their number logged.
+   **What a dropped direction means.** It is a combination of the six terms whose weighted pixel pattern on the exposure's cut is below
+   1e-4 of the strongest. On that cut it is indistinguishable from the other terms, and any change along it can be absorbed by a
+   large-scale (order at most 2) sky pattern, which the background gauge and the zero-level rule already hold. Holding it changes the model
+   by less than 1e-4 of the strongest background term over the cut.
+   The gauge (the training mean of each raw term per filter, or of the constant only) is imposed exactly by the orthogonal projector
+   $P = D - (CD)^{\mathsf T}\,[(CD)(CD)^{\mathsf T}]^{+}\,(CD)$ onto $\{C c = 0,\ \text{dropped slots} = 0\}$ per filter group
+   ($C$ = the stacked $T_e$ rows of the held terms, $D$ = the kept-slot mask). The background preconditioner is then $P$ itself, **the exact
+   inverse of the background block on the gauge subspace**. The raw form $P_g B^{-1} P_g$ is not that inverse when the blocks are badly
+   conditioned and differ between exposures. The vector layout (6 slots per exposure) and every other code path are unchanged; the step's
+   backgrounds are reported in raw terms (`bkg_to_raw`). Tested: the same Gauss-Newton step as the raw basis when nothing is dropped
+   (relative difference below 1e-3 on the tiny field), the background block equal to the identity on the gauge subspace, the raw gauge
+   satisfied to 1e-8, dropped slots held at exactly 0.
+2. **mu over the data footprint** in 'filter' mode (11a). This changes mu slightly on full fields (its definition: the median over the nodes
+   that have data, not over every node a kernel wing reaches).
+3. **Block Jacobi** (`--unc-precond bjacobi`): the per-node 12 x 12 inverse $M_j^{-1}$ of the 'filter' set-up's local information. No extra
+   application.
+4. **Ritz vectors and mode reports**: `pcg(..., keep_vectors=True)` keeps the Lanczos vectors on the host, `ritz_vectors` and `mode_report`
+   give each extreme Ritz vector's share in the sky and background blocks, by exposure, term and spectral coefficient. The lab prints them.
+5. **The lab**: one 'filter' operator (mixed precision; raw and orthonormal backgrounds switched on the same operator), 30 iterations per
+   variant, default variants `jacobi64, jacobi64_orth, bjacobi64_orth, filter64, filter64_orth, restrict64_orth`.
+
+**Not done: a coarse-grid correction, and block Jacobi from coloured probing.** Probing per-node 12 x 12 blocks needs K applications per
+colour, with at least about 25 colours to separate the long-wavelength footprints: about 300 applications, or 5 hours on a half. On the
+analogue the per-node block from the 'filter' model (bjacobi) is no better than plain Jacobi (2.2e-2 against 2.3e-2 at 30 iterations).
+Once the backgrounds are orthonormal, 'filter' and the restricted solve are 10 to 20 times better than both. A coarse correction is
+called for only if the new lab's slowest modes are smooth. The lab's mode report will say.
+
+### 11c. The CPU analogue of the SMACS background conditioning (`tests/solver_repro/bkg_analogue.py --det2048 1 --box 0`)
+
+The 56 x 56 reproducer with each exposure's cut placed in the corner of a 2048-pixel detector (only the detector shape changes; the
+background, throughput and distortion fields are evaluated at the patch's coordinates, which span 0.06 (SW) and 0.03 (LW)). Background-block
+condition numbers: up to 4.4e10 (the lab: 6e9). Mixed precision; mu 3.9e-4 from the footprint. Relative residual of the Gauss-Newton step:
+
+| variant | 1 | 5 | 10 | 20 | 30 | 60 | 100 | Lanczos range | top / bottom mode |
+|---|---|---|---|---|---|---|---|---|---|
+| none, raw backgrounds | 0.86 | 1.22 | 0.61 | 0.36 | 0.36 | | | 0.006 to 4.5 | background 100 % / sky 2 % |
+| jacobi, raw | 0.36 | 0.26 | 0.20 | 8.2e-2 | 2.3e-2 | | | 0.19 to 61 | background 97 % / sky 44 % |
+| jacobi, orth | 0.42 | 0.24 | 0.14 | 5.2e-2 | 3.0e-2 | | | 0.19 to 61 | sky 100 % / sky 100 % |
+| bjacobi, orth | 0.48 | 0.24 | 0.12 | 4.7e-2 | 2.2e-2 | | | 0.08 to 24 | sky / sky |
+| filter, raw | 1.47 | 0.29 | 0.36 | 5.7e-2 | 7.2e-3 | | | 0.07 to 11 | sky 100 % / sky 74 % |
+| filter, orth | 0.23 | 8.9e-2 | 4.4e-2 | 7.3e-3 | 1.1e-3 | 2.7e-5 | 1.8e-7 | 0.07 to 11 | sky / sky |
+| restricted 0.08, raw | 1.02 | 0.57 | 0.11 | 3.0e-2 | 1.05e-2 | | | 0.12 to 17 | sky 80 % / background 99 % |
+| **restricted 0.08, orth** | 0.44 | 0.15 | 6.0e-2 | 6.4e-3 | 2.0e-3 | **4.8e-5** | **4.6e-7** | 0.04 to 17 | sky / sky |
+
+**The restricted solve with orthonormal backgrounds reaches 1e-3 in about 33 iterations on this analogue.** With the 14 set-up
+applications and 7 for the checks, that is about 55 applications, well inside the target of 100.
+
+### 11d. What I expect on SMACS, plainly
+
+The analogue has SMACS's background conditioning and filter set, but not its size (4.5 million coefficients), its 43 exposures, or its
+weights (bright cluster galaxies, floor-limited). Of the two failures found in the lab, one was my mu artefact (fixed) and one was the
+background treatment (fixed, and shown to matter on the analogue). If the new lab shows, for restrict64_orth, a residual below about
+1e-2 at 30 iterations and extreme modes that are sky, then 1e-3 within 100 applications on a full half is reachable. If restrict64_orth is
+still near 0.3 to 0.5 at 30 iterations with sky extreme modes, the remaining problem is in the sky operator itself (the Fourier models on
+real kernels and weights). The realistic aim then is a converged restricted solve at 0.16 arcsec (`--unc-restrict 0.16`, four times fewer
+unknowns and a better-posed problem), or a coarse correction designed from the lab's mode report. I would not promise 0.08 arcsec.
+
+### 11e. The lab command and the next full run
+
+UNC_ARGS (half 1, `onesky_smacs_items004w_half1_s0`; the wrapper adds `--unc-band`, `--unc-out`, `--unc-config`, `--device cuda`):
+
+```
+--unc-cmd lab --unc-lab-box 2.0 --unc-lab-iters 30 --unc-max-minutes 19 --unc-batch-px 16000
+```
+
+(Default variants `jacobi64,jacobi64_orth,bjacobi64_orth,filter64,filter64_orth,restrict64_orth`, one operator. Expected time from the
+first lab's timings: data 0.7 min, set-up 1.8 min, checks 0.5 min, 6 variants of 31 applications plus 3 to 4 checks each at about 3.2 s
+per application, about 11 min; 14 to 15 min in all. The 2 arcsec box is kept: a larger one does not fit 20 minutes with 6 variants.) Read:
+the mu line (now from the footprint; expect of order 1e-1 to 1e1, not 1e-10); the background-basis line (directions dropped); and for each
+variant the residual curve and the "top / bottom Ritz value" lines (sky against background shares).
+
+Next full half run, if the lab's restrict64_orth passes (11d):
+
+```
+--unc-precond filter --unc-precision mixed --unc-bkg-basis orth --unc-bkg-rcond 1e-4 --unc-restrict 0.08 --unc-check 1 \
+--unc-method circulant --unc-polish 1 --unc-maxiter 100 --unc-tol 1e-4 --unc-accept-tol 1e-3 --unc-resolution 0.08 \
+--unc-batch-px 16000 --unc-max-minutes 150
+```
+
+About 2 h; memory as in the 19 Nov run.
+
+### 11f. Verified
+
+Tests: 40 pass (`tests/test_uncertainty.py` 20, `tests/test_uncertainty_solver.py` 8, `tests/test_uncertainty_restricted.py` 12;
+the new ones cover the orthonormal basis against the raw basis, dropped directions, block Jacobi, the footprint, the Ritz-vector report,
+and the lab's mode lines). The 18 Nov path is still bit-identical to the saved truth calibration (`tests/check_uncertainty_rerun.py`,
+realisation 0, part 1: differences 0.0; mu 1.0178e-4).

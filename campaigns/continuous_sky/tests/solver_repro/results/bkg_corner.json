@@ -1,0 +1,688 @@
+{
+ "name": "corner",
+ "args": {
+  "name": "corner",
+  "variants": "none,jacobi,jacobi_orth,bjacobi_orth,filter,filter_orth,restrict,restrict_orth",
+  "bkg_basis": "raw",
+  "iters": 30,
+  "sw_npix": 60,
+  "lw_npix": 30,
+  "threads": 2,
+  "det2048": 1,
+  "box": 0.0
+ },
+ "mu": 0.0003915712992899545,
+ "bb_cond_max": 43511087433.19333,
+ "bb_cond_sorted": [
+  2263988253.7842636,
+  2290009201.1117415,
+  25715577736.459053,
+  25744152654.224606,
+  27905407486.27484,
+  33746850579.046974,
+  33942386231.56498,
+  43511087433.19333
+ ],
+ "n_pix": 15621,
+ "checks": {
+  "F_symmetry": 8.235576337951491e-11,
+  "P_symmetry": 1.12812060748507e-10,
+  "F_positive": 0.5571452117373591,
+  "P_positive": 2853.5912687841715,
+  "q_null": 1.0027758067258887,
+  "P_null": 0.9996603221573713,
+  "F_background_positive": 542.3916904346152,
+  "background_block_condition_max": 43511087433.19333,
+  "background_blocks_above_1e7": 15,
+  "failed": []
+ },
+ "variants": {
+  "none": {
+   "residual": {
+    "1": 0.8559102164441221,
+    "5": 1.2248978168808684,
+    "10": 0.6126767924696881,
+    "15": 0.5291704746721645,
+    "20": 0.3636440029947242,
+    "25": 0.33273976417990697,
+    "30": 0.3614383227614943
+   },
+   "breakdown": "",
+   "ritz": [
+    0.006427721244684013,
+    4.450839553758955
+   ],
+   "modes": {
+    "top": {
+     "ritz": 4.4508395537589545,
+     "sky_share": 2.2415955855822554e-06,
+     "background_share": 0.9999977584044144,
+     "background_top_exposures": [
+      "F150W#4: 0.337",
+      "F150W#5: 0.262",
+      "F200W#7: 0.254"
+     ],
+     "background_per_term": [
+      0.2773,
+      0.0051,
+      0.6325,
+      0.0009,
+      0.0086,
+      0.0756
+     ],
+     "sky_per_coefficient": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "bottom": {
+     "ritz": 0.00642772124468438,
+     "sky_share": 0.021050088904503488,
+     "background_share": 0.9789499110954966,
+     "background_top_exposures": [
+      "F277W#9: 0.329",
+      "F277W#10: 0.329",
+      "F444W#13: 0.130"
+     ],
+     "background_per_term": [
+      0.3311,
+      0.1953,
+      0.3824,
+      0.0135,
+      0.0141,
+      0.0426
+     ],
+     "sky_per_coefficient": [
+      0.001,
+      0.0012,
+      0.0012,
+      0.0019,
+      0.0033,
+      0.0031,
+      0.0023,
+      0.0013,
+      0.0016,
+      0.0018,
+      0.0017,
+      0.0006
+     ]
+    }
+   }
+  },
+  "jacobi": {
+   "residual": {
+    "1": 0.3612873960320271,
+    "5": 0.25634066206320016,
+    "10": 0.19972272895373544,
+    "15": 0.12559516307523455,
+    "20": 0.08202172209703819,
+    "25": 0.05655672051095984,
+    "30": 0.022782514673124872
+   },
+   "breakdown": "",
+   "ritz": [
+    0.19318340691471686,
+    60.961393938376574
+   ],
+   "modes": {
+    "top": {
+     "ritz": 60.961393938376574,
+     "sky_share": 0.03447601032161731,
+     "background_share": 0.9655239896783827,
+     "background_top_exposures": [
+      "F444W#13: 0.390",
+      "F444W#14: 0.390",
+      "F356W#11: 0.089"
+     ],
+     "background_per_term": [
+      0.2388,
+      0.0195,
+      0.6209,
+      0.0047,
+      0.0072,
+      0.0744
+     ],
+     "sky_per_coefficient": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0003,
+      0.0018,
+      0.0054,
+      0.0092,
+      0.0177
+     ]
+    },
+    "bottom": {
+     "ritz": 0.19318340691471558,
+     "sky_share": 0.4442583015161466,
+     "background_share": 0.5557416984838535,
+     "background_top_exposures": [
+      "F277W#9: 0.105",
+      "F277W#10: 0.105",
+      "F200W#6: 0.085"
+     ],
+     "background_per_term": [
+      0.1198,
+      0.2457,
+      0.0548,
+      0.0189,
+      0.0903,
+      0.0262
+     ],
+     "sky_per_coefficient": [
+      0.0492,
+      0.0159,
+      0.0192,
+      0.0347,
+      0.1347,
+      0.0586,
+      0.0239,
+      0.0275,
+      0.0238,
+      0.0187,
+      0.0178,
+      0.0202
+     ]
+    }
+   }
+  },
+  "jacobi_orth": {
+   "residual": {
+    "1": 0.4218799571717745,
+    "5": 0.23712480190840524,
+    "10": 0.13678493614772122,
+    "15": 0.07592985710536429,
+    "20": 0.05156798049735295,
+    "25": 0.037575151021195054,
+    "30": 0.029664729260769334
+   },
+   "breakdown": "",
+   "ritz": [
+    0.18642761488337925,
+    60.601998536135476
+   ],
+   "modes": {
+    "top": {
+     "ritz": 60.60199853613543,
+     "sky_share": 0.9999997138468865,
+     "background_share": 2.86153113537857e-07,
+     "background_top_exposures": [
+      "F444W#14: 0.000",
+      "F444W#13: 0.000",
+      "F200W#7: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.0,
+      0.0,
+      0.0,
+      0.0001,
+      0.0001,
+      0.0002,
+      0.0014,
+      0.0097,
+      0.0522,
+      0.1554,
+      0.2652,
+      0.5157
+     ]
+    },
+    "bottom": {
+     "ritz": 0.18642761488338302,
+     "sky_share": 0.999999724118385,
+     "background_share": 2.7588161499725317e-07,
+     "background_top_exposures": [
+      "F090W#2: 0.000",
+      "F090W#0: 0.000",
+      "F444W#14: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.1107,
+      0.0361,
+      0.0445,
+      0.0849,
+      0.2865,
+      0.1327,
+      0.0558,
+      0.063,
+      0.0548,
+      0.0439,
+      0.0422,
+      0.0449
+     ]
+    }
+   }
+  },
+  "bjacobi_orth": {
+   "residual": {
+    "1": 0.4810432241483976,
+    "5": 0.23653717157920173,
+    "10": 0.11696148268464898,
+    "15": 0.06552730885556739,
+    "20": 0.04737846754946739,
+    "25": 0.031128200503577296,
+    "30": 0.022406282745689142
+   },
+   "breakdown": "",
+   "ritz": [
+    0.07548886217447826,
+    23.843827530505045
+   ],
+   "modes": {
+    "top": {
+     "ritz": 23.843827530505035,
+     "sky_share": 0.9999989942364498,
+     "background_share": 1.0057635502214168e-06,
+     "background_top_exposures": [
+      "F444W#14: 0.000",
+      "F444W#13: 0.000",
+      "F356W#11: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.0,
+      0.0,
+      0.0,
+      0.0004,
+      0.0002,
+      0.0016,
+      0.0002,
+      0.0066,
+      0.0254,
+      0.0254,
+      0.49,
+      0.4502
+     ]
+    },
+    "bottom": {
+     "ritz": 0.07548886217448492,
+     "sky_share": 0.9999998394893749,
+     "background_share": 1.6051062512456582e-07,
+     "background_top_exposures": [
+      "F150W#5: 0.000",
+      "F150W#4: 0.000",
+      "F200W#7: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.0255,
+      0.0552,
+      0.0471,
+      0.0499,
+      0.1231,
+      0.1758,
+      0.1877,
+      0.146,
+      0.0826,
+      0.0378,
+      0.0443,
+      0.025
+     ]
+    }
+   }
+  },
+  "filter": {
+   "residual": {
+    "1": 1.4707284807331844,
+    "5": 0.29188095109243284,
+    "10": 0.3564684386762861,
+    "15": 0.09495598197508398,
+    "20": 0.0570966010590556,
+    "25": 0.020508765582656352,
+    "30": 0.007171543340044713
+   },
+   "breakdown": "",
+   "ritz": [
+    0.07041911325785283,
+    10.83066364930564
+   ],
+   "modes": {
+    "top": {
+     "ritz": 10.830663649305642,
+     "sky_share": 0.9999931108321629,
+     "background_share": 6.889167837087484e-06,
+     "background_top_exposures": [
+      "F090W#2: 0.000",
+      "F090W#1: 0.000",
+      "F090W#0: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.1178,
+      0.5091,
+      0.3427,
+      0.012,
+      0.0142,
+      0.0011,
+      0.0026,
+      0.0,
+      0.0003,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "bottom": {
+     "ritz": 0.07041911325785218,
+     "sky_share": 0.7399152455300236,
+     "background_share": 0.26008475446997636,
+     "background_top_exposures": [
+      "F150W#5: 0.102",
+      "F200W#7: 0.040",
+      "F150W#4: 0.029"
+     ],
+     "background_per_term": [
+      0.0713,
+      0.0997,
+      0.055,
+      0.0135,
+      0.0139,
+      0.0066
+     ],
+     "sky_per_coefficient": [
+      0.0021,
+      0.0089,
+      0.0084,
+      0.0524,
+      0.2117,
+      0.277,
+      0.1485,
+      0.0206,
+      0.0046,
+      0.0037,
+      0.0015,
+      0.0005
+     ]
+    }
+   }
+  },
+  "filter_orth": {
+   "residual": {
+    "1": 0.2315269132036268,
+    "5": 0.08921443182338525,
+    "10": 0.04439722145137037,
+    "15": 0.019445603228577177,
+    "20": 0.007340669003687605,
+    "25": 0.003247946883160636,
+    "30": 0.0011006752777764802
+   },
+   "breakdown": "",
+   "ritz": [
+    0.07018084670256401,
+    10.83067159875949
+   ],
+   "modes": {
+    "top": {
+     "ritz": 10.83067159875948,
+     "sky_share": 0.9999999999892608,
+     "background_share": 1.073918731719914e-11,
+     "background_top_exposures": [
+      "F090W#2: 0.000",
+      "F090W#1: 0.000",
+      "F090W#0: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.1178,
+      0.5091,
+      0.3427,
+      0.012,
+      0.0142,
+      0.0011,
+      0.0026,
+      0.0,
+      0.0003,
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "bottom": {
+     "ritz": 0.07018084670256376,
+     "sky_share": 0.9999999159477087,
+     "background_share": 8.405229134922365e-08,
+     "background_top_exposures": [
+      "F200W#6: 0.000",
+      "F200W#7: 0.000",
+      "F090W#1: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.003,
+      0.0127,
+      0.0123,
+      0.0693,
+      0.2773,
+      0.3743,
+      0.2075,
+      0.0303,
+      0.006,
+      0.0046,
+      0.002,
+      0.0007
+     ]
+    }
+   }
+  },
+  "restrict": {
+   "residual": {
+    "1": 1.0247486977506999,
+    "5": 0.5650532541527518,
+    "10": 0.10540410709345076,
+    "15": 0.0658592912766013,
+    "20": 0.030171103241366494,
+    "25": 0.013369950067149017,
+    "30": 0.010455858197237716
+   },
+   "breakdown": "",
+   "ritz": [
+    0.11951678448822269,
+    17.12043063148072
+   ],
+   "modes": {
+    "top": {
+     "ritz": 17.120430631480726,
+     "sky_share": 0.8012221840695771,
+     "background_share": 0.19877781593042287,
+     "background_top_exposures": [
+      "F090W#2: 0.132",
+      "F090W#1: 0.034",
+      "F090W#0: 0.032"
+     ],
+     "background_per_term": [
+      0.0013,
+      0.1081,
+      0.0679,
+      0.0101,
+      0.0013,
+      0.0101
+     ],
+     "sky_per_coefficient": [
+      0.7855,
+      0.0142,
+      0.0006,
+      0.0007,
+      0.0001,
+      0.0
+     ]
+    },
+    "bottom": {
+     "ritz": 0.11951678448822274,
+     "sky_share": 0.01212740211915039,
+     "background_share": 0.9878725978808496,
+     "background_top_exposures": [
+      "F150W#5: 0.301",
+      "F444W#13: 0.135",
+      "F444W#14: 0.135"
+     ],
+     "background_per_term": [
+      0.2981,
+      0.4415,
+      0.1177,
+      0.0636,
+      0.0424,
+      0.0244
+     ],
+     "sky_per_coefficient": [
+      0.0005,
+      0.0026,
+      0.0041,
+      0.0019,
+      0.0016,
+      0.0015
+     ]
+    }
+   }
+  },
+  "restrict_orth": {
+   "residual": {
+    "1": 0.43922057059940733,
+    "5": 0.15066597663018869,
+    "10": 0.059467733671836956,
+    "15": 0.01753591206317114,
+    "20": 0.006402025499269232,
+    "25": 0.002669907640427753,
+    "30": 0.002124255543936256
+   },
+   "breakdown": "",
+   "ritz": [
+    0.09690729294922502,
+    17.107724527955728
+   ],
+   "modes": {
+    "top": {
+     "ritz": 17.107724527955725,
+     "sky_share": 0.9999995699624289,
+     "background_share": 4.300375711085991e-07,
+     "background_top_exposures": [
+      "F090W#2: 0.000",
+      "F090W#1: 0.000",
+      "F090W#0: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.9804,
+      0.0177,
+      0.0008,
+      0.0009,
+      0.0001,
+      0.0001
+     ]
+    },
+    "bottom": {
+     "ritz": 0.0969072929492262,
+     "sky_share": 0.9999798119007658,
+     "background_share": 2.01880992342085e-05,
+     "background_top_exposures": [
+      "F150W#5: 0.000",
+      "F200W#6: 0.000",
+      "F150W#3: 0.000"
+     ],
+     "background_per_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "sky_per_coefficient": [
+      0.0391,
+      0.1952,
+      0.329,
+      0.1659,
+      0.1451,
+      0.1256
+     ]
+    }
+   }
+  }
+ },
+ "n_bkg_dropped": 44,
+ "log": [
+  "uncertainty plan: 15 tiles of up to 64 x 64 detector pixels, 15621 training pixels (37800 rendered), 6 batches per pass (largest 10800 pixels; budget 16000, by budget tiles per batch)",
+  "background basis: 15 exposures x 6 terms, orthonormalised over each exposure's weighted pixels; 44 directions dropped (singular value below 0.0001 of the largest; held at the fit); block condition numbers before: max 4.351e+10",
+  "first pass (forward only, the weights): 0.8 s for 6 batches; a full application (forward + adjoint) is expected to take about 1.5 s",
+  "first full application (forward + adjoint, per-filter coverage): 1.3 s",
+  "preconditioner 'filter': probe nodes (row, column) per filter {'F090W': (27, 23), 'F150W': (29, 30), 'F200W': (27, 33), 'F277W': (27, 27), 'F356W': (27, 27), 'F444W': (27, 27)} ([1, 1, 1, 1, 1, 1] probes per filter averaged, window +-8 nodes); coverage of the box centre relative to each filter's probe {'F090W': 0.6426, 'F150W': 0.4448, 'F200W': 0.7601, 'F277W': 1.0, 'F356W': 1.0, 'F444W': 1.0} (0 = the filter does not reach the centre); 8 coverage regions (nodes per region [176, 704, 130, 957, 211, 127, 506, 325]; mean relative coverage per filter [[0.0, 0.01, 0.05, 0.08, 0.16, 0.17], [0.73, 0.77, 0.62, 0.88, 0.93, 0.85], [0.01, 0.28, 0.5, 0.64, 0.68, 0.57], [0.0, 0.0, 0.0, 0.0, 0.01, 0.01], [0.11, 0.15, 0.07, 0.28, 0.39, 0.46], [0.0, 0.01, 0.42, 0.57, 0.67, 0.53], [0.29, 0.34, 0.5, 0.74, 0.82, 0.75], [0.0, 0.0, 0.01, 0.02, 0.05, 0.07]]; 0 without data)",
+  "uncertainty operator: 15 tiles, 15621 training pixels (2149 with Huber weight < 1), 15 exposures; coefficients 37632, background terms 90; node noise (median, coefficient units) 5.054; prior rho 10.0 -> mu 0.0003916; preconditioner 'filter' 16.2 s (13 applications + 1 forward-only)",
+  "operator checks (precision mixed): F_symmetry 8.236e-11, P_symmetry 1.128e-10, F_positive 5.571e-01, P_positive 2.854e+03, q_null 1.003e+00, P_null 9.997e-01, F_background_positive 5.424e+02, background_block_condition_max 4.351e+10, background_blocks_above_1e7 15; ALL PASSED",
+  "restricted preconditioner (Schwarz, from the base's probe kernels, no application): 8 regions on 29 x 29 coarse nodes",
+  "restricted operator: band images of 6 filters on 29 x 29 nodes at 0.0800 arcsec (5046 unknowns instead of 37632); preconditioner G^-1 B^T P^-1 B G^-1 with the base 'filter'",
+  "restricted preconditioner (Schwarz, from the base's probe kernels, no application): 8 regions on 29 x 29 coarse nodes",
+  "restricted operator: band images of 6 filters on 29 x 29 nodes at 0.0800 arcsec (5046 unknowns instead of 37632); preconditioner G^-1 B^T P^-1 B G^-1 with the base 'filter'"
+ ],
+ "seconds": 328.98622274398804
+}

@@ -255,13 +255,29 @@ class SkyNormalOperator:
     and released after it; what stays on the device is the weights (two float32 and one bool per training pixel) plus fixed-size arrays."""
 
     def __init__(self, model, exps, cfg, P=None, chunk=None, rho=10.0, tile=None, huber=True, precond_mode="fourier", bkg_gauge="all", log=print,
-                 batch_px=None, plan=None, mu=None, n_regions=8, region_smooth=1.5, coverage="quadratic", n_probes=1):
+                 batch_px=None, plan=None, mu=None, n_regions=8, region_smooth=1.5, coverage="quadratic", n_probes=1, precision="float32",
+                 region_box=None, exclude_bright=0.0, bkg_basis="raw", bkg_rcond=1e-4):
         """precond_mode: 'fourier' (the 18 Nov preconditioner: one Fourier model probed at the centre node, scaled by the all-filter coverage;
         bit-identical to the calibrated truth-problem runs; class default), 'jacobi', or 'filter' (19 Nov, SOLVER_DIAGNOSIS_2026-11-19.md: one
         Fourier model per filter probed where that filter is well covered, per-node K x K scaling by each filter's own coverage, and the prior
-        handled exactly where the data are absent; the command-line default). mu: prior weight given explicitly (default: from the data)."""
-        if precond_mode not in ("fourier", "jacobi", "filter"):
+        handled exactly where the data are absent; the command-line default). mu: prior weight given explicitly (default: from the data).
+        precision (19 Nov, second part of the report): 'float32' (as before, bit-identical) or 'mixed': the renders stay in float32, but the adjoint
+        sums are accumulated over batches in float64, the background blocks are built and inverted in float64 (eigenvalue pseudo-inverse with a
+        relative floor), and the operator's vectors (apply, preconditioner, right-hand sides) are float64.
+        region_box (arcsec, half width; lab only): keep the training pixels whose header position is within it. exclude_bright (lab only): drop
+        the pixels whose noise-floor variance exceeds this fraction of their total variance (0 = keep all). Both change the estimator."""
+        if precond_mode not in ("fourier", "jacobi", "filter", "none", "bjacobi"):
             raise ValueError(f"precond_mode {precond_mode!r}")
+        if precision not in ("float32", "mixed"):
+            raise ValueError(f"precision {precision!r}")
+        self.precision = precision
+        self.vdtype = torch.float64 if precision == "mixed" else torch.float32
+        self.setup_mode = "fourier" if precond_mode in ("jacobi", "none") else ("filter" if precond_mode == "bjacobi" else precond_mode)
+        if bkg_basis not in ("raw", "orth"):
+            raise ValueError(f"bkg_basis {bkg_basis!r}")
+        if bkg_basis == "orth" and precision != "mixed":
+            raise ValueError("bkg_basis='orth' needs precision='mixed'")
+        self.bkg_basis, self.bkg_rcond = "raw", float(bkg_rcond)        # 'raw' until the weights pass has built the orthonormal basis
         self.model, self.cfg = model, cfg
         self.n_regions, self.region_smooth, self.coverage_kind, self.n_probes = int(n_regions), float(region_smooth), coverage, int(n_probes)
         self.bkg_gauge = bkg_gauge          # "constant": the fit's pedestal gauge only; "all": the training mean of each of the 6 terms held
@@ -296,6 +312,8 @@ class SkyNormalOperator:
                         pix = e.pix(sl)
                         inside = ((pix["X"] + e.shift0[0]).abs() < h) & ((pix["Y"] + e.shift0[1]).abs() < h)
                         mask = pix["valid"] & inside
+                        if region_box:
+                            mask = mask & ((pix["X"] + e.shift0[0]).abs() < region_box) & ((pix["Y"] + e.shift0[1]).abs() < region_box)
                         k = int(mask.sum())
                         if k == 0:
                             continue
@@ -303,7 +321,7 @@ class SkyNormalOperator:
                         self.tiles.append(Tile(self, e, sl, mask))
         self.tile_filt = [int(t.e.filt) for t in self.tiles]
         self.filters = sorted(set(self.tile_filt))
-        if precond_mode == "filter":     # one filter per batched render, so that each filter's pass can carry its own probe (same pixels per pass)
+        if precond_mode in ("filter", "bjacobi"):     # one filter per batched render, so that each filter's pass can carry its own probe (same pixels per pass)
             self.batches = []
             for f in self.filters:
                 idx = [i for i, ff in enumerate(self.tile_filt) if ff == f]
@@ -328,7 +346,8 @@ class SkyNormalOperator:
             + (f"; planned passes (one pass = forward + adjoint over all training pixels): set-up {pl['setup']} + 1 forward-only, "
                f"Gauss-Newton step {pl['polish']}, draws {pl['draws']}, exact solves ~{pl['exact']}; total up to {pl['total']}" if pl else ""))
         # weights at the fit (forward only): w, w r per tile, the 6 x 6 background blocks (exact, block-Jacobi)
-        Bb = torch.zeros(len(self.rows), 6, 6, device=dev)
+        Bb = torch.zeros(len(self.rows), 6, 6, device=dev, dtype=torch.float64 if precision == "mixed" else torch.float32)
+        n_bright = 0
         t0 = time.perf_counter()
         with torch.no_grad(), sky_override(sky, A_fit):
             for ch in self._batches():
@@ -344,13 +363,27 @@ class SkyNormalOperator:
                         hw = torch.clamp(cfg.huber_delta / z.abs().clamp(min=1e-12), max=1.0)
                         n_down += int(((hw < 1) & t.mask).sum())
                         w = w * hw
+                    if exclude_bright and exclude_bright > 0:     # lab: drop the pixels whose variance is mostly the noise floor (f S)^2
+                        fl = torch.nn.functional.softplus(model.floor_raw[model.e_chan[et]])
+                        br = (fl * S) ** 2 > exclude_bright * sig ** 2
+                        n_bright += int((br & t.mask).sum())
+                        w = torch.where(br, torch.zeros_like(w), w)
                     t.w = torch.where(t.mask, w, torch.zeros_like(w))
                     t.wr = t.w * (pix["d"] - m)            # weighted residual at the fit (Gauss-Newton step)
-                    if precond_mode == "filter":           # weights splatted at the pixels' sky positions (filter mode: quadratic coverage)
+                    if precond_mode in ("filter", "bjacobi"):           # weights splatted at the pixels' sky positions (filter mode: quadratic coverage)
                         self._splat_weights(t, pix)
                     Lb = self._lb(t, pix)
-                    Bb[t.row] += Lb.T @ (t.w[:, None] * Lb)
+                    if precision == "mixed":
+                        Lb64 = Lb.double()
+                        Bb[t.row] += Lb64.T @ (t.w.double()[:, None] * Lb64)
+                    else:
+                        Bb[t.row] += Lb.T @ (t.w[:, None] * Lb)
                 del outs, pixs
+        self.n_bright_excluded = n_bright
+        self.Bb = Bb
+        if precision == "mixed":
+            self._setup_bkg_basis(Bb, log)
+            self.bkg_basis = bkg_basis
         self.n_huber = n_down
         self.n_forward += 1
         self.t_forward += time.perf_counter() - t0
@@ -362,9 +395,9 @@ class SkyNormalOperator:
         self.precond_mode = precond_mode
         self.rho = rho
         self._qcache = {}
-        if precond_mode == "filter":
+        if self.setup_mode == "filter":
             self._setup_filter_precond(rho, mu, log, pl)
-            self.Bb_inv = torch.linalg.inv(Bb + 1e-9 * torch.eye(6, device=dev))
+            self.Bb_inv = self._bb_inverse(Bb)
             self.t_setup_precond = time.perf_counter() - t0
             log(f"uncertainty operator: {len(self.tiles)} tiles, {n_pix} training pixels ({n_down} with Huber weight < 1), {len(self.rows)} exposures; "
                 f"coefficients {self.nA}, background terms {self.nb}; node noise (median, coefficient units) {self.node_noise:.4g}; prior rho {rho} -> mu {self.mu:.4g}; "
@@ -378,7 +411,7 @@ class SkyNormalOperator:
         for k in range(self.K):
             v = torch.zeros(self.K, self.N, self.N, device=dev)
             v[k, c, c] = 1.0
-            cols.append(self._data_normal(v.reshape(-1), torch.zeros(self.nb, device=dev))[0].view(self.K, self.N, self.N))
+            cols.append(self._data_normal(v.reshape(-1), torch.zeros(self.nb, device=dev))[0].view(self.K, self.N, self.N).float())
         self.fc = fc = torch.stack(cols, 1)                                # (K', K, N, N): F[(k', j), (k, centre)]
         dcen = torch.stack([fc[k, k, c, c] for k in range(self.K)])         # (K,) diagonal entries at the centre
         rel = (self.cov / self.cov[c, c].clamp(min=1e-30)).clamp(min=0)
@@ -403,7 +436,7 @@ class SkyNormalOperator:
         del fh
         self.kappa = (dcen / self.cov[c, c].clamp(min=1e-30)).tolist()
         kap = self.kappa
-        self.Bb_inv = torch.linalg.inv(Bb + 1e-9 * torch.eye(6, device=dev))
+        self.Bb_inv = self._bb_inverse(Bb)
         self.t_setup_precond = time.perf_counter() - t0
         log(f"uncertainty operator: {len(self.tiles)} tiles, {n_pix} training pixels ({n_down} with Huber weight < 1), {len(self.rows)} exposures; "
             f"coefficients {self.nA}, background terms {self.nb}; node noise (median, coefficient units) {self.node_noise:.4g}; prior rho {rho} -> mu {self.mu:.4g}; "
@@ -412,6 +445,83 @@ class SkyNormalOperator:
     def _batches(self):
         for b in self.batches:
             yield [self.tiles[i] for i in b]
+
+    def _bb_inverse(self, Bb):
+        """Inverses of the per-exposure 6 x 6 background blocks. float32: inv(Bb + 1e-9 I) (the 18 Nov code). mixed: float64 eigenvalue
+        pseudo-inverse with a relative floor 1e-12 x the block's largest eigenvalue (the 6 Legendre terms of a detector that the box crosses only
+        in part are nearly collinear; an absolute 1e-9 is no regulariser for blocks of order 1e10, and float32 cannot invert them).
+        Records the blocks' condition numbers (self.bb_cond)."""
+        B64 = 0.5 * (Bb.double() + Bb.double().transpose(-1, -2)).cpu()
+        ev = torch.linalg.eigvalsh(B64)
+        self.bb_cond = (ev[:, -1] / ev[:, 0].clamp(min=1e-300)).tolist()
+        if self.precision != "mixed":
+            return torch.linalg.inv(Bb + 1e-9 * torch.eye(6, device=Bb.device, dtype=Bb.dtype))
+        self.Bb_inv_f32 = torch.linalg.inv(Bb.float() + 1e-9 * torch.eye(6, device=Bb.device))   # the 18 Nov inverse (for set_precision)
+        lam, V = torch.linalg.eigh(B64)
+        floor = 1e-12 * lam[:, -1:].clamp(min=1e-300)
+        inv = torch.where(lam > floor, 1.0 / lam.clamp(min=1e-300), torch.zeros_like(lam))
+        self.Bb_inv_f64 = ((V * inv[:, None, :]) @ V.transpose(-1, -2)).to(self.dev)
+        return self.Bb_inv_f64
+
+    def _setup_bkg_basis(self, Bb, log):
+        """Orthonormal background basis (bkg_basis 'orth', 19 Nov, section 11 of the report). Per exposure, the six Legendre functions times the
+        gain are orthonormalised over the exposure's own weighted valid pixels: Bb_r = V diag(lam) V^T (float64), b_r = T_r c_r with
+        T_r = V diag(lam^{-1/2}), so the background block in c is the identity. Directions with sqrt(lam / lam_max) < bkg_rcond (combinations of the
+        six terms that the cut cannot tell apart: they change the model by less than bkg_rcond of the strongest one) are dropped, i.e. held at
+        the fit; they are degenerate with large-scale sky modes. The gauge (the training mean of each raw term per filter, or of the constant only)
+        is imposed exactly by the orthogonal projector onto {C c = 0, dropped slots 0} per group."""
+        B64 = 0.5 * (Bb.double() + Bb.double().transpose(-1, -2)).cpu()
+        lam, V = torch.linalg.eigh(B64)
+        lmax = lam[:, -1:].clamp(min=1e-300)
+        keep = lam > (self.bkg_rcond ** 2) * lmax
+        T = V * torch.where(keep, lam.clamp(min=1e-300).rsqrt(), torch.zeros_like(lam))[:, None, :]
+        self.bkgT = T.to(self.dev)
+        self.bkg_keep = keep.to(self.dev)
+        self.n_bkg_dropped = int((~keep).sum())
+        terms = list(range(6)) if self.bkg_gauge == "all" else [0]
+        proj, in_group = [], torch.zeros(len(self.rows), dtype=torch.bool)
+        for g in self.gauge_groups:
+            rows = g.cpu()
+            in_group[rows] = True
+            C = torch.cat([T[r][terms, :] for r in rows.tolist()], dim=1)                 # (n_terms, 6 n_g)
+            D = keep[rows].reshape(-1).double()
+            CD = C * D[None]
+            Pg = torch.diag(D) - CD.T @ torch.linalg.pinv(CD @ CD.T, hermitian=True, rtol=1e-12) @ CD
+            proj.append((rows.to(self.dev), Pg.to(self.dev)))
+        self.bkg_proj, self.bkg_in_group = proj, in_group.to(self.dev)
+        log(f"background basis: {len(self.rows)} exposures x 6 terms, orthonormalised over each exposure's weighted pixels; "
+            f"{self.n_bkg_dropped} directions dropped (singular value below {self.bkg_rcond:g} of the largest; held at the fit); block condition "
+            f"numbers before: max {float((lam[:, -1] / lam[:, 0].clamp(min=1e-300)).max()):.3e}")
+
+    def bkg_to_raw(self, xb):
+        """Background terms in the raw Legendre coefficients (n_rows, 6) from the solver's vector (raw already, or orthonormal coordinates)."""
+        xb = xb.reshape(-1, 6)
+        if self.bkg_basis != "orth":
+            return xb
+        return torch.einsum("rij,rj->ri", self.bkgT.to(xb.dtype), xb)
+
+    def _bkg_grad(self, gb):
+        """A gradient with respect to the raw terms (n_rows, 6) -> with respect to the solver's background coordinates."""
+        if self.bkg_basis != "orth":
+            return gb
+        return torch.einsum("rji,rj->ri", self.bkgT.to(gb.dtype), gb.reshape(-1, 6))
+
+    def set_bkg_basis(self, basis):
+        """Switch between the raw background terms and the orthonormal basis (an operator built with precision 'mixed'). For the lab."""
+        if basis == "orth" and not hasattr(self, "bkgT"):
+            raise ValueError("the orthonormal background basis needs precision='mixed' at construction")
+        self.bkg_basis = basis
+
+    def set_precision(self, precision):
+        """Switch an operator built with precision 'mixed' between 'mixed' and 'float32' (float32: float32 vectors, float32 adjoint sums, the 18 Nov
+        background inverse). For the lab."""
+        if precision == self.precision:
+            return
+        if not hasattr(self, "Bb_inv_f64"):
+            raise ValueError("set_precision needs an operator built with precision='mixed'")
+        self.precision = precision
+        self.vdtype = torch.float64 if precision == "mixed" else torch.float32
+        self.Bb_inv = self.Bb_inv_f64 if precision == "mixed" else self.Bb_inv_f32
 
     # ---------------------------------------------------------------- per-filter preconditioner (precond_mode 'filter', 19 Nov)
     def _splat_weights(self, t, pix):
@@ -439,20 +549,30 @@ class SkyNormalOperator:
         {f: J_f^T r_f (K, N, N)}. Same pixels and cost as _render_sum."""
         model = self.model
         t0 = time.perf_counter()
-        leaves = {f: x.detach().clone().requires_grad_(True) for f, x in xAs.items()}
+        leaves = {f: x.detach().float().clone().requires_grad_(True) for f, x in xAs.items()}
+        mixed = self.precision == "mixed"
+        acc = {f: torch.zeros(l.shape, dtype=torch.float64, device=l.device) for f, l in leaves.items()} if mixed else None
         with torch.enable_grad(), frozen(model):
             for b in self.batches:
                 ch = [self.tiles[i] for i in b]
-                with sky_override(model.sky, leaves[self.tile_filt[b[0]]]):
+                lf = leaves[self.tile_filt[b[0]]]
+                with sky_override(model.sky, lf):
                     pixs = [t["pix"] for t in ch]
                     outs = model.render_batch([(t.eid, p) for t, p in zip(ch, pixs)], self.P)
                     Ss = [o["S"] for o in outs]
                     Rs = [rfun(t, o["S"].detach(), None) for t, o in zip(ch, outs)]
-                    torch.autograd.backward(Ss, Rs)
+                    if mixed:                     # this batch's adjoint alone (float32), added to a float64 sum
+                        g_ = torch.autograd.grad(Ss, lf, Rs, allow_unused=True)[0]
+                        if g_ is not None:
+                            acc[self.tile_filt[b[0]]] += g_.double()
+                    else:
+                        torch.autograd.backward(Ss, Rs)
                 del outs, Ss, Rs, pixs
         self.n_apply += 1
         self.t_last = time.perf_counter() - t0
         self.t_apply += self.t_last
+        if mixed:
+            return acc
         return {f: (l.grad.detach() if l.grad is not None else torch.zeros_like(l)) for f, l in leaves.items()}
 
     def _setup_filter_precond(self, rho, mu, log, pl, n_regions=None, smooth=None):
@@ -557,9 +677,18 @@ class SkyNormalOperator:
         self.d_filter_linear = d_lin
         diag = torch.einsum("fhw,fk->khw", d, torch.diagonal(G0, dim1=-2, dim2=-1))  # (K, N, N): diagonal of the data part of M_j
         covc = self.cov.double().cpu()
-        ref = torch.quantile(covc[covc > 0], 0.9).item() if bool((covc > 0).any()) else 1.0
+        # the data footprint: nodes with a training pixel within one node (the weight splat, dilated). Kernel wings (to 10 arcsec) give a
+        # small coverage to almost every node, so 'coverage > 0' is not the footprint; the prior weight mu (median node information / rho^2)
+        # and the reference coverage are taken over the footprint (19 Nov, section 11; on the 4-arcsec lab box mu was 6e-10 otherwise)
+        if hasattr(self, "wsplat") and self.wsplat:
+            Wt = sum(w.view(N, N).cpu() for w in self.wsplat.values())
+            foot = torch.nn.functional.max_pool2d((Wt > 0).double()[None, None], 3, 1, 1)[0, 0] > 0
+        else:
+            foot = covc > 0
+        self.footprint = foot.to(dev)
+        ref = torch.quantile(covc[foot & (covc > 0)], 0.9).item() if bool((foot & (covc > 0)).any()) else 1.0
         rel = (covc / max(ref, 1e-300)).clamp(min=0)
-        self.covered = (rel > 1e-3).to(dev)
+        self.covered = ((rel > 1e-3) & foot).to(dev)
         dmed = float(torch.stack([diag[k][self.covered.cpu()].median() for k in range(K)]).max())
         self.mu = dmed / rho ** 2 if mu is None else float(mu)
         mu_ = self.mu
@@ -611,7 +740,7 @@ class SkyNormalOperator:
                 return (V * (1.0 / ev)[..., None, :]) @ V.conj().transpose(-1, -2)
             finv_r.append(_eigh_rows(fh, _inv).to(dev))
             del fh, kr
-        del kernF
+        self.kernF = kernF                       # host: per-filter lag kernels (filter, K', K, N, N), kept for the restricted operator
         self.region_Mhalf = [m.to(dev) for m in Mr_half]
         self.region_finv = finv_r
         self.region_empty = empty
@@ -702,7 +831,7 @@ class SkyNormalOperator:
         coverage, scaled by 1 / sqrt(relative coverage) elsewhere. Costs nothing beyond the preconditioner's K + 1 applications; ignores the
         background terms, the edges and coverage gradients. Returns (N, N) (NaN where the relative coverage is below 0.05).
         With precond_mode 'filter' this is local_fourier_sigma (each filter's own coverage)."""
-        if self.precond_mode == "filter":
+        if self.setup_mode == "filter":
             return self.local_fourier_sigma(phi, s)
         N, c = self.N, (self.N - 1) // 2
         q = self._circ_q(phi)
@@ -714,7 +843,14 @@ class SkyNormalOperator:
 
     # ---------------------------------------------------------------- pieces
     def gauge(self, xb):
-        """Project the background part onto the gauge (per filter, sum over training rows of b_e0, or of every term, = 0)."""
+        """Project the background part onto the gauge (per filter, sum over training rows of b_e0, or of every term, = 0). With the orthonormal
+        basis: the exact orthogonal projector onto the gauge constraints and the kept directions."""
+        if getattr(self, "bkg_basis", "raw") == "orth":
+            x = xb.reshape(-1, 6)
+            out = x * self.bkg_keep.to(x.dtype)
+            for rows, Pg in self.bkg_proj:
+                out[rows] = (Pg.to(x.dtype) @ x[rows].reshape(-1)).view(-1, 6)
+            return out.reshape(-1)
         xb = xb.view(-1, 6).clone()
         cols = slice(0, 6) if self.bkg_gauge == "all" else slice(0, 1)
         for g in self.gauge_groups:
@@ -727,8 +863,10 @@ class SkyNormalOperator:
         next batch. Returns J_A^T r (K, N, N) and, if want_gb, L^T r per training row (n_rows, 6) accumulated per batch."""
         model = self.model
         t0 = time.perf_counter()
-        xA = xA.detach().requires_grad_(True)
-        gb = torch.zeros(len(self.rows), 6, device=self.dev) if want_gb else None
+        mixed = self.precision == "mixed"
+        xA = xA.detach().float().requires_grad_(True)
+        gb = torch.zeros(len(self.rows), 6, device=self.dev, dtype=torch.float64 if mixed else torch.float32) if want_gb else None
+        acc = torch.zeros(xA.shape, dtype=torch.float64, device=xA.device) if mixed else None
         with torch.enable_grad(), frozen(model), sky_override(model.sky, xA):
             for ch in self._batches():
                 pixs = [t["pix"] for t in ch]
@@ -740,37 +878,51 @@ class SkyNormalOperator:
                     Ss.append(o["S"])
                     Rs.append(r)
                     if want_gb:
-                        gb[t.row] += Lb.T @ r
-                torch.autograd.backward(Ss, Rs)
+                        gb[t.row] += (Lb.double().T @ r.double()) if mixed else (Lb.T @ r)
+                if mixed:                         # this batch's adjoint alone (float32), added to a float64 sum
+                    acc += torch.autograd.grad(Ss, xA, Rs)[0].double()
+                else:
+                    torch.autograd.backward(Ss, Rs)
                 del outs, Ss, Rs, pixs
         self.n_apply += 1
         self.t_last = time.perf_counter() - t0
         self.t_apply += self.t_last
+        if mixed:
+            return acc, gb
         g = xA.grad if xA.grad is not None else torch.zeros_like(xA)
         return g.detach(), gb
 
     def _JT_w(self):
         g, _ = self._render_sum(torch.zeros(self.K, self.N, self.N, device=self.dev), lambda t, S, Lb: t.w)
-        return g
+        return g.float()
 
     def _data_normal(self, xA_flat, xb_flat):
         xA = xA_flat.view(self.K, self.N, self.N)
-        xb = xb_flat.view(-1, 6)
+        xb = self.bkg_to_raw(xb_flat).float()
         gA, gb = self._render_sum(xA, lambda t, S, Lb: t.w * (S + Lb @ xb[t.row]), want_gb=True)
-        return gA.reshape(-1), gb.reshape(-1)
+        return gA.reshape(-1), self._bkg_grad(gb).reshape(-1)
 
     # ---------------------------------------------------------------- operator, preconditioner, right-hand sides
     def apply(self, x):
         xA, xb = x[:self.nA], self.gauge(x[self.nA:])
         gA, gb = self._data_normal(xA, xb)
-        return torch.cat([gA + self.mu * xA, self.gauge(gb)])
+        return torch.cat([gA.to(x.dtype) + self.mu * xA, self.gauge(gb.to(x.dtype))])
 
     def precond(self, r):
         rA, rb = r[:self.nA], r[self.nA:].view(-1, 6)
-        zb = torch.einsum("rij,rj->ri", self.Bb_inv, rb).reshape(-1)
+        if self.bkg_basis == "orth":            # the background block is the identity in the orthonormal basis: exact inverse on the gauge subspace
+            zb = rb.reshape(-1)
+        else:
+            zb = torch.einsum("rij,rj->ri", self.Bb_inv, rb.to(self.Bb_inv.dtype)).reshape(-1).to(r.dtype)
+        if self.precond_mode == "bjacobi":      # per-node K x K block Jacobi M_j^{-1} from the 'filter' set-up's local information
+            R = rA.view(self.K, self.N, self.N).to(self.Minvh.dtype)
+            zA = torch.einsum("hwkl,lhw->khw", self.Minvh, torch.einsum("hwkl,lhw->khw", self.Minvh, R))
+            return torch.cat([zA.reshape(-1).to(r.dtype), self.gauge(zb)])
+        if self.precond_mode == "none":          # no preconditioner on the sky block (the background blocks keep their exact inverses)
+            return torch.cat([rA, self.gauge(zb)])
         if self.precond_mode == "jacobi":
-            return torch.cat([rA / self.dA.reshape(-1), self.gauge(zb)])
-        R = rA.view(self.K, self.N, self.N)
+            return torch.cat([rA / self.dA.reshape(-1).to(r.dtype), self.gauge(zb)])
+        R = rA.view(self.K, self.N, self.N).float()
         if self.precond_mode == "filter":
             y = torch.einsum("hwkl,lhw->khw", self.Minvh, R)
             z = torch.zeros_like(y)
@@ -779,31 +931,31 @@ class SkyNormalOperator:
                 v = self._region_solve(i, torch.einsum("kl,lhw->khw", Mh, sa * y))
                 z += sa * torch.einsum("kl,lhw->khw", Mh, v)
             zA = torch.einsum("hwkl,lhw->khw", self.Minvh, z)
-            return torch.cat([zA.reshape(-1), self.gauge(zb)])
+            return torch.cat([zA.reshape(-1).to(r.dtype), self.gauge(zb)])
         u = torch.where(self.fmask, R * self.fscale, torch.zeros_like(R))
         Uh = torch.fft.fft2(u).permute(1, 2, 0)                                   # (N, N, K)
         z = torch.fft.ifft2(torch.einsum("hwij,hwj->hwi", self.finv, Uh).permute(2, 0, 1)).real
         zA = torch.where(self.fmask, z * self.fscale, R / self.dA)
-        return torch.cat([zA.reshape(-1), self.gauge(zb)])
+        return torch.cat([zA.reshape(-1).to(r.dtype), self.gauge(zb)])
 
     def sample_rhs(self, gen):
         """[J_A L]^T W^{1/2} z + [sqrt(mu) z', 0] (z, z' standard normal from generator gen; z is drawn tile by tile, in tile order, on the host)."""
         gA, gb = self._render_sum(torch.zeros(self.K, self.N, self.N, device=self.dev),
                                   lambda t, S, Lb: t.w.sqrt() * torch.randn((t.n,), generator=gen).to(self.dev), want_gb=True)
         zA = torch.randn(self.nA, generator=gen).to(self.dev)
-        return torch.cat([gA.reshape(-1) + math.sqrt(self.mu) * zA, self.gauge(gb.reshape(-1))])
+        return torch.cat([gA.reshape(-1) + math.sqrt(self.mu) * zA.to(gA.dtype), self.gauge(self._bkg_grad(gb).reshape(-1))])
 
     def residual_rhs(self):
         """Gradient of the log posterior at the fit: [J_A^T W r - mu A_fit, L^T W r] (gauge-projected)."""
         gA, gb = self._render_sum(torch.zeros(self.K, self.N, self.N, device=self.dev), lambda t, S, Lb: t.wr, want_gb=True)
-        return torch.cat([gA.reshape(-1) - self.mu * self.A_fit.reshape(-1), self.gauge(gb.reshape(-1))])
+        return torch.cat([gA.reshape(-1) - self.mu * self.A_fit.reshape(-1).to(gA.dtype), self.gauge(self._bkg_grad(gb).reshape(-1))])
 
     def unit_rhs(self, kA):
         """Right-hand side [k (A part), 0] for an exact variance solve."""
-        return torch.cat([kA.reshape(-1).to(self.dev), torch.zeros(self.nb, device=self.dev)])
+        return torch.cat([kA.reshape(-1).to(self.dev, self.vdtype), torch.zeros(self.nb, device=self.dev, dtype=self.vdtype)])
 
 
-def pcg(op, b, tol=1e-3, maxiter=300, x0=None, snapshots=None, monitor=None, label="solve", keep_every=0):
+def pcg(op, b, tol=1e-3, maxiter=300, x0=None, snapshots=None, monitor=None, label="solve", keep_every=0, keep_vectors=False):
     """Preconditioned conjugate gradients for op.apply (symmetric positive definite on the gauge subspace). Returns x, info.
     monitor (optional): progress line every few iterations and the time budget; when it asks to stop, the iteration ends cleanly before the next
     application and info['truncated'] is True (x is the last iterate; info['rel_residual'] the residual reached)."""
@@ -816,6 +968,11 @@ def pcg(op, b, tol=1e-3, maxiter=300, x0=None, snapshots=None, monitor=None, lab
         bn = float(b.norm())
         hist, alphas, betas, rzs = [], [], [], []
         x_mark, it_mark, x_mark_prev, it_mark_prev = None, 0, None, 0
+        breakdown = ""
+        lvecs = []
+        if not (math.isfinite(float(rz)) and float(rz) > 0):
+            breakdown = f"r.P^-1 r = {float(rz):.3e} at the start (the preconditioner as applied is not positive)"
+            maxiter = 0
         it, truncated = 0, False
         if monitor is not None:
             monitor.residual = 1.0
@@ -824,7 +981,14 @@ def pcg(op, b, tol=1e-3, maxiter=300, x0=None, snapshots=None, monitor=None, lab
                 truncated, it = True, it - 1
                 break
             Ap = op.apply(p)
-            a = rz / torch.dot(p, Ap)
+            pAp = torch.dot(p, Ap)
+            if not (math.isfinite(float(pAp)) and float(pAp) > 0):      # p.Fp <= 0: impossible for a positive operator; stop, say so
+                breakdown = f"p.Fp = {float(pAp):.3e} at iteration {it} (the operator as applied is not positive on the search direction)"
+                it -= 1
+                break
+            a = rz / pAp
+            if keep_vectors:                          # Lanczos vector (-1)^j z_j / sqrt(r_j.z_j), on the host (for Ritz vectors)
+                lvecs.append((((-1) ** (it - 1)) * z / math.sqrt(float(rz))).double().cpu())
             alphas.append(float(a))
             rzs.append(float(rz))
             x += a * p
@@ -842,6 +1006,9 @@ def pcg(op, b, tol=1e-3, maxiter=300, x0=None, snapshots=None, monitor=None, lab
                 break
             z = op.precond(r)
             rz_new = torch.dot(r, z)
+            if not (math.isfinite(float(rz_new)) and float(rz_new) > 0):  # r.P^{-1}r <= 0: the preconditioner is not positive
+                breakdown = f"r.P^-1 r = {float(rz_new):.3e} at iteration {it} (the preconditioner as applied is not positive)"
+                break
             betas.append(float(rz_new / rz))
             p = z + (rz_new / rz) * p
             rz = rz_new
@@ -859,7 +1026,321 @@ def pcg(op, b, tol=1e-3, maxiter=300, x0=None, snapshots=None, monitor=None, lab
             extra = {"x_back": ref, "iter_back": ref_it}
     return x, {**extra, "iterations": it, "rel_residual": hist[-1] if hist else 1.0, "history": hist[::10], "truncated": truncated,
                "ritz_min": ritz[0] if ritz else float("nan"), "ritz_max": ritz[-1] if ritz else float("nan"),
-               "err_F_est": errF, "rel_err_F_est": errF / math.sqrt(xb) if xb > 0 else float("nan")}
+               "err_F_est": errF, "rel_err_F_est": errF / math.sqrt(xb) if xb > 0 else float("nan"), "breakdown": breakdown,
+               "history_all": hist, **({"lanczos_vectors": lvecs, "alphas": alphas, "betas": betas} if keep_vectors else {})}
+
+
+class OperatorCheckError(RuntimeError):
+    pass
+
+
+def band_synthesis(Phi_band, smooth=1e-3):
+    """E (K, F): coefficients from band values, reproducing every band exactly (Phi_band E = I) with the smoothest spectrum (least second
+    difference across k): E = W Phi^T (Phi W Phi^T)^{-1}, W = (D^T D + smooth I)^{-1}."""
+    Phi = Phi_band.double().cpu()
+    K = Phi.shape[1]
+    D = torch.zeros(K - 2, K, dtype=torch.float64)
+    for i in range(K - 2):
+        D[i, i:i + 3] = torch.tensor([1.0, -2.0, 1.0], dtype=torch.float64)
+    W = torch.linalg.inv(D.T @ D + smooth * torch.eye(K, dtype=torch.float64))
+    return W @ Phi.T @ torch.linalg.inv(Phi @ W @ Phi.T)
+
+
+class RestrictedOperator:
+    """The normal operator restricted to a sky at a stated resolution in the observed bands (19 Nov, second part of the report).
+
+    Unknowns y = (band images on a coarse node grid of pitch q = factor x the sky pitch, the background terms). The sky coefficients are
+        x = B y,   B = E (x) B1 (x) B1,
+    E (K x F) the band synthesis (band_synthesis: exact band reproduction, smoothest spectrum), B1 (N x Nc) the coarse tent of half-width q
+    (optionally convolved with a Gaussian of width s_extra), a partition of unity. The operator is B^T F B (the prior becomes mu B^T B), solved
+    in y. Directions that F leaves to the prior (spatial frequencies above the coarse grid's, the spectral directions no filter reads) are not
+    unknowns any more: they stay at the fit's values. Preconditioner: G^{-1} B^T P^{-1} B G^{-1}, G = B^T B (Kronecker, exact inverse),
+    P^{-1} the base operator's (exact if range(B) is invariant under P). Everything else (rows, gauge, A_fit, the cheap sigma, timings) is the
+    base operator's."""
+
+    def __init__(self, op, factor=2, s_extra=0.0, bands=None, log=print, precond_kind=None):
+        self.base = op
+        model = op.model
+        dev = op.dev
+        self.vdtype = torch.float64
+        self.factor = int(factor)
+        bands = sorted(set(op.filters)) if bands is None else list(bands)
+        self.bands = bands
+        self.E = band_synthesis(model.Phi_band.detach()[bands]).to(dev)               # (K, F)
+        N, p = op.N, model.sky.pitch
+        Nc = int(math.ceil((N - 1) / self.factor)) + 1
+        x = (torch.arange(N, dtype=torch.float64) - (N - 1) / 2) * p
+        z = (torch.arange(Nc, dtype=torch.float64) - (Nc - 1) / 2) * self.factor * p
+        self.B1 = tent_gauss_1d(x, z, self.factor * p, s_extra).to(dev)               # (N, Nc)
+        G1 = self.B1.T @ self.B1
+        self.G1inv = torch.linalg.inv(G1)
+        self.GEinv = torch.linalg.inv(self.E.T @ self.E)
+        self.F, self.Nc = len(bands), Nc
+        self.K, self.N = self.F, Nc                                                    # shape of the unknown sky part (bands, Nc, Nc)
+        self.nA, self.nb = self.F * Nc * Nc, op.nb
+        self.precision = "mixed"
+        self.pitch_restricted = self.factor * p
+        self.s_extra = float(s_extra)
+        if precond_kind is None:
+            precond_kind = "schwarz" if getattr(op, "kernF", None) is not None and s_extra == 0 else "projected"
+        self.precond_kind = precond_kind
+        self.precond_mode = f"restricted/{precond_kind}"
+        if precond_kind == "schwarz":
+            self._setup_schwarz(log)
+        log(f"restricted operator: band images of {self.F} filters on {Nc} x {Nc} nodes at {self.factor * p:.4f} arcsec "
+            f"({self.nA} unknowns instead of {op.nA}); preconditioner G^-1 B^T P^-1 B G^-1 with the base '{op.precond_mode}'")
+
+    def __getattr__(self, k):                     # everything not defined here is the base operator's
+        if k == "base":
+            raise AttributeError(k)
+        return getattr(self.base, k)
+
+    def lift_A(self, yA):
+        """x = B y: (F Nc Nc,) -> (K, N, N), float64."""
+        y = yA.reshape(self.F, self.Nc, self.Nc).double()
+        return torch.einsum("kb,bmn->kmn", self.E, self.B1 @ y @ self.B1.T)
+
+    def restrict_A(self, xA):
+        """B^T x: (K N N,) -> (F Nc Nc,)."""
+        X = xA.reshape(self.base.K, self.base.N, self.base.N).double()
+        return (self.B1.T @ torch.einsum("kb,kmn->bmn", self.E, X) @ self.B1).reshape(-1)
+
+    def _Ginv(self, yA):
+        y = yA.reshape(self.F, self.Nc, self.Nc)
+        return torch.einsum("ab,bmn->amn", self.GEinv, self.G1inv @ y @ self.G1inv).reshape(-1)
+
+    def _full(self, xA, yb):
+        return torch.cat([xA.reshape(-1).to(self.base.vdtype), yb.to(self.base.vdtype)])
+
+    def apply(self, y):
+        out = self.base.apply(self._full(self.lift_A(y[:self.nA]), y[self.nA:]))
+        return torch.cat([self.restrict_A(out[:self.base.nA]), out[self.base.nA:].double()])
+
+    def _setup_schwarz(self, log):
+        """The 'filter' preconditioner rebuilt for B^T F B on the coarse grid, from the base operator's per-filter probe kernels (no application):
+        on a coarse grid of pitch q, B^T F B of a translation-invariant F is translation invariant by one coarse node, with kernel
+            Gy_f(D) = E^T [ (G_f * c2)(q D) ] E,   c2 = the autocorrelation of the fine-grid tent profile of B1 (separable),
+        and the prior mu B^T B has kernel mu E^T E c2(q D). Regions, their weights and the per-filter coverage are the base's, read at the fine
+        nodes under the coarse ones; P_y^{-1} = M^{-1/2} [sum_r a_r^{1/2} M_r^{1/2} C_r^{-1} M_r^{1/2} a_r^{1/2}] M^{-1/2} as in the base."""
+        op, q, N, Nc, F = self.base, self.factor, self.base.N, self.Nc, self.F
+        E = self.E.double().cpu()
+        prof = self.B1[:, Nc // 2].double().cpu()                                    # the tent profile of an interior coarse node on the fine grid
+        b = prof[prof > 1e-12]                                                       # (aligned for odd N: q = 2 -> 0.5, 1, 0.5; offset for even N)
+        nb_ = len(b)
+        cv = {v: float((b[max(0, -v):nb_ - max(0, v)] * b[max(0, v):nb_ - max(0, -v)]).sum()) for v in range(-nb_ + 1, nb_)}
+        H = (N - 1) // 2 // q
+        lagD = torch.arange(-H, H + 1)
+        fine_idx = (q * lagD) % N
+        coarse_idx = lagD % Nc
+
+        def to_coarse(G):                                                            # (a, b, N, N) lag kernel -> (a, b, Nc, Nc)
+            Gc = torch.zeros_like(G)
+            for v, w in cv.items():                                                  # rows
+                Gc += w * torch.roll(G, shifts=v, dims=-2)
+            G2 = torch.zeros_like(G)
+            for v, w in cv.items():                                                  # columns
+                G2 += w * torch.roll(Gc, shifts=v, dims=-1)
+            out = torch.zeros(*G.shape[:-2], Nc, Nc, dtype=G.dtype)
+            out[..., coarse_idx[:, None], coarse_idx[None, :]] = G2[..., fine_idx[:, None], fine_idx[None, :]]
+            return out
+        Gy = torch.stack([to_coarse(torch.einsum("ka,klhw,lb->abhw", E, op.kernF[i].double(), E)) for i in range(len(op.filters))])   # (Ff, F, F, Nc, Nc)
+        G0y = Gy[..., 0, 0]                                                          # (Ff, F, F)
+        c00 = cv[0] ** 2
+        # prior mu B^T B: symbol mu (E^T E) chat(w_y) chat(w_x), chat the coarse-lag spectrum of the tent autocorrelation (>= cv[0] - 2 cv[q] > 0)
+        wq = 2 * math.pi * torch.fft.fftfreq(Nc, dtype=torch.float64)
+        chat = cv[0] + sum(2 * cv.get(q * D_, 0.0) * torch.cos(D_ * wq) for D_ in range(1, nb_ // q + 2))
+        prior_sym = op.mu * chat[:, None] * chat[None, :]                               # (Nc, Nc) scalar part
+        ev_e, V_e = torch.linalg.eigh(E.T @ E)
+        EtE_mhalf = (V_e * ev_e.rsqrt()[None]) @ V_e.T                                  # (E^T E)^{-1/2}
+        # coarse node m sits over fine node j = (N-1)/2 + (m - (Nc-1)/2) q (nearest)
+        jj = torch.clamp(torch.round((N - 1) / 2 + (torch.arange(Nc, dtype=torch.float64) - (Nc - 1) / 2) * q).long(), 0, N - 1)
+        d = op.d_filter[:, jj][:, :, jj].double()                                    # (Ff, Nc, Nc)
+        a = op.region_sqrt_a.cpu().double()[:, jj][:, :, jj] ** 2
+        a = a / a.sum(0, keepdim=True).clamp(min=1e-300)
+        self.ry_sqrt_a = a.sqrt().to(op.dev)
+        mu0 = op.mu * (E.T @ E) * c00
+        Mh, finv = [], []
+        for i, dbar in enumerate(op.region_dbar):
+            dbar = torch.tensor(dbar, dtype=torch.float64)
+            Mr = torch.einsum("f,fab->ab", dbar, G0y) + mu0
+            ev, V = torch.linalg.eigh(0.5 * (Mr + Mr.T))
+            Mh.append(((V * ev.clamp(min=0).sqrt()[None]) @ V.T).to(op.dev))
+            kr = torch.einsum("f,fabhw->abhw", dbar, Gy)                             # data part only
+            fh = torch.fft.fft2(kr).permute(2, 3, 0, 1)
+            fh = 0.5 * (fh + fh.conj().transpose(-1, -2))
+            # C = Pr^{1/2} (I + S) Pr^{1/2}, S = Pr^{-1/2} D Pr^{-1/2} with its eigenvalues clamped at 0 (a one-probe data symbol can dip below 0)
+            Wm = EtE_mhalf.to(fh.dtype)[None, None] / prior_sym.sqrt()[..., None, None]          # Pr^{-1/2} per frequency
+            Sm = Wm @ fh @ Wm
+            ev, V = torch.linalg.eigh(0.5 * (Sm + Sm.conj().transpose(-1, -2)))
+            inner_inv = (V * (1.0 / (1.0 + ev.clamp(min=0)))[..., None, :]) @ V.conj().transpose(-1, -2)
+            finv.append((Wm @ inner_inv @ Wm).to(op.dev))
+        Mj = torch.einsum("fhw,fab->hwab", d, G0y) + mu0
+        lam, Vj = torch.linalg.eigh(0.5 * (Mj + Mj.transpose(-1, -2)))
+        self.ry_Minvh = ((Vj * lam.clamp(min=float(op.mu * c00 * 1e-6)).rsqrt()[..., None, :]) @ Vj.transpose(-1, -2)).to(op.dev)
+        self.ry_Mhalf, self.ry_finv = Mh, finv
+        log(f"restricted preconditioner (Schwarz, from the base's probe kernels, no application): {len(finv)} regions on {Nc} x {Nc} coarse nodes")
+
+    def circulant_sigma(self, phi, s):
+        """Cheap sigma of the RESTRICTED estimator (Schwarz kind): sigma^2 = k_y^T P_y^{-1} k_y with k_y = B^T k_x = (E^T phi) (x) B1^T g_s (for a
+        band, E^T phi_f = e_f exactly), M and the region weights taken as constant over the kernel:
+            sigma^2(m) = sum_r a_r(m) u_rm^T Q_r u_rm,  u_rm = M_r^{1/2} M_m^{-1/2} E^T phi,  Q_r = Nc^-2 sum_w |k^(w)|^2 Re C_r^{-1}(w),
+        on the coarse nodes, read at the nearest coarse node for every fine node. Other kinds: the base operator's (full-space) Fourier sigma."""
+        if self.precond_kind != "schwarz":
+            return self.base.circulant_sigma(phi, s)
+        N, Nc, q = self.base.N, self.Nc, self.factor
+        c = (N - 1) // 2
+        g1 = Smoother(N, self.base.model.sky.pitch, s, dtype=torch.float64).M[c]          # (N,) fine weights of the centre output node
+        w1 = self.B1.double().cpu().T @ g1                                              # (Nc,) on the coarse nodes
+        mc = int(torch.argmax(w1))
+        k2 = torch.roll(w1[:, None] * w1[None, :], shifts=(-mc, -mc), dims=(0, 1))
+        kh2 = torch.fft.fft2(k2).abs() ** 2
+        ph = (self.E.double().cpu().T @ phi.double().cpu())                            # (F,)
+        w = torch.einsum("hwab,b->hwa", self.ry_Minvh.cpu().double(), ph)
+        var = torch.zeros(Nc, Nc, dtype=torch.float64)
+        for i, Mh in enumerate(self.ry_Mhalf):
+            Q = torch.einsum("hw,hwij->ij", kh2.to(torch.complex128), self.ry_finv[i].cpu().to(torch.complex128)).real / Nc ** 2
+            u = torch.einsum("ab,hwb->hwa", Mh.cpu().double(), w)
+            var += self.ry_sqrt_a[i].cpu().double() ** 2 * torch.einsum("hwa,ab,hwb->hw", u, Q, u)
+        m_of = torch.clamp(torch.round((torch.arange(N, dtype=torch.float64) - (N - 1) / 2) / q + (Nc - 1) / 2).long(), 0, Nc - 1)
+        sig = var.clamp(min=0).sqrt()[m_of][:, m_of]
+        return torch.where(self.base.fmask.cpu(), sig, torch.full_like(sig, float("nan")))
+
+    def precond(self, r):
+        if self.precond_kind == "schwarz":
+            zb = self.base.precond(torch.cat([torch.zeros(self.base.nA, device=self.base.dev, dtype=self.base.vdtype),
+                                              r[self.nA:].to(self.base.vdtype)]))[self.base.nA:].double()
+            R = r[:self.nA].reshape(self.F, self.Nc, self.Nc).double()
+            y = torch.einsum("hwab,bhw->ahw", self.ry_Minvh, R)
+            z = torch.zeros_like(y)
+            for i, Mh in enumerate(self.ry_Mhalf):
+                sa = self.ry_sqrt_a[i]
+                v = torch.einsum("ab,bhw->ahw", Mh, sa * y)
+                Vh = torch.fft.fft2(v).permute(1, 2, 0)
+                v = torch.fft.ifft2(torch.einsum("hwij,hwj->hwi", self.ry_finv[i], Vh).permute(2, 0, 1)).real
+                z += sa * torch.einsum("ab,bhw->ahw", Mh, v)
+            zA = torch.einsum("hwab,bhw->ahw", self.ry_Minvh, z)
+            return torch.cat([zA.reshape(-1), zb])
+        z = self.base.precond(self._full(self.lift_A(self._Ginv(r[:self.nA])), r[self.nA:]))
+        return torch.cat([self._Ginv(self.restrict_A(z[:self.base.nA])), z[self.base.nA:].double()])
+
+    def gauge(self, xb):
+        return self.base.gauge(xb)
+
+    def _map(self, v):
+        return torch.cat([self.restrict_A(v[:self.base.nA]), v[self.base.nA:].double()])
+
+    def residual_rhs(self):
+        return self._map(self.base.residual_rhs())
+
+    def sample_rhs(self, gen):
+        return self._map(self.base.sample_rhs(gen))
+
+    def unit_rhs(self, kA):
+        return torch.cat([self.restrict_A(kA.reshape(-1).to(self.base.dev)), torch.zeros(self.nb, device=self.base.dev, dtype=torch.float64)])
+
+
+def operator_checks(op, seed=7, log=print, sym_tol=1e-4, null_tol=0.5, raise_on_fail=False, label=""):
+    """Checks of the operator F and the preconditioner P^{-1} on the actual problem (19 Nov, second part of the report). Costs 4 applications.
+      * symmetry: |u.Fv - v.Fu| / (|u| |Fv|) and the same for P^{-1}, u, v random (gauge-projected);
+      * positivity: u.Fu / u.u and u.P^{-1}u / u.u for random u;
+      * the prior-only direction: u in the spectral null space of the filters (every node's coefficient vector orthogonal to all rows of Phi, the
+        directions no band reads), random in space. Exactly, J u is then small and u.Fu >= mu u.u; the ratio q_null = u.Fu / (mu u.u) must be
+        >= 1 up to the data's small share. q_null < null_tol (or negative) means the operator as applied cannot resolve the prior against the
+        data curvature (round-off of the large components swamps mu): CG on it will break down;
+      * background only: u.Fu for a random background vector (the 6 x 6 blocks), and the blocks' condition numbers.
+    Prints one line; returns a dict with 'failed' (list of reasons). raise_on_fail: raise OperatorCheckError with the reasons."""
+    g = torch.Generator().manual_seed(seed)
+    dt = getattr(op, "vdtype", torch.float32)
+    dev = op.dev
+
+    def rv():
+        u = torch.randn(op.nA + op.nb, generator=g, dtype=torch.float64).to(dev, dt)
+        return torch.cat([u[:op.nA], op.gauge(u[op.nA:])])
+    u, v = rv(), rv()
+    Fu, Fv = op.apply(u), op.apply(v)
+    Pu, Pv = op.precond(u), op.precond(v)
+    out = {"F_symmetry": abs(float(u @ Fv - v @ Fu)) / max(float(u.norm() * Fv.norm()), 1e-300),
+           "P_symmetry": abs(float(u @ Pv - v @ Pu)) / max(float(u.norm() * Pv.norm()), 1e-300),
+           "F_positive": min(float(u @ Fu), float(v @ Fv)) / float(u @ u), "P_positive": min(float(u @ Pu), float(v @ Pv)) / float(u @ u)}
+    # spectral null space of the filters (base operator only: a restricted operator has no such directions)
+    base = getattr(op, "base", None)
+    if base is None and hasattr(op, "model"):
+        Phi = op.model.Phi_band.detach().double().cpu()
+        Q, _ = torch.linalg.qr(Phi.T)                                   # (K, F): the read directions
+        Pn = torch.eye(op.K, dtype=torch.float64) - Q @ Q.T
+        n = torch.randn(op.K, op.N, op.N, generator=g, dtype=torch.float64)
+        n = torch.einsum("kl,lhw->khw", Pn, n)
+        un = torch.cat([n.reshape(-1).to(dev, dt), torch.zeros(op.nb, device=dev, dtype=dt)])
+        Fn = op.apply(un)
+        out["q_null"] = float(un @ Fn) / (op.mu * float(un @ un))
+        out["P_null"] = float(un @ op.precond(un)) * op.mu / float(un @ un)        # ~1 when P^{-1} gives the prior's 1/mu there
+    ub = torch.zeros(op.nA + op.nb, device=dev, dtype=dt)
+    ub[op.nA:] = op.gauge(torch.randn(op.nb, generator=g, dtype=torch.float64).to(dev, dt))
+    out["F_background_positive"] = float(ub @ op.apply(ub)) / max(float(ub @ ub), 1e-300)
+    bc = getattr(op, "bb_cond", None) or getattr(base, "bb_cond", None) or []
+    if bc:
+        out["background_block_condition_max"] = float(max(bc))
+        out["background_blocks_above_1e7"] = int(sum(c > 1e7 for c in bc))
+    fails = []
+    if not out["F_symmetry"] < sym_tol:
+        fails.append(f"operator not symmetric ({out['F_symmetry']:.2e} > {sym_tol:g})")
+    if not out["P_symmetry"] < sym_tol:
+        fails.append(f"preconditioner not symmetric ({out['P_symmetry']:.2e} > {sym_tol:g})")
+    if not out["F_positive"] > 0:
+        fails.append(f"operator not positive on a random vector (u.Fu/u.u = {out['F_positive']:.3e})")
+    if not out["P_positive"] > 0:
+        fails.append(f"preconditioner not positive on a random vector ({out['P_positive']:.3e})")
+    if "q_null" in out and not out["q_null"] > null_tol:
+        fails.append(f"the operator does not resolve the prior in the filters' spectral null space (u.Fu / (mu u.u) = {out['q_null']:.3e}, "
+                     f"exactly >= 1): round-off of the data curvature swamps mu")
+    if not out["F_background_positive"] > 0:
+        fails.append(f"background block not positive ({out['F_background_positive']:.3e})")
+    out["failed"] = fails
+    log(f"operator checks{(' [' + label + ']') if label else ''} (precision {getattr(op, 'precision', getattr(base, 'precision', '?'))}): "
+        + ", ".join(f"{k} {v:.3e}" if isinstance(v, float) else f"{k} {v}" for k, v in out.items() if k != "failed")
+        + ("; ALL PASSED" if not fails else "; FAILED: " + "; ".join(fails)))
+    if fails and raise_on_fail:
+        raise OperatorCheckError("; ".join(fails))
+    return out
+
+
+def ritz_vectors(info, which=(-1, 0)):
+    """Ritz pairs of P^{-1} F from a pcg run with keep_vectors=True: [(value, vector)] for the indices `which` of the ascending Ritz values."""
+    al, be, V = info["alphas"], info["betas"], info["lanczos_vectors"]
+    m = min(len(al), len(V))
+    T = np.zeros((m, m))
+    for j in range(m):
+        T[j, j] = 1.0 / al[j] + (be[j - 1] / al[j - 1] if j > 0 else 0.0)
+        if j + 1 < m and j < len(be):
+            T[j, j + 1] = T[j + 1, j] = math.sqrt(max(be[j], 0.0)) / al[j]
+    ev, S = np.linalg.eigh(T)
+    Vm = torch.stack(V[:m])
+    return [(float(ev[i]), (torch.tensor(S[:, i], dtype=torch.float64)[:, None] * Vm).sum(0)) for i in which]
+
+
+def mode_report(op, y):
+    """Where a vector lives: share of its squared norm in the sky block and the background block; the background share per exposure (the
+    largest three) and per term; the sky share per spectral coefficient (or band, restricted)."""
+    nA = op.nA
+    ya, yb = y[:nA].double(), y[nA:].double().view(-1, 6)
+    tot = float((y.double() ** 2).sum()) or 1.0
+    sky = float((ya ** 2).sum()) / tot
+    per_row = (yb ** 2).sum(1) / tot
+    top = torch.argsort(per_row, descending=True)[:3].tolist()
+    rows = getattr(op, "rows", None)
+    model = getattr(op, "model", None)
+    names = []
+    for r in top:
+        eid = rows[r] if rows is not None else r
+        try:
+            names.append(f"{model.fset.names[int(model.e_filt[eid])]}#{eid}: {float(per_row[r]):.3f}")
+        except Exception:
+            names.append(f"row {r}: {float(per_row[r]):.3f}")
+    per_term = ((yb ** 2).sum(0) / tot).tolist()
+    K = op.K
+    per_k = (ya.view(K, -1) ** 2).sum(1) / tot
+    return {"sky_share": sky, "background_share": 1 - sky, "background_top_exposures": names, "background_per_term": [round(v, 4) for v in per_term],
+            "sky_per_coefficient": [round(float(v), 4) for v in per_k]}
 
 
 def lanczos_ritz(alphas, betas):
@@ -894,11 +1375,14 @@ def posterior_samples(op, n, seed=0, tol=1e-3, maxiter=300, log=print, monitor=N
                 log(f"  posterior draw {i + 1}/{n}: stopped by the time budget at iteration {info['iterations']} (relative residual "
                     f"{info['rel_residual']:.2e}); this draw is discarded")
                 break
+            if info.get("breakdown"):
+                log(f"  WARNING posterior draw {i + 1}/{n}: CONJUGATE-GRADIENT BREAKDOWN ({info['breakdown']}); this draw is discarded")
+                continue
             if accept_tol is not None and not info["rel_residual"] <= accept_tol:
                 log(f"  WARNING posterior draw {i + 1}/{n}: NOT CONVERGED (relative residual {info['rel_residual']:.2e} above the tolerance "
                     f"{accept_tol:.1e} after {info['iterations']} iterations); this draw is discarded")
                 continue
-            out.append(x[:op.nA].view(op.K, op.N, op.N).cpu())
+            out.append((op.lift_A(x[:op.nA]) if hasattr(op, "lift_A") else x[:op.nA].view(op.K, op.N, op.N)).cpu())
             info["seconds"] = time.perf_counter() - t0
             recs.append(info)
             tail = f"; {monitor.tail()}" if monitor is not None else ""
@@ -916,9 +1400,11 @@ def gauss_newton_polish(op, tol=1e-4, maxiter=60, monitor=None, keep_every=0):
         return (op.A_fit.clone().detach(), torch.zeros(len(op.rows), 6), {"iterations": 0, "rel_residual": 1.0, "history": [], "truncated": True})
     with torch.no_grad():
         x, info = pcg(op, op.residual_rhs(), tol=tol, maxiter=maxiter, monitor=monitor, label="Gauss-Newton step", keep_every=keep_every)
+        lift = op.lift_A if hasattr(op, "lift_A") else (lambda v: v.view(op.K, op.N, op.N))     # restricted unknowns -> coefficient grid
         if "x_back" in info:                                  # the sky of the step some iterations earlier (for the change diagnostic)
-            info["A_back"] = (op.A_fit + info.pop("x_back")[:op.nA].view(op.K, op.N, op.N)).detach().cpu()
-        return (op.A_fit + x[:op.nA].view(op.K, op.N, op.N)).detach(), x[op.nA:].view(-1, 6).detach(), info
+            info["A_back"] = (op.A_fit + lift(info.pop("x_back")[:op.nA])).detach().cpu()
+        db = op.bkg_to_raw(x[op.nA:]) if hasattr(op, "bkg_to_raw") else x[op.nA:].view(-1, 6)   # raw Legendre terms
+        return (op.A_fit + lift(x[:op.nA])).detach(), db.detach(), info
 
 
 def exact_variance(op, phi, smoother, pts, tol=1e-4, maxiter=600, monitor=None):
@@ -1060,8 +1546,10 @@ def solve_shared(op, n_samples=8, method="draws", polish=True, tol=1e-4, maxiter
                 + (f"; estimated error of the step in the posterior metric (F-norm, 10 iterations before the end) {info['err_F_est']:.3g}, relative "
                    f"{info['rel_err_F_est']:.2e}" if math.isfinite(info.get("err_F_est", float("nan"))) else "")
                 + f"; background constants moved by {db[:, 0].abs().max().item():.4g} at most (gauge-preserving)" + ritz)
+            if info.get("breakdown"):
+                log(f"WARNING: CONJUGATE-GRADIENT BREAKDOWN in the Gauss-Newton step: {info['breakdown']}. The solve stopped there.")
             if accept_tol is not None:
-                conv = info["iterations"] > 0 and info["rel_residual"] <= accept_tol
+                conv = info["iterations"] > 0 and info["rel_residual"] <= accept_tol and not info.get("breakdown")
                 sh["polish_converged"] = bool(conv)
                 if not conv:
                     log(f"WARNING: the Gauss-Newton step did NOT CONVERGE (relative residual {info['rel_residual']:.2e} after {info['iterations']} "
@@ -1283,7 +1771,7 @@ def build_from_args(cfg, log=print):
 
 def add_args(ap):
     g = ap.add_argument_group("uncertainty (python -m fieldop.uncertainty)")
-    g.add_argument("--unc-cmd", choices=["map", "diff", "diff-files"], default="map",
+    g.add_argument("--unc-cmd", choices=["map", "diff", "diff-files", "lab"], default="map",
                    help="map: product, sigma and resolution from --state; diff: the fitted skies of two states; diff-files: two products of 'map'")
     g.add_argument("--unc-file-a", default="")
     g.add_argument("--unc-file-b", default="")
@@ -1306,9 +1794,26 @@ def add_args(ap):
     g.add_argument("--unc-alpha", type=float, default=2.0)
     g.add_argument("--unc-tol", type=float, default=1e-4, help="relative residual at which a conjugate-gradient solve stops")
     g.add_argument("--unc-maxiter", type=int, default=100, help="iterations per solve at most (19 Nov: 100, was 60)")
-    g.add_argument("--unc-precond", choices=["filter", "fourier", "jacobi"], default="filter",
+    g.add_argument("--unc-precond", choices=["filter", "fourier", "jacobi", "bjacobi"], default="filter",
                    help="filter (19 Nov, default): one Fourier model per filter and per-node K x K scaling by each filter's coverage; fourier: the 18 Nov "
                         "preconditioner (one Fourier model probed at the centre node; reproduces the truth-problem calibration bit for bit); jacobi")
+    g.add_argument("--unc-precision", choices=["mixed", "float32"], default="mixed",
+                   help="mixed (19 Nov, default): float64 vectors, inner products, adjoint sums over batches and background blocks (renders stay float32); "
+                        "float32: as on 18 Nov")
+    g.add_argument("--unc-restrict", type=float, default=0.0,
+                   help="arcsec: solve for band images on a coarse grid of this pitch (a multiple of the sky pitch; e.g. 0.08), the directions the data "
+                        "leave to the prior held at the fit (RestrictedOperator); 0 = the full coefficient grid (the 18 Nov formulation)")
+    g.add_argument("--unc-bkg-basis", choices=["orth", "raw"], default="orth",
+                   help="orth (19 Nov, section 11; needs --unc-precision mixed): each exposure's six background functions orthonormalised over its "
+                        "weighted pixels, directions below --unc-bkg-rcond dropped (held at the fit), the gauge imposed exactly; raw: as before")
+    g.add_argument("--unc-bkg-rcond", type=float, default=1e-4,
+                   help="orth: drop background directions whose singular value is below this fraction of the largest (the cut cannot tell them apart)")
+    g.add_argument("--unc-check", type=int, choices=[0, 1], default=1,
+                   help="1: check the operator and the preconditioner (symmetry, positivity, the prior-only direction; 4 applications) before solving "
+                        "and ABORT with the reason if a check fails")
+    g.add_argument("--unc-lab-box", type=float, default=2.0, help="lab: half width [arcsec] of the central region whose training pixels are used")
+    g.add_argument("--unc-lab-iters", type=int, default=30, help="lab: conjugate-gradient iterations per variant")
+    g.add_argument("--unc-lab-variants", default=LAB_VARIANTS, help="lab: comma-separated variants (see run_lab)")
     g.add_argument("--unc-regions", type=int, default=8, help="--unc-precond filter: number of coverage regions, each with its own Fourier model "
                    "(device memory about 8 K^2 N^2 bytes per region: 433 MB at K = 12, N = 613)")
     g.add_argument("--unc-probes", type=int, default=1, help="--unc-precond filter: probes per filter whose windowed responses are averaged (the "
@@ -1493,10 +1998,35 @@ def main(argv=None):
     plan = dict(method=cfg.unc_method, polish=bool(cfg.unc_polish), n_samples=cfg.unc_samples, maxiter=cfg.unc_maxiter, n_exact=cfg.unc_exact,
                 n_bands=len(bands))
     cuda = torch.device(model.dev).type == "cuda"
+    if cfg.unc_cmd == "lab":
+        budget = cfg.unc_max_minutes if cfg.unc_max_minutes and cfg.unc_max_minutes > 0 else 20.0
+        log(f"solver lab: training pixels within +-{cfg.unc_lab_box} arcsec of the centre, {cfg.unc_lab_iters} iterations per variant, variants "
+            f"{cfg.unc_lab_variants}; budget {budget:g} min from the start")
+        recs = run_lab(model, exps, cfg, log=log, box=cfg.unc_lab_box, iters=cfg.unc_lab_iters, variants=cfg.unc_lab_variants,
+                       deadline=T0 + 60.0 * budget - 90.0)
+        outp = os.path.join(os.path.dirname(os.path.abspath(cfg.unc_out.format(band="lab"))), "solver_lab.json")
+        json.dump(recs, open(outp, "w"), indent=1, default=str)
+        log(f"solver lab done in {(time.perf_counter() - T0) / 60:.1f} min; records written to {outp}")
+        return
     op = SkyNormalOperator(model, exps, cfg, rho=cfg.unc_prior, tile=cfg.unc_tile or None, chunk=cfg.unc_chunk or None, log=log,
                            batch_px=cfg.unc_batch_px if (explicit_batch or cuda) else None, plan=plan, precond_mode=cfg.unc_precond,
-                           n_regions=cfg.unc_regions, n_probes=cfg.unc_probes)
+                           n_regions=cfg.unc_regions, n_probes=cfg.unc_probes, precision=cfg.unc_precision,
+                           bkg_basis=cfg.unc_bkg_basis if cfg.unc_precision == "mixed" else "raw", bkg_rcond=cfg.unc_bkg_rcond)
     acc = cfg.unc_accept_tol if cfg.unc_accept_tol and cfg.unc_accept_tol > 0 else None
+    op_full = op
+    if cfg.unc_restrict and cfg.unc_restrict > 0:
+        f_ = int(round(cfg.unc_restrict / model.sky.pitch))
+        if f_ < 1 or abs(f_ * model.sky.pitch - cfg.unc_restrict) > 1e-6 * max(cfg.unc_restrict, 1e-9) + 1e-9:
+            raise SystemExit(f"--unc-restrict {cfg.unc_restrict}: must be a multiple of the sky pitch {model.sky.pitch}")
+        op = RestrictedOperator(op_full, factor=f_, log=log)
+    if cfg.unc_check:
+        fails = operator_checks(op_full, log=log, label="full")["failed"]
+        if op is not op_full:
+            fails += operator_checks(op, log=log, label="restricted")["failed"]
+        if fails:
+            log("ABORT: the operator checks failed: " + "; ".join(fails) + ". No solve was run (a conjugate-gradient solve on this operator would "
+                "break down). See SOLVER_DIAGNOSIS_2026-11-19.md section 10 for the options.")
+            raise SystemExit("uncertainty: operator checks failed: " + "; ".join(fails))
     pl = plan_passes(op.K, **plan)
     mon = Monitor(op, log=log, max_minutes=cfg.unc_max_minutes, t0=T0, planned_apps=pl["setup"] + pl["polish"] + pl["draws"] + pl["exact"],
                   reserve=60.0 + 30.0 * len(bands))            # time kept for the per-band read-outs (Fourier eigendecomposition, smoothing) and the files
@@ -1519,6 +2049,90 @@ def main(argv=None):
     log(f"done: {len(bands)} band(s), {op.n_apply} applications + {op.n_forward} forward-only pass, {mon.elapsed() / 60:.1f} min"
         + (" (solve truncated by the time budget)" if shared["truncated"] else "")
         + ("; the Gauss-Newton step did NOT CONVERGE: SKY is NOT polished" if shared.get("polish_converged") is False else ""))
+
+
+LAB_VARIANTS = "jacobi64,jacobi64_orth,bjacobi64_orth,filter64,filter64_orth,restrict64_orth"   # one operator, held once
+
+
+def run_lab(model, exps, cfg, log=print, box=2.0, iters=25, variants=LAB_VARIANTS, factor=None, deadline=None, clock=time.perf_counter):
+    """Solver lab (19 Nov, second part of the report): the operator restricted to the training pixels within +-box arcsec of the box centre (one
+    application takes seconds), and short solves of the Gauss-Newton step with each variant:
+      none64 / jacobi64     no preconditioner / diagonal (on the 'filter' operator), float64 vectors and sums
+      fourier32             the 18 Nov preconditioner, float32 throughout (what ran on 18-19 Nov)
+      filter32 / filter64   the 'filter' preconditioner, float32 throughout / float64 vectors, sums and background blocks
+      restrict64            the restricted operator (band images at factor x the sky pitch, default 0.08 arcsec) on the 'filter' operator
+      *_nobright            the same without the pixels whose variance is mostly the noise floor ((f S)^2 > 0.5 sigma^2)
+    For each operator: the checks of operator_checks in float32 and in float64; for each variant: the relative residual at iterations 1, 2, 5,
+    10, 15, 20, 25 (or iters), the Lanczos range, any breakdown, and the time. Returns a list of records."""
+    names = [v.strip() for v in str(variants).split(",") if v.strip()]
+    factor = factor or max(2, int(round(0.08 / model.sky.pitch)))
+    ops, recs = {}, []
+    kw = dict(rho=cfg.unc_prior, tile=cfg.unc_tile or None, chunk=cfg.unc_chunk or None, batch_px=cfg.unc_batch_px, region_box=box, log=log)
+
+    def get(kind):
+        if kind not in ops:
+            for k_ in list(ops):                  # one operator on the device at a time (a 'filter' operator holds about 4 GB at SMACS size)
+                del ops[k_]
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            log(f"lab: building the '{kind}' operator (training pixels within +-{box} arcsec of the centre)")
+            op = SkyNormalOperator(model, exps, cfg, precond_mode="fourier" if kind == "fourier" else "filter", precision="mixed",
+                                   exclude_bright=0.5 if kind.endswith("nobright") else 0.0, bkg_rcond=getattr(cfg, "unc_bkg_rcond", 1e-4), **kw)
+            if kind.endswith("nobright"):
+                log(f"lab: {op.n_bright_excluded} pixels excluded as floor-dominated")
+            log(f"lab: background blocks: condition number max {max(op.bb_cond):.3e}, median {float(np.median(op.bb_cond)):.3e}, "
+                f"{sum(c > 1e7 for c in op.bb_cond)} of {len(op.bb_cond)} above 1e7")
+            for prec in ("float32", "mixed"):
+                op.set_precision(prec)
+                recs.append({"operator": kind, "precision": prec, "checks": operator_checks(op, log=log, label=f"{kind}, {prec}")})
+            ops[kind] = op
+        return ops[kind]
+    for name in names:
+        if deadline is not None and clock() > deadline:
+            log(f"lab: variant {name} SKIPPED (time budget)")
+            continue
+        kind = "fourier" if name.startswith("fourier") else "filter"
+        if "_nobright" in name:
+            kind += "_nobright"
+        op = get(kind)
+        op.set_precision("float32" if "32" in name else "mixed")
+        op.set_bkg_basis("orth" if "_orth" in name else "raw")
+        base_ = name.split("_")[0].rstrip("0123456789")
+        op.precond_mode = {"none": "none", "jacobi": "jacobi", "bjacobi": "bjacobi"}.get(base_, op.setup_mode)
+        target = op
+        if base_ == "restrict":
+            target = RestrictedOperator(op, factor=factor, log=log)
+        if "_orth" in name or base_ == "restrict":
+            operator_checks(target, log=log, label=name)
+        t0, n0 = clock(), op.n_apply
+        b = target.residual_rhs()
+        x, info = pcg(target, b, tol=1e-12, maxiter=iters, keep_vectors=True)
+        modes = {}
+        try:
+            for lab_, i_ in (("top", -1), ("bottom", 0)):
+                val, y_ = ritz_vectors(info, which=(i_,))[0]
+                modes[lab_] = {"ritz": val, **mode_report(target, y_)}
+        except Exception as ex:                    # a report problem must not stop the lab
+            modes = {"error": repr(ex)}
+        info.pop("lanczos_vectors", None)
+        h = info["history_all"]
+        pts = [i for i in (1, 2, 5, 10, 15, 20, 25, 30, 40, 50) if i <= len(h)]
+        rec = {"variant": name, "residual": {i: h[i - 1] for i in pts}, "final": info["rel_residual"], "iterations": info["iterations"],
+               "ritz": [info["ritz_min"], info["ritz_max"]], "breakdown": info["breakdown"], "applications": op.n_apply - n0, "seconds": clock() - t0,
+               "rel_err_F_est": info["rel_err_F_est"], "modes": modes}
+        recs.append(rec)
+        for lab_, m_ in modes.items():
+            if isinstance(m_, dict):
+                log(f"lab variant {name}: {lab_} Ritz value {m_['ritz']:.3e}: sky share {m_['sky_share']:.3f}, background share {m_['background_share']:.3f} "
+                    f"(largest exposures {m_['background_top_exposures']}; per term {m_['background_per_term']}); sky per coefficient or band "
+                    f"{m_['sky_per_coefficient']}")
+        log(f"lab variant {name}: relative residual " + ", ".join(f"{i}: {h[i - 1]:.3e}" for i in pts)
+            + f"; Lanczos {info['ritz_min']:.3e} to {info['ritz_max']:.3e}; estimated relative F-norm error {info['rel_err_F_est']:.2e}; "
+            + (f"BREAKDOWN: {info['breakdown']}; " if info["breakdown"] else "") + f"{rec['applications']} applications, {rec['seconds']:.0f} s")
+        op.precond_mode = op.setup_mode
+        op.set_precision("mixed")
+        op.set_bkg_basis("raw")
+    return recs
 
 
 def resolve_bands(model, spec):

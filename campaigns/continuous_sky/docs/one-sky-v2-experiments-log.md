@@ -2,6 +2,35 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 19 Nov 2026, 13:30 UTC: why the Gauss–Newton solve stalled on real data; the kernel-centroid convention tested and not adopted
+
+**1. The solve (Opus, three rounds with a 15-minute real-data "lab" job between them; `SOLVER_DIAGNOSIS_2026-11-19.md`, sections 10 and 11).** Three separate faults, each shown on real data:
+- Preconditioner built from one probe at the box centre, which lies in a chip gap (found 06:00; fixed by `--unc-precond filter`). That alone did not cure it: the next full run still stalled (relative residual 0.82 to 1.92 over 100 iterations).
+- **The per-exposure background terms.** The six Legendre terms are defined on the detector; over a 20-arcsecond cut they are nearly collinear (block condition numbers up to 5.5e8 and 2.7e9 in the two halves). They were eliminated by inverting each 6 by 6 block in single precision with an absolute regulariser. On the lab problem the largest eigen-direction (9.76e8, the same under every sky preconditioner) is 100% background: the constant, x and y terms of two F200W exposures. Fix: each exposure's background functions are made orthonormal over its own weighted pixels before elimination, and directions the cut cannot distinguish are held at the fit (7 of 336 dropped on a full half). Inner products and adjoint sums are now in double precision.
+- A reformulation that is well conditioned by construction (`--unc-restrict 0.08`): solve for the six band images on a 0.08-arcsecond grid (565,494 unknowns instead of 4.5 million); finer scales and the six spectral directions no filter reads are held at the fit. The standard deviation is then conditional on those, not marginalised. On the truth problem the pulls are unchanged (empty sky 1.06, sources 0.90 to 1.29).
+
+Lab on real data (half 1, 4-arcsec box, 30 iterations), relative residual: raw backgrounds 55 to 62 (diverging); orthonormal backgrounds with Jacobi 0.19, block Jacobi 0.16, per-filter preconditioner 0.05, restricted 0.09. Spectrum with the fixes 3.6e-3 to 3.8. Two full solves launched at 12:52 UTC on the two half fits (150 iterations, about 2.7 h); half 1 is at 0.19 after 10 iterations. Not yet shown: convergence of a full solve to 1e-2.
+
+**2. Kernel-centroid convention on real data (pruned package, minimal model, four half fits of 200 minutes): not adopted.**
+
+| | Convention off | Convention on |
+|---|---|---|
+| Common shift between the halves, six bands [mas] | x −2.8 to +0.4, y +4.0 to +7.1 | x −0.2 to +4.6, y −0.1 to +3.9 (F444W y +10.4) |
+| Flux scale between the halves | −2.6% to +2.2% | −1.9% to +2.2% |
+| Source-to-source spread: flux, position | 3.5% to 6.5%; 4 to 10 mas | 2.6% to 13.6%; 6 to 14 mas |
+| Final blur dilation (half 0, half 1) | 2.1, 1.6 | 1.0, 1.0 |
+| Held-out headline (half 0, half 1) | 1.752, 3.387 | 2.056, 4.066 |
+| Held-out at signal-to-noise 5 to 20 | 1.176, 1.324 | 1.225, 1.435 |
+| Steps in 200 minutes | 3,800, 3,500 | 3,300, 3,000 |
+
+- With the convention off, the minimal-model halves differ by about 5 mas, not the 12 to 20 mas of the first pair (which used the full model: validation exposures, distortion and spatial kernel terms). So the large shift is not reproduced by the minimal model, and the convention is not shown to be what removes it. With 40 sources and spreads of 6 to 10 mas the error on each common shift is 1 to 2 mas: off is 3 to 4 standard errors from zero in y, on is 1 to 2.
+- With the convention on, held-out prediction is worse in both halves in every bin from 5 upward. A pure convention should not change prediction; this one costs 13% of the steps and holds the blur dilation at 1.0, which changes what the blur rule does. So it stays off. What it does show: the dilation drift (1.6 to 2.2 in every minimal-model fit) is tied to the kernel centroid.
+- Half 1 is much worse than half 0 in both pairs (3.4 to 4.1 against 1.75 to 2.06; also 2.60 against 1.85 in the first pair), at signal-to-noise 20 to 200. The alternating split gives 56 and 43 training exposures. Not diagnosed; a balanced split is needed before more half tests.
+
+**3. What two independent half fits of the same sky agree to (minimal model, cheap standard deviation, product at 0.08 arcsec).** Positions: 3 to 5 mas common, 4 to 10 mas source to source. Flux: within 2.6% common, 3.5% to 6.5% source to source. Brightest 10% of pixels: half-difference over the stated standard deviation 2.9 to 7.1 before, 0.8 to 2.8 after adding the calibration term. So on sources the photon-noise standard deviation understates the error by a factor 3 to 7, and the calibration term (flux scale and position spread measured between two fits) accounts for most of the gap.
+
+**4. Housekeeping.** `fieldop_min` is the package used on CANFAR from now on (archive in `/home/claude/work/UNC_SCRIPT_MIN`); its first four real-data fits ran without fault. torchsky's `_uncertainty.py` still has the first solver; the port waits for a converged full solve.
+
 ## 19 Nov 2026, 06:00 UTC: the fit is inside torchsky; minimal model confirmed on real data; first real-data test of the uncertainty fails for two understood reasons
 
 **1. Minimal model on SMACS (two seeds, 200 minutes, cross-fitted, no scorer offset): passes its rule.**

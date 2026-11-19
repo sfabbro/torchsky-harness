@@ -59,7 +59,8 @@ def test_filter_preconditioner_symmetric_positive(gapc):
     assert torch.equal(Fu, op.apply(u))
     # both modes apply the same F (the batching differs: round-off only)
     o2 = ops["fourier"]
-    assert float((o2.apply(u) - Fu).norm() / Fu.norm()) < 1e-5
+    uA = torch.cat([u[:op.nA], torch.zeros(op.nb)])          # the two modes take mu differently (19 Nov, section 11): compare the data part
+    assert float(((o2.apply(u) - o2.mu * uA) - (Fu - op.mu * uA)).norm() / (Fu - op.mu * uA).norm()) < 1e-5
 
 
 def test_probe_gap_signature_and_convergence(gapc):
