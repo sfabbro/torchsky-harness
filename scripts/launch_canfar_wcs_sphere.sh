@@ -112,6 +112,13 @@ launch_one() {
   if [[ -n "${gpu_flag}" ]]; then
     create_args+=(--gpu "${gpu_flag}")
   fi
+  # Optional catalog-match-gpu-peers selection (comma lists, no spaces).
+  if [[ -n "${TORCHSKY_CATALOG_GPU_PEERS:-}" ]]; then
+    create_args+=(--env "TORCHSKY_CATALOG_GPU_PEERS=${TORCHSKY_CATALOG_GPU_PEERS}")
+  fi
+  if [[ -n "${TORCHSKY_CATALOG_SIZES:-}" ]]; then
+    create_args+=(--env "TORCHSKY_CATALOG_SIZES=${TORCHSKY_CATALOG_SIZES}")
+  fi
   # Only forward a GitHub token when explicitly requested. The AstroAI
   # notebook image already has session GitHub credentials; do not scrape
   # `gh auth token` into CANFAR argv or logs.

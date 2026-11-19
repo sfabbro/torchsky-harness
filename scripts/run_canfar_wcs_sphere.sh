@@ -603,10 +603,16 @@ case "${mode}" in
     pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
       bash "${source_root}/scripts/install_gpu_nn_peers.sh" "${artifact_root}"
     vos_upload after_gpu_peer_install || echo "after_gpu_peer_install VOS upload failed; continuing job" >&2
+    if [[ -f "${artifact_root}/peer_env.sh" ]]; then
+      # shellcheck disable=SC1091
+      source "${artifact_root}/peer_env.sh"
+    fi
     pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
       python "${source_root}/benchmarks/bench_catalog_match_perf.py" \
-      --sizes 100000,1000000,10000000 --layouts sparse,dense,crowded --modes best,all,knn2 \
+      --sizes "${TORCHSKY_CATALOG_SIZES:-100000,1000000,10000000}" \
+      --layouts sparse,dense,crowded --modes best,all,knn2 \
       --runs 3 --device cuda --astropy-max-n 0 --threads "${catalog_threads}" \
+      --gpu-peers "${TORCHSKY_CATALOG_GPU_PEERS:-cupy_kdtree,cupy_kdtree_kgrow,faiss_flat,cuvs_brute_force,torch_cluster,open3d_nns}" \
       --brute-force-max-n 1000000 --cupy-ball-max-n 1000000 --worker-timeout 1800 \
       --json-out "${artifact_root}/catalog_match_gpu_peers.json"
     ;;

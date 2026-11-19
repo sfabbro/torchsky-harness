@@ -61,7 +61,33 @@ try_pip faiss 1200 faiss-gpu-cu12 && check faiss 'import faiss; assert faiss.get
 try_pip cuvs 1800 cuvs-cu13 --extra-index-url https://pypi.nvidia.com \
   && check cuvs 'import torch, cuvs; from cuvs.neighbors import brute_force; x = torch.rand(64, 3, device="cuda"); i = brute_force.build(x); brute_force.search(i, x[:4].contiguous(), 2); print(cuvs.__version__)' \
   || true
-try_pip open3d 1200 open3d && check open3d 'import open3d.core as o3c; assert o3c.cuda.is_available(); print("cuda devices", o3c.cuda.device_count())' || true
+o3d_check='import open3d.core as o3c; assert o3c.cuda.is_available(); print("cuda devices", o3c.cuda.device_count())'
+if try_pip open3d 1200 open3d && ! check open3d "${o3d_check}"; then
+  # The open3d wheel links system GL libraries (libEGL.so.1, ...) that headless
+  # images lack: fetch them into a cached conda-forge prefix with `pixi exec`
+  # (pixi.lock untouched) and export it through OUT_DIR/peer_env.sh.
+  specs=()
+  for attempt in 1 2 3 4; do
+    missing="$(grep -o 'lib[A-Za-z0-9_+]*\.so[.0-9]*: cannot open' "${out}/check_open3d.log" | head -n 1 | cut -d: -f1)"
+    case "${missing}" in
+      libEGL.so*) specs+=(-s libegl) ;;
+      libGL.so* | libGLX.so*) specs+=(-s libgl) ;;
+      libOpenGL.so*) specs+=(-s libopengl) ;;
+      libX11.so*) specs+=(-s xorg-libx11) ;;
+      libgomp.so*) specs+=(-s libgomp) ;;
+      libc++.so* | libc++abi.so*) specs+=(-s libcxx) ;;
+      *) echo "open3d: unhandled missing library '${missing}'"; break ;;
+    esac
+    echo "open3d attempt ${attempt}: missing ${missing}; pixi exec ${specs[*]}"
+    prefix="$(env -u CONDA_PREFIX pixi exec -c conda-forge "${specs[@]}" -- sh -c 'printf %s "${CONDA_PREFIX}"' 2>> "${out}/pixi_exec_open3d.log")"
+    [[ -n "${prefix}" && -d "${prefix}/lib" ]] || { echo "pixi exec gave no prefix"; break; }
+    export LD_LIBRARY_PATH="${prefix}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+    if check open3d "${o3d_check}"; then
+      echo "export LD_LIBRARY_PATH=\"${prefix}/lib\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}\"" > "${out}/peer_env.sh"
+      break
+    fi
+  done
+fi
 
 # torch_cluster has no wheel for torch 2.14 on data.pyg.org: build it for this GPU.
 (
