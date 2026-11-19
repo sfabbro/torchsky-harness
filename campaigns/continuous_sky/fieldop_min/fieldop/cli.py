@@ -118,6 +118,10 @@ def build_parser():
                    help="end the fit cleanly, with a message, at the first step where the common-blur dilation exceeds this value (0 = off; real fits stay at 1.0 to 1.4; "
                    "WARNING lines are logged at 2 and 10 regardless)")
     g.add_argument("--blur-floor", type=float, default=1.0, help="blur gauge: core m2 of the sharpest kernel class >= this x (sky pitch)^2 / 3 (0 = off)")
+    g.add_argument("--kernel-centroid-gauge", type=int, choices=[0, 1], default=0,
+                   help="1 = hold the windowed first moment of every kernel class's mean kernel at zero, by an exact function-preserving projection "
+                   "after each step (the shift goes into the translations and the sky); fixes the astrometric frame that a common kernel shift "
+                   "against the sky leaves free (F43). 0 (default) = off, the fit is unchanged")
     g.add_argument("--pedestal-gauge", type=int, default=1, help="per filter, training background constants (relative to the exposure medians) sum to zero")
     g.add_argument("--coarse-reg", choices=["off", "xcorr"], default="off",
                    help="coarse registration of exposures that start far (several pixels) from the sky, before the pre-pass: masked normalised cross-correlation "

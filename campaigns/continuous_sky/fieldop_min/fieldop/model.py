@@ -162,6 +162,10 @@ class FieldOperator(nn.Module):
         r2 = (self.blur_u ** 2).sum(-1)
         self.register_buffer("blur_r2", r2, persistent=False)
         self.register_buffer("blur_logw", -0.5 * r2 / Rw ** 2, persistent=False)
+        # ---- kernel-centroid gauge (F43, --kernel-centroid-gauge): nothing is made when it is off, so the default path is unchanged
+        self.kc_on = bool(int(getattr(cfg, "kernel_centroid_gauge", 0) or 0))
+        if self.kc_on:
+            self._init_kernel_centroid(meta, fpix, fdiam)
 
     # ------------------------------------------------------------------ setup helpers
     @staticmethod
@@ -208,6 +212,117 @@ class FieldOperator(nn.Module):
             return None
         M = self.blur_moment(s1)
         return s1 * torch.sqrt(torch.clamp(self.blur_floor / M, min=1.0))
+
+    # ------------------------------------------------------------------ kernel-centroid gauge (F43)
+    KC_NEWTON = 4          # Newton iterations of the centring per projection (quadratic convergence; the start is the previous centred state)
+    KC_WINDOW = 2.0        # Gaussian window sigma = KC_WINDOW x the generic core width of the class (diffraction and pixel box)
+
+    def _init_kernel_centroid(self, meta, fpix, fdiam):
+        """Kernel classes = the (filter, instrument) pairs of the exposures (the kernel code hbar depends on the pivot wavelength, the filter
+        input and the instrument, and it is the same at every lambda node of the filter). Per class: a detector-frame offset d_c [arcsec] of
+        the finished kernel (a persistent buffer, zero at the start), the Gaussian window of the held moment and the grid that samples it."""
+        dev = self.dev
+        pairs = sorted({(int(f), int(i)) for f, i in zip(meta["filt"], meta["inst"])})
+        self.kc_pairs = pairs
+        cls = {p_: k for k, p_ in enumerate(pairs)}
+        self.kc_class_host = [cls[(int(f), int(i))] for f, i in zip(meta["filt"], meta["inst"])]
+        self.kc_class = torch.as_tensor(self.kc_class_host, dtype=torch.long, device=dev)
+        self.register_buffer("kc_off", torch.zeros(len(pairs), 2, device=dev))
+        sw = []
+        for f, _ in pairs:
+            s2 = (0.42 * float(self.piv[f]) * 1e-6 / fdiam[f] * 206264.8) ** 2 + fpix[f] ** 2 / 12
+            sw.append(self.KC_WINDOW * math.sqrt(s2))
+        self.kc_sigma = sw                                                    # window sigma per class [arcsec]
+        g = torch.arange(-32, 33, device=dev, dtype=torch.float32) / 8.0      # +-4 window sigmas, 8 nodes per sigma
+        yy, xx = torch.meshgrid(g, g, indexing="ij")
+        self.kc_g = torch.stack([xx.flatten(), yy.flatten()], -1)            # (P, 2) in window sigmas
+        self.kc_logw = -0.5 * (self.kc_g ** 2).sum(-1)
+        z = lambda *s_: torch.zeros(*s_, device=dev)                         # noqa: E731
+        # projection sizes, kept on the device (read at logged steps only): count, largest and sum of squared class steps, last steps,
+        # last and total sky shift, largest held moment left after a projection [arcsec]
+        self.kc_stats = {"n": 0, "step_max": z(()), "step_sq_sum": z(()), "last_step": z(len(pairs)), "last_sky": z(2), "sky_total": z(2), "residual": z(())}
+
+    def kernel_centroid(self, c, d, dil=None):
+        """Held moment of class c: the first moment, in the detector frame [arcsec], of the class's mean-code kernel (z = 0) as rendered
+        (common dilation, then the offset d (2,)), weighted by a Gaussian window of sigma kc_sigma[c] centred on the origin:
+            mu_c = sum_j w_j W(w_j) k_c(w_j) / sum_j W(w_j) k_c(w_j),   k_c(w) = exp l((w - d) / dil; hbar_c),   w_j on a grid of pitch sigma / 8.
+        The continuous kernel field is sampled on this grid (not on the render's level grids). Differentiable in d."""
+        f, ins = self.kc_pairs[c]
+        dev = self.dev
+        h = self.codes.hbar_at(self.piv[f].view(1), torch.full((1,), f, device=dev, dtype=torch.long), torch.full((1,), ins, device=dev, dtype=torch.long))
+        w = self.kc_g * self.kc_sigma[c]
+        v = w - d
+        if dil is not None:
+            v = v / dil
+        lg = self.net(self.net.enc(v), h)[0] + self.kc_logw
+        p = torch.softmax(lg, -1)
+        return (p[:, None] * w).sum(0)
+
+    def kernel_centroid_solve(self, c, d0, dil=None):
+        """Offset d_c that makes the held moment of class c zero: KC_NEWTON Newton steps from d0 with the exact 2 x 2 Jacobian (autograd in d
+        only; no parameter gradient is touched). Returns (d, mu after the solve)."""
+        d = d0.detach().clone()
+        for _ in range(self.KC_NEWTON):
+            with torch.enable_grad():
+                dv = d.clone().requires_grad_(True)
+                mu = self.kernel_centroid(c, dv, dil)
+                J = torch.stack([torch.autograd.grad(mu[i], dv, retain_graph=(i == 0))[0] for i in range(2)])
+            d = d - torch.linalg.solve(J.detach(), mu.detach())
+        with torch.no_grad():
+            res = self.kernel_centroid(c, d, dil)
+        return d, res
+
+    @torch.no_grad()
+    def project_kernel_centroid(self):
+        """Kernel-centroid gauge (F43): exact projection after an optimiser step, function-preserving. Every kernel class's held moment is set
+        to zero by moving its offset (d_c -> d_c + delta_c: the finished kernel moves by delta_c in the detector frame, R_e delta_c on the sky),
+        and the shift is put back into the geometry so that every prediction is unchanged: the translation of every exposure e of class c
+        (training and held out) moves by -R_e delta_c; the training mean a of those changes is then taken out of every translation and out of
+        the sky (item positions - a), so the common-shift gauge (learned training translations of zero mean) still holds exactly.
+        The render applies d_c as the equivalent shift of its read positions (R_e d_c), so the translation part is exact to round-off; the sky
+        part is exact up to the item rasteriser's interpolation (a is of the order of the step, micro-arcseconds per step in a fit).
+        Returns the per-class detector-frame steps delta (C, 2) and the sky shift a (2,) [arcsec]."""
+        dl = self.dilation()
+        dil = None if dl is None else dl.detach()
+        old = self.kc_off.clone()
+        new, res = [], []
+        for c in range(len(self.kc_pairs)):
+            d, r = self.kernel_centroid_solve(c, old[c], dil)
+            new.append(d)
+            res.append(r)
+        new = torch.stack(new)
+        delta = new - old
+        self.kc_off.copy_(new)
+        dt = -torch.einsum("eij,ej->ei", self.e_R, delta[self.kc_class])        # (E, 2) sky-frame translation changes [arcsec]
+        a = dt[self.ref_eids].mean(0)
+        dt = dt - a
+        self.affine.data[:, 4:6] += dt / self.aff_scale[4:6]
+        self.sky.pos.data -= a.to(self.sky.pos.dtype)
+        self.sky._mut += 1
+        self.sky._cache = None
+        st = self.kc_stats
+        stp = delta.norm(dim=-1)
+        st["n"] += 1
+        st["step_max"] = torch.maximum(st["step_max"], stp.max())
+        st["step_sq_sum"] = st["step_sq_sum"] + (stp ** 2).mean()
+        st["last_step"] = stp
+        st["last_sky"] = a
+        st["sky_total"] = st["sky_total"] - a
+        st["residual"] = torch.stack(res).norm(dim=-1).max()
+        return delta, a
+
+    def kernel_centroid_report(self):
+        """Record of the kernel-centroid gauge [mas]: per class the offset d_c (the total detector-frame shift the gauge has given the kernel),
+        the window sigma [arcsec] and the last projection's step; the held moment left after the last projection (largest over classes);
+        the size of the projections over the fit (largest and rms class step, the last and the total sky shift applied to the items)."""
+        st = self.kc_stats
+        mas = lambda t: [float(x) * 1e3 for x in t.reshape(-1)]             # noqa: E731
+        names = self.fset.names
+        return {"classes": [{"filter": names[f], "instrument": i, "offset_mas": mas(self.kc_off[k]), "window_sigma_arcsec": self.kc_sigma[k],
+                             "last_step_mas": float(st["last_step"][k]) * 1e3} for k, (f, i) in enumerate(self.kc_pairs)],
+                "projections": st["n"], "held_moment_after_last_projection_mas": float(st["residual"]) * 1e3,
+                "step_max_mas": float(st["step_max"]) * 1e3, "step_rms_mas": math.sqrt(float(st["step_sq_sum"]) / max(st["n"], 1)) * 1e3,
+                "last_sky_shift_mas": mas(st["last_sky"]), "sky_shift_total_mas": mas(st["sky_total"])}
 
     # ------------------------------------------------------------------ per-step preparation (normalisations, gauge)
     def prepare(self):
@@ -360,6 +475,8 @@ class FieldOperator(nn.Module):
                 e, pix = items[k]
                 e_t = self.et(e)
                 pos = self.positions(e_t, pix["X"], pix["Y"], pix["xi"], P, c0=pix.get("c0"))
+                if self.kc_on:            # kernel-centroid gauge (F43): the kernel moved by d_c in the detector frame = every read position moved by R_e d_c
+                    pos = pos + self.e_R[e_t] @ self.kc_off[self.kc_class_host[e]]
                 ny, nx = self.l_shape[e]
                 nodes, w = region_nodes(pix["xi_px"], (ny, nx), region, bounds=pix.get("bounds"))
                 xin = torch.stack([nodes[:, 0] / (nx - 1) * 2 - 1, nodes[:, 1] / (ny - 1) * 2 - 1], -1).float()
@@ -477,6 +594,12 @@ class FieldOperator(nn.Module):
             core = r2 <= (0.5 * lv.R[0]) ** 2
             m2.append(float(((K0 * (r2 * core)).sum((-1, -2)) / (K0 * core).sum((-1, -2))).mean()))
         out["common_blur_core_m2_arcsec2"] = float(np.mean(m2))
+        if self.kc_on:                       # kernel-centroid gauge (F43): the held moment per class now [mas] and the offsets
+            dl = P.get("dil")
+            dil = None if dl is None else (dl.detach() if torch.is_tensor(dl) else dl)
+            out["kernel_centroid_held_mas"] = {f"{self.fset.names[f]}/{i}": [float(x) * 1e3 for x in self.kernel_centroid(k, self.kc_off[k], dil)]
+                                               for k, (f, i) in enumerate(self.kc_pairs)}
+            out["kernel_centroid_offset_mas"] = {f"{self.fset.names[f]}/{i}": [float(x) * 1e3 for x in self.kc_off[k]] for k, (f, i) in enumerate(self.kc_pairs)}
         out["background_mean_per_filter"] = {self.fset.names[f]: float(self.bkg[self.ref_eids][self.e_filt[self.ref_eids] == f, 0].mean())
                                              for f in range(len(self.fset)) if bool((self.e_filt[self.ref_eids] == f).any())}
         S = self.sky.band_images(self.Phi_band)

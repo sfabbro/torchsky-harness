@@ -383,6 +383,10 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
     from .tiles import TileSet
     dev = model.dev
     ts = ts or TileSet.single(model, exps, cfg, log)
+    kc_on = bool(getattr(model, "kc_on", False))
+    if kc_on and ts.multi:
+        raise SystemExit("--kernel-centroid-gauge 1 is implemented for one tile only (the sky shift that keeps the projection function-preserving "
+                         "would have to move every tile's sky and respect each shift component)")
     rng = np.random.default_rng(cfg.seed)
     trng = np.random.default_rng(cfg.seed + 101)          # tile draws: a separate stream, so the single-tile fit is unchanged
     tr = sorted({e.eid for e in exps if e.split == "train"})      # global exposure ids
@@ -492,6 +496,8 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             for g in ts.shift_groups:
                 model.project_shift(g)
             opt_sky.step()
+        if kc_on:                               # kernel-centroid gauge (F43): after the whole joint step, function-preserving
+            model.project_kernel_centroid()
         if em_on and prog >= cfg.tau_start and step % cfg.val_every == 0:      # no data, no gradient: the cadence is --val-every x --tau-accum steps from --tau-start
             n_em_eval += 1
             if n_em_eval % cfg.tau_accum == 0:
@@ -528,6 +534,10 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
             mem += (f" cuda peak {torch.cuda.max_memory_allocated() / 2 ** 30:.2f} GB" if dev.type == "cuda" else "")
             if ts.multi:
                 mem += f" tile {k} resident {ts.resident_gb():.2f} GB"
+            if kc_on:
+                kr = model.kernel_centroid_report()
+                mem += (f" kcen held {kr['held_moment_after_last_projection_mas']:.1e} mas step {max(c['last_step_mas'] for c in kr['classes']):.2e} "
+                        f"(max {kr['step_max_mas']:.2e}) mas sky-shift total [{kr['sky_shift_total_mas'][0]:.2f}, {kr['sky_shift_total_mas'][1]:.2f}] mas")
             chi_in = float(model._chi_in) / max(npx, 1)
             log(f"step {step:6d} t {el:7.1f}s prog {prog:.3f} loss {float(loss):.4f} chi2/px(batch) {chi / max(npx, 1):.3f} "
                 f"chi2/px(input noise) {chi_in:.3f} noise-floor {noise_floor_values(model)} "
@@ -547,6 +557,14 @@ def fit(model, exps, cfg, log=print, history=None, ts=None):
         nf_warn_step = rec["noise_floor_first_above"] = int(nf_first)
         log(f"WARNING: learned fractional noise floor exceeds {NOISE_FLOOR_WARN} first at step {nf_warn_step}")
     rec["noise_floor_final"] = noise_floor_values(model)
+    if kc_on:
+        rec["kernel_centroid_gauge"] = model.kernel_centroid_report()
+        kr = rec["kernel_centroid_gauge"]
+        log("kernel-centroid gauge: " + "; ".join(f"{c['filter']}/{c['instrument']} offset [{c['offset_mas'][0]:.2f}, {c['offset_mas'][1]:.2f}] mas "
+                                                    f"(window {c['window_sigma_arcsec']:.3f} arcsec)" for c in kr["classes"])
+            + f"; {kr['projections']} projections, class step max {kr['step_max_mas']:.3e} rms {kr['step_rms_mas']:.3e} mas, held moment after the "
+              f"last projection {kr['held_moment_after_last_projection_mas']:.1e} mas, total sky shift [{kr['sky_shift_total_mas'][0]:.3f}, "
+              f"{kr['sky_shift_total_mas'][1]:.3f}] mas")
     if nf_max > 0 or hs_max is not None:
         br = bound_report(model, cfg)
         rec["noise_at_bound_final"] = br

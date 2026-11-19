@@ -2,6 +2,7 @@
 
     PYTHONNOUSERSITE=1 PYTHONPATH=/home/claude/torchsky/src python compare_port.py --steps 30
     PYTHONNOUSERSITE=1 PYTHONPATH=/home/claude/torchsky/src python compare_port.py --steps 150 [--reference-state REF.pt]
+    ... compare_port.py --steps 30 --kernel-centroid-gauge 1      (both sides with the kernel-centroid gauge on)
 
 The field is the one of fieldop_min/tests/synth_small.py (item sky, seed 0, minimal protocol). It is built once with the prototype's generator;
 each side gets its own copy. The prototype side repeats synth_small.py's sequence of calls (which is why, at 150 steps, its final state is also
@@ -25,6 +26,8 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--steps", type=int, default=30)
 ap.add_argument("--seed", type=int, default=0)
 ap.add_argument("--reference-state", default="")
+ap.add_argument("--kernel-centroid-gauge", type=int, choices=[0, 1], default=0,
+                help="1: run both sides with the kernel-centroid gauge on (prototype --kernel-centroid-gauge 1, torchsky internal kernel_centroid_gauge 1)")
 a = ap.parse_args()
 
 import fieldop  # noqa: E402  (prototype)
@@ -53,6 +56,8 @@ exps_port = copy.deepcopy(exps)
 kw = dict(sky_pitch=0.06, render_pitch=0.02, level_nh=12, kernel_extent=1.2, region_px=13, n_lambda=3, k_hidden=32, warm_kernel_steps=150,
           batch_patches=4, inner_sky=1, budget_min=1e6, steps=a.steps, val_every=2, held_steps=50, held_reg_steps=30, log_every=10, is_snr=10.0,
           reg_prepass_steps=40, reg_prepass_iters=1, seed=a.seed, item_count=1500, gauge_ref_inst=0, device="cpu")
+if a.kernel_centroid_gauge:
+    kw["kernel_centroid_gauge"] = 1
 
 # ---- prototype side: the sequence of synth_small.py
 cfg = default_config(**kw)
@@ -92,6 +97,8 @@ config = ef.SkyFitConfig(sky_pitch=0.06, item_count=1500, kernel_extent=1.2, ref
                          device="cpu")
 internal = dict(render_pitch=0.02, level_nh=12, region_px=13, n_lambda=3, k_hidden=32, warm_kernel_steps=150, inner_sky=1, val_every=2,
                 held_steps=50, held_reg_steps=30, log_every=10, is_snr=10.0, reg_prepass_steps=40, reg_prepass_iters=1)
+if a.kernel_centroid_gauge:
+    internal["kernel_centroid_gauge"] = 1
 # every setting that is neither a public field nor overridden above must equal the prototype's parser default
 ref_ns, new_ns = vars(default_config(**kw)), vars(tcf._namespace(config, internal))
 bad = {k: (ref_ns.get(k, "<absent>"), new_ns[k]) for k in new_ns if k not in ref_ns or ref_ns[k] != new_ns[k]}
@@ -125,5 +132,10 @@ same_chi2 = all(proto_chi2[k]["chi2"] == port_chi2[k]["chi2"] and proto_chi2[k][
 print("held-out chi2 (prototype, torchsky):", {k: (proto_chi2[k]["chi2"], port_chi2[k]["chi2"]) for k in proto_chi2}, "equal:", same_chi2)
 strip = lambda L: [[r[0]] + list(r[2:]) for r in L]          # column 1 is the elapsed time
 print("loss log equal (step, loss, chi2 columns):", strip(rec["steps"]) == strip(sf.report["loss_log"]))
+if a.kernel_centroid_gauge:
+    kp, kt = rec.get("kernel_centroid_gauge"), sf.report.get("kernel_centroid_gauge")
+    print("kernel-centroid gauge record (prototype):", kp)
+    print("kernel-centroid gauge records equal:", kp == kt)
+    ok &= kp is not None and kp == kt
 print("RESULT:", "PASS" if ok and same_chi2 else "FAIL")
 sys.exit(0 if ok and same_chi2 else 1)
