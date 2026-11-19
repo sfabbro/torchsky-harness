@@ -24,10 +24,10 @@ case "${mode}" in
   cpu | cuda | optimization-cpu | optimization-cuda | real-data-gates | spectral | sphere | sparse | healsparse | spin | geometry | cuhpx | \
   wcs-paper2 | wcs-tpv | wcs-spectral | wcs-tabular | sht-profile | moc | catalog | \
   catalog-scale | catalog-scale-1e6 | catalog-scale-1e7 | catalog-scale-real | \
-  catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | \
+  catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | catalog-match-cuda | \
   observed | geom-cuda | world-cuda | gpu-validate) ;;
   *)
-    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, catalog-match-real, observed, geom-cuda, or world-cuda)" >&2
+    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, catalog-match-real, catalog-match-cuda, observed, geom-cuda, or world-cuda)" >&2
     exit 2
     ;;
 esac
@@ -579,6 +579,19 @@ case "${mode}" in
       python "${source_root}/scripts/run_catalog_scale_contract.py" \
       --left-rows 10000000 --layout sparse --find best --engine-fast \
       --json-out "${artifact_root}/catalog_scale_1e7_sparse_best.json"
+    ;;
+  catalog-match-cuda)
+    install_env cuda-bench
+    record_versions cuda-bench
+    pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+      python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'"
+    pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+      python -m pip install scipy
+    pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+      python "${source_root}/benchmarks/bench_catalog_match_perf.py" \
+      --sizes 100000,1000000,10000000 --layouts sparse,dense,crowded --modes best,all,knn2 \
+      --runs 3 --device cuda --astropy-max-n 0 --threads "${catalog_threads}" \
+      --json-out "${artifact_root}/catalog_match_perf_cuda.json"
     ;;
   catalog-match-real)
     install_env test

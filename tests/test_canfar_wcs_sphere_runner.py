@@ -74,6 +74,8 @@ def test_canfar_wcs_sphere_runner_contract() -> None:
     assert "catalog_match_perf_1e6.json" in runner
     assert "catalog-match-1e7 | catalog-match-1e8)" in runner
     assert "\n  catalog-match-real)" in runner
+    assert "\n  catalog-match-cuda)" in runner
+    assert "catalog_match_perf_cuda.json" in runner
     assert "bench_catalog_match_real.py" in runner
     assert "bench_catalog_crossmatch.py" not in runner
     assert "test_crossmatch_engine.py" in runner
