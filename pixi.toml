@@ -601,6 +601,10 @@ starlink-pyast = "==4.2.0"
 drizzlepac = "==3.11.0"
 drizzle = "==2.2.0"
 
+# nway (Salvato et al. 2018) as an out-of-process N-way association peer.
+[feature.nway.pypi-dependencies]
+nway = "==4.8.0"
+
 # STILTS is Java: openjdk here, stilts.jar via `pixi run fetch-stilts` (the improc image ships /usr/local/bin/stilts).
 [feature.stilts.dependencies]
 openjdk = ">=17"
@@ -609,6 +613,7 @@ openjdk = ">=17"
 [environments]
 oracle = { features = ["prod", "test", "oracle"], solve-group = "oracle" }
 stilts = { features = ["prod", "test", "stilts"], solve-group = "stilts" }
+nway = { features = ["prod", "test", "nway"], solve-group = "nway" }
 default = { features = ["prod"], solve-group = "default" }
 test = { features = ["prod", "test"], solve-group = "default" }
 bench = { features = ["prod", "bench"], solve-group = "default" }
