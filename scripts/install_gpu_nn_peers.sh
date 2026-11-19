@@ -66,26 +66,33 @@ if try_pip open3d 1200 open3d && ! check open3d "${o3d_check}"; then
   # The open3d wheel links system GL libraries (libEGL.so.1, ...) that headless
   # images lack: fetch them into a cached conda-forge prefix with `pixi exec`
   # (pixi.lock untouched) and export it through OUT_DIR/peer_env.sh.
-  specs=()
-  for attempt in 1 2 3 4; do
-    missing="$(grep -o 'lib[A-Za-z0-9_+]*\.so[.0-9]*: cannot open' "${out}/check_open3d.log" | head -n 1 | cut -d: -f1)"
+  # The wheel also bundles RealSense/GUI code: libX11, libusb-1.0, libudev, ...
+  specs=(-s libegl -s libgl -s xorg-libx11 -s xorg-libxext -s xorg-libxrandr -s xorg-libxi
+    -s xorg-libxcursor -s xorg-libxinerama -s xorg-libxxf86vm -s xorg-libxfixes -s libglu
+    -s libusb -s libudev1 -s libgomp -s libcxx)
+  for attempt in 1 2 3 4 5 6; do
+    echo "open3d attempt ${attempt}: pixi exec ${specs[*]}"
+    prefix="$(env -u CONDA_PREFIX pixi exec -c conda-forge "${specs[@]}" -- sh -c 'printf %s "${CONDA_PREFIX}"' 2>> "${out}/pixi_exec_open3d.log")"
+    [[ -n "${prefix}" && -d "${prefix}/lib" ]] || { echo "pixi exec gave no prefix"; break; }
+    if LD_LIBRARY_PATH="${prefix}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" check open3d "${o3d_check}"; then
+      export LD_LIBRARY_PATH="${prefix}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+      echo "export LD_LIBRARY_PATH=\"${prefix}/lib\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}\"" > "${out}/peer_env.sh"
+      break
+    fi
+    missing="$(grep -o 'lib[A-Za-z0-9_+.-]*\.so[.0-9]*: cannot open' "${out}/check_open3d.log" | head -n 1 | cut -d: -f1)"
     case "${missing}" in
       libEGL.so*) specs+=(-s libegl) ;;
       libGL.so* | libGLX.so*) specs+=(-s libgl) ;;
       libOpenGL.so*) specs+=(-s libopengl) ;;
-      libX11.so*) specs+=(-s xorg-libx11) ;;
+      libGLU.so*) specs+=(-s libglu) ;;
+      libX*.so*) lib="${missing#libX}"; specs+=(-s "xorg-libx$(printf %s "${lib%%.so*}" | tr '[:upper:]' '[:lower:]')") ;;
+      libxkbcommon*.so*) specs+=(-s libxkbcommon) ;;
+      libusb-1.0.so*) specs+=(-s libusb) ;;
+      libudev.so*) specs+=(-s libudev1) ;;
       libgomp.so*) specs+=(-s libgomp) ;;
       libc++.so* | libc++abi.so*) specs+=(-s libcxx) ;;
-      *) echo "open3d: unhandled missing library '${missing}'"; break ;;
+      *) echo "open3d: unhandled missing library '${missing}'"; tail -n 3 "${out}/check_open3d.log"; break ;;
     esac
-    echo "open3d attempt ${attempt}: missing ${missing}; pixi exec ${specs[*]}"
-    prefix="$(env -u CONDA_PREFIX pixi exec -c conda-forge "${specs[@]}" -- sh -c 'printf %s "${CONDA_PREFIX}"' 2>> "${out}/pixi_exec_open3d.log")"
-    [[ -n "${prefix}" && -d "${prefix}/lib" ]] || { echo "pixi exec gave no prefix"; break; }
-    export LD_LIBRARY_PATH="${prefix}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-    if check open3d "${o3d_check}"; then
-      echo "export LD_LIBRARY_PATH=\"${prefix}/lib\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}\"" > "${out}/peer_env.sh"
-      break
-    fi
   done
 fi
 
