@@ -360,7 +360,7 @@ def _fake_main(monkeypatch, tiny, tmp_path):
     st = tmp_path / "state.pt"
     torch.save({}, st)
     return ["--state", str(st), "--region-px", "8", "--pred-margin", str(cfg.pred_margin), "--unc-samples", "2", "--unc-maxiter", "12",
-            "--unc-tol", "1e-9"]
+            "--unc-tol", "1e-9", "--unc-accept-tol", "0"]          # 19 Nov: these tests cap the solves at 12 iterations; no convergence check
 
 
 def test_bands_from_one_solve_equal_separate_runs(tiny, monkeypatch, tmp_path, capsys):

@@ -2,6 +2,46 @@
 
 Plan and design: `claude/one-sky-v2-raw-anyscale-ensemble.md` (living doc, tab "Version 2": https://claude.ai/artifact/DYP9UJuvosgpaz7BGG4yr5#bcefa2e8-f671).
 
+## 19 Nov 2026, 06:00 UTC: the fit is inside torchsky; minimal model confirmed on real data; first real-data test of the uncertainty fails for two understood reasons
+
+**1. Minimal model on SMACS (two seeds, 200 minutes, cross-fitted, no scorer offset): passes its rule.**
+
+| Bin (signal-to-noise) | Minimal, seed 0 | Minimal, seed 1 | Reference, four seeds | Pipeline |
+|---|---|---|---|---|
+| headline (≥ 5) | 1.646 | 1.819 | 1.68 ± 0.11 | 1.822 |
+| 1 to 5 | 0.974 | 0.978 | 0.979 ± 0.003 | 1.094 |
+| 5 to 20 | 1.088 | 1.091 | 1.092 ± 0.003 | 1.174 |
+| 20 to 50 | 1.147 | 1.141 | 1.149 ± 0.006 | 1.237 |
+| 50 to 200 | 6.00 | 7.65 | 6.53 ± 0.80 | 6.70 |
+| above 200 | 75 | 96 | 73 ± 21 | 92 |
+
+Fluxes over the mosaic at 1 arcsec: 0.98 to 1.00 in all six bands. So the terms dropped (kernel and throughput variation across the detector and with time, distortion fields, detector pattern, the variability-evidence machinery, validation exposures) cost nothing measurable on a 20-arcsecond box. The blur dilation reached 2.17 in seed 0 (the guard warned; final 1.48).
+
+**2. Pruned prototype (Sonnet; `fieldop_min/`, `PRUNE_2026-11-19.md`).** The minimal model is now the only model: package 7,615 to 5,551 lines, options 184 to 119. Every surviving tensor of the 150-step synthetic run is bit-identical to the full prototype's (66 of 66; re-run by me); the three golden steps agree to 3e-14.
+
+**3. The fit is in torchsky (two Sonnet builds; reports under `port_check/`).** `torchsky.map.exposure_fit`: `load_exposures` (the only function that opens files, through torchfits), `SkyFitConfig` (17 fields), `fit_sky`, `SkyFit`, `predict_exposure`, `SkyFit.product` giving a `SkyProduct` (image and standard deviation per band), `half_difference`, read-outs of the fitted kernel, throughput and noise terms; `torchsky.instrument.InstrumentDescription` for NIRCam, WFC3/IR and ACS/WFC. The numerical modules are moved unchanged: the torchsky fit is bit-identical to the pruned prototype (66 of 66 tensors, held-out scores and loss log equal), and the product is bit-identical on the truth problem. The loader agrees with the prototype's on real files (NIRCam and WFC3/IR identical; ACS positions differ by 0.9 mas because torchsky's WCS does not apply the ACS look-up-table distortion). Lint clean with the project's pinned version; type check, strict documentation build and Pixi tasks not run (not available in the cloud workspace). Not yet run on a GPU or on a full real field through the torchsky path.
+
+**4. Joint JWST + HST with the median zero rule:** headline 2.346. Worse than JWST alone at 20 to 50 (1.347 against 1.149 ± 0.006) and 50 to 200 (13.7 against 6.5 ± 0.8); the two earlier joint fits gave 1.29 and 1.30 at 20 to 50. This is outside the seed scatter in all three: adding HST currently hurts the prediction of moderately bright JWST pixels. Not diagnosed. Below 20 nothing changes.
+
+**5. First real-data test of the uncertainty (two fits on disjoint halves of the exposures; product at 0.08 arcsec).**
+- Cost: one pass over the training pixels takes 120 s on the GPU (60 s for a half); set-up 13 passes, Gauss–Newton step 61.
+- **The Gauss–Newton solve did not converge:** relative residual 0.97 to 1.07 over 60 iterations, so the "polished" sky was the optimiser's own sky.
+- Half-difference over the stated standard deviation: faintest 30% of pixels: rms 0.52 (F090W), 0.72 (F200W), 1.41 (F444W); brightest 10%: 2.1, 10.9, 22.9.
+
+**6. Diagnosis (Opus; `SOLVER_DIAGNOSIS_2026-11-19.md`, reproducer under `tests/solver_repro/`).**
+- *Why the solve stalled.* The preconditioner modelled the whole operator from one probe at the centre of the box. On SMACS the centre lies in the F090W chip gap of one half and partly in the F150W gap of the other, on bright emission. The operator itself is symmetric to 1e-9 and repeatable, so there is no adjoint fault. New preconditioner (`--unc-precond filter`): one Fourier model per filter, probed where that filter is well covered, combined over 8 coverage regions with a 12 by 12 scaling per node. On the CPU reproducer with the real-data features: residual at 60 and 100 iterations 0.65 and 0.28 before, 1.7e-3 and 2.0e-4 after. Convergence on SMACS is expected, not shown (two runs launched at 05:56 UTC).
+- *The factor 7.7 between the halves' F090W standard deviation* is the same single-probe fault (one number taken in the gap), not an imbalance: the halves have 12 and 11 F090W exposures.
+- *Bright sources.* The two half fits differ by a shift of 17 to 20 mas common to all bands and by a flux scale of 3% to 7% (one sign at short wavelengths, the other at long), with a source-to-source spread of 3.5% to 9%. Exposures shared by both halves are registered to the two skies within 3 mas, so the shift is not registration: nothing in the model fixes the centroid of the learned kernels, and a common shift of all kernels against the sky leaves every predicted pixel unchanged. With the common shift, scale and width removed, the pulls on sources are 0.2 to 1.3.
+- An unconverged step is now reported as such and not applied; the half-difference tool writes the common terms and a calibration error map
+
+$$
+\sigma_{\rm cal}^2(x) = (\epsilon_s I)^2 + (\epsilon_x\,\partial_x I)^2 + (\epsilon_y\,\partial_y I)^2 + (\epsilon_v\,\nabla^2 I)^2 .
+$$
+
+**What this means for "trust".** The stated error is a fair photon-noise estimate in faint sky (within a factor 2, to be re-read after the corrected solve). On sources the error is dominated by the response: an astrometric frame free at the 10 mas level and a flux scale uncertain at 3% to 7% between two fits of the same sky. Two model changes follow, both small: a convention that fixes the kernel centroid (and, with Seb's permission of 18 Nov, a tie of the frame to Gaia stars), and a calibration term in the product's error. Whether the optimiser's own scatter also contributes is decided by the two corrected solves now running.
+
+**Not pushed.** Seb's clones are 9 (torchsky) and 24 or more (harness) commits ahead of his fork.
+
 ## 18 Nov 2026, 23:20 UTC: toward the end-to-end torchsky — uncertainty tool, plan, minimal model, library prerequisites; four seeds read
 
 Seb's direction of 18 Nov: one end-to-end path in torchsky, exposures in, sky plus trusted uncertainty out, no resampling, no intermediate products, catalogues allowed for geometry and calibration.

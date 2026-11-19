@@ -255,8 +255,15 @@ class SkyNormalOperator:
     and released after it; what stays on the device is the weights (two float32 and one bool per training pixel) plus fixed-size arrays."""
 
     def __init__(self, model, exps, cfg, P=None, chunk=None, rho=10.0, tile=None, huber=True, precond_mode="fourier", bkg_gauge="all", log=print,
-                 batch_px=None, plan=None):
+                 batch_px=None, plan=None, mu=None, n_regions=8, region_smooth=1.5, coverage="quadratic", n_probes=1):
+        """precond_mode: 'fourier' (the 18 Nov preconditioner: one Fourier model probed at the centre node, scaled by the all-filter coverage;
+        bit-identical to the calibrated truth-problem runs; class default), 'jacobi', or 'filter' (19 Nov, SOLVER_DIAGNOSIS_2026-11-19.md: one
+        Fourier model per filter probed where that filter is well covered, per-node K x K scaling by each filter's own coverage, and the prior
+        handled exactly where the data are absent; the command-line default). mu: prior weight given explicitly (default: from the data)."""
+        if precond_mode not in ("fourier", "jacobi", "filter"):
+            raise ValueError(f"precond_mode {precond_mode!r}")
         self.model, self.cfg = model, cfg
+        self.n_regions, self.region_smooth, self.coverage_kind, self.n_probes = int(n_regions), float(region_smooth), coverage, int(n_probes)
         self.bkg_gauge = bkg_gauge          # "constant": the fit's pedestal gauge only; "all": the training mean of each of the 6 terms held
         self.log = log
         sky = model.sky
@@ -294,7 +301,15 @@ class SkyNormalOperator:
                             continue
                         n_pix += k
                         self.tiles.append(Tile(self, e, sl, mask))
-        self.batches = pack_batches([t.n for t in self.tiles], self.batch_px, self.chunk)
+        self.tile_filt = [int(t.e.filt) for t in self.tiles]
+        self.filters = sorted(set(self.tile_filt))
+        if precond_mode == "filter":     # one filter per batched render, so that each filter's pass can carry its own probe (same pixels per pass)
+            self.batches = []
+            for f in self.filters:
+                idx = [i for i, ff in enumerate(self.tile_filt) if ff == f]
+                self.batches += [[idx[j] for j in b] for b in pack_batches([self.tiles[i].n for i in idx], self.batch_px, self.chunk)]
+        else:
+            self.batches = pack_batches([t.n for t in self.tiles], self.batch_px, self.chunk)
         self.n_pix = n_pix
         self.A_fit = A_fit
         self.dev = dev
@@ -331,6 +346,8 @@ class SkyNormalOperator:
                         w = w * hw
                     t.w = torch.where(t.mask, w, torch.zeros_like(w))
                     t.wr = t.w * (pix["d"] - m)            # weighted residual at the fit (Gauss-Newton step)
+                    if precond_mode == "filter":           # weights splatted at the pixels' sky positions (filter mode: quadratic coverage)
+                        self._splat_weights(t, pix)
                     Lb = self._lb(t, pix)
                     Bb[t.row] += Lb.T @ (t.w[:, None] * Lb)
                 del outs, pixs
@@ -342,6 +359,17 @@ class SkyNormalOperator:
         # preconditioner of the sky block (F_AA + mu): Fourier (circulant) model of F_AA from its response to a delta at the centre node,
         # scaled by the relative coverage d_j = (J^T w)_j / (J^T w)_centre; Jacobi on the nodes with d < 0.05 (edges, uncovered)
         t0 = time.perf_counter()
+        self.precond_mode = precond_mode
+        self.rho = rho
+        self._qcache = {}
+        if precond_mode == "filter":
+            self._setup_filter_precond(rho, mu, log, pl)
+            self.Bb_inv = torch.linalg.inv(Bb + 1e-9 * torch.eye(6, device=dev))
+            self.t_setup_precond = time.perf_counter() - t0
+            log(f"uncertainty operator: {len(self.tiles)} tiles, {n_pix} training pixels ({n_down} with Huber weight < 1), {len(self.rows)} exposures; "
+                f"coefficients {self.nA}, background terms {self.nb}; node noise (median, coefficient units) {self.node_noise:.4g}; prior rho {rho} -> mu {self.mu:.4g}; "
+                f"preconditioner 'filter' {self.t_setup_precond:.1f} s ({self.n_apply} applications + {self.n_forward} forward-only)")
+            return
         self.cov = self._JT_w().sum(0)                                     # (N, N): sum_k (J_A^T w)
         log(f"first full application (forward + adjoint): {self.t_last:.1f} s" + (f"; planned total up to {pl['total']} passes = about "
             f"{pl['total'] * self.t_last / 3600:.2f} h" if pl else ""))
@@ -357,11 +385,10 @@ class SkyNormalOperator:
         self.covered = rel > 1e-3
         dA = dcen[:, None, None] * rel[None]
         dmed = float(torch.stack([dA[k][self.covered].median() for k in range(self.K)]).max())
-        self.mu = dmed / rho ** 2
+        self.mu = dmed / rho ** 2 if mu is None else float(mu)
         self.rho = rho
         self.node_noise = 1.0 / math.sqrt(dmed)
         self.dA = dA + self.mu
-        self.precond_mode = precond_mode
         self.fmask = rel > 0.05
         self.fscale = torch.where(self.fmask, rel, torch.ones_like(rel)).rsqrt()
         fh = torch.fft.fft2(torch.roll(fc, shifts=(-c, -c), dims=(-2, -1)))  # (K', K, N, N)
@@ -374,7 +401,6 @@ class SkyNormalOperator:
             return (V * (1.0 / ev)[..., None, :]) @ V.conj().transpose(-1, -2)
         self.finv = _eigh_rows(fh, _inv)                                    # (N, N, K, K)
         del fh
-        self._qcache = {}
         self.kappa = (dcen / self.cov[c, c].clamp(min=1e-30)).tolist()
         kap = self.kappa
         self.Bb_inv = torch.linalg.inv(Bb + 1e-9 * torch.eye(6, device=dev))
@@ -386,6 +412,264 @@ class SkyNormalOperator:
     def _batches(self):
         for b in self.batches:
             yield [self.tiles[i] for i in b]
+
+    # ---------------------------------------------------------------- per-filter preconditioner (precond_mode 'filter', 19 Nov)
+    def _splat_weights(self, t, pix):
+        """Add the tile's weights w_i, bilinearly, at its pixels' sky positions (the model's positions, mean over the lambda nodes) to the
+        per-filter weight map W_f (N, N) on the node grid."""
+        if not hasattr(self, "wsplat"):
+            self.wsplat = {}
+        f = int(t.e.filt)
+        N, sky = self.N, self.model.sky
+        W = self.wsplat.setdefault(f, torch.zeros(N * N, device=self.dev, dtype=torch.float64))
+        pos = self.model.positions(self.model.et(t.eid), pix["X"], pix["Y"], pix["xi"], self.P, c0=pix.get("c0")).mean(0)
+        u = (pos - sky.x0) / sky.pitch                                                # node coordinates (x = column, y = row)
+        i0 = torch.floor(u).long()
+        fr = u - i0
+        w = t.w.double()
+        for dy in (0, 1):
+            for dx in (0, 1):
+                ix, iy = i0[:, 0] + dx, i0[:, 1] + dy
+                wt = (fr[:, 0] if dx else 1 - fr[:, 0]) * (fr[:, 1] if dy else 1 - fr[:, 1])
+                ok = (ix >= 0) & (ix < N) & (iy >= 0) & (iy < N) & (w > 0)
+                W.index_add_(0, (iy * N + ix)[ok], (w * wt.double())[ok])
+
+    def _render_sum_by_filter(self, xAs, rfun):
+        """One application in which the tiles of filter f render with their own coefficient grid xAs[f] (batches hold one filter each): returns
+        {f: J_f^T r_f (K, N, N)}. Same pixels and cost as _render_sum."""
+        model = self.model
+        t0 = time.perf_counter()
+        leaves = {f: x.detach().clone().requires_grad_(True) for f, x in xAs.items()}
+        with torch.enable_grad(), frozen(model):
+            for b in self.batches:
+                ch = [self.tiles[i] for i in b]
+                with sky_override(model.sky, leaves[self.tile_filt[b[0]]]):
+                    pixs = [t["pix"] for t in ch]
+                    outs = model.render_batch([(t.eid, p) for t, p in zip(ch, pixs)], self.P)
+                    Ss = [o["S"] for o in outs]
+                    Rs = [rfun(t, o["S"].detach(), None) for t, o in zip(ch, outs)]
+                    torch.autograd.backward(Ss, Rs)
+                del outs, Ss, Rs, pixs
+        self.n_apply += 1
+        self.t_last = time.perf_counter() - t0
+        self.t_apply += self.t_last
+        return {f: (l.grad.detach() if l.grad is not None else torch.zeros_like(l)) for f, l in leaves.items()}
+
+    def _setup_filter_precond(self, rho, mu, log, pl, n_regions=None, smooth=None):
+        """Preconditioner of precond_mode 'filter' (SOLVER_DIAGNOSIS_2026-11-19.md, section 4). Pieces:
+          c_f(j)   = sum_k (J_f^T w_f)_{kj}: linear coverage of node j by the training pixels of filter f (one application for all filters);
+          p_f      = probe node of filter f: the node nearest the box centre with c_f within 10 per cent of its 90th percentile;
+          G_f(d)   = response of filter f's normal operator to a unit coefficient k at p_f, read at p_f + d (K x K per lag d; K applications for
+                     all filters together, each filter's pixels carrying the delta at its own probe); d_f(j) = c_f(j) / c_f(p_f);
+          M_j      = sum_f d_f(j) G_f(0) + mu I: the local K x K information of node j;
+          regions  r = 1..R: k-means of theta_f(j) = d_f(j) g_f / (d_f(j) g_f + mu) (g_f the largest eigenvalue of G_f(0)), i.e. nodes grouped by
+                     which filters constrain them (gaps, edges, bright-source cores, the uncovered margin); a_r(j) >= 0, sum_r a_r = 1, the
+                     indicator of region r smoothed over `smooth` nodes; dbar_rf the mean of d_f over region r;
+          C_r(w)   = sum_f dbar_rf FFT[G_f](w) + mu I  (K x K per frequency w),  M_r = sum_f dbar_rf G_f(0) + mu I;
+          P^{-1}   = M_j^{-1/2} [ sum_r a_r^{1/2} M_r^{1/2} C_r^{-1} M_r^{1/2} a_r^{1/2} ] M_j^{-1/2}.
+        Symmetric positive definite. Exact where one region's coverage is uniform (P = C_r) and where no data reach a node (P = M_j = mu I)."""
+        K, N, dev = self.K, self.N, self.dev
+        R_ = int(n_regions or getattr(self, "n_regions", 8))
+        sm_nodes = float(smooth or getattr(self, "region_smooth", 1.5))
+        c = (N - 1) // 2
+        Z = torch.zeros(K, N, N, device=dev)
+        covf = self._render_sum_by_filter({f: Z for f in self.filters}, lambda t, S, Lb: t.w)
+        log(f"first full application (forward + adjoint, per-filter coverage): {self.t_last:.1f} s" + (f"; planned total up to {pl['total']} passes = "
+            f"about {pl['total'] * self.t_last / 3600:.2f} h" if pl else ""))
+        cf = {f: g.sum(0) for f, g in covf.items()}                                  # (N, N) per filter
+        self.cov = sum(cf.values())
+        self.cov_filter = cf
+        yy, xx = torch.meshgrid(torch.arange(N, device=dev), torch.arange(N, device=dev), indexing="ij")
+        r2 = ((yy - c) ** 2 + (xx - c) ** 2).float()
+        # probes: up to n_probes per filter, at least 2 Rw + 1 nodes apart (Chebyshev), nearest the centre first, among the nodes whose coverage
+        # is within 10 per cent of the 90th percentile; their windowed responses are averaged (the Fourier model averaged over sub-pixel phases).
+        # With room for one probe only: one probe, no window (the response of the whole field).
+        Rw = int(max(6, min(40, N // 7)))
+        nmax = int(getattr(self, "n_probes", 1))
+        probes, plist = {}, {}
+        for f, m in cf.items():
+            pos = m > 0.05 * m.max()
+            thr = 0.9 * torch.quantile(m[pos].float().cpu(), 0.9).item() if bool(pos.any()) else 0.0
+            i = int(torch.argmin(torch.where(m >= thr, r2, torch.full_like(r2, float("inf")))))
+            probes[f] = (i // N, i % N)
+            inside = (yy >= Rw) & (yy < N - Rw) & (xx >= Rw) & (xx < N - Rw)
+            cand = torch.nonzero((m >= thr) & inside).cpu()
+            order = torch.argsort(r2[cand[:, 0], cand[:, 1]].cpu())
+            pk = []
+            for q in order.tolist():
+                y_, x_ = int(cand[q, 0]), int(cand[q, 1])
+                if all(max(abs(y_ - a), abs(x_ - b)) >= 2 * Rw + 1 for a, b in pk):
+                    pk.append((y_, x_))
+                if len(pk) >= nmax:
+                    break
+            plist[f] = pk if len(pk) >= 2 else [probes[f]]
+            probes[f] = plist[f][0]
+        self.probes, self.probe_list = probes, plist
+        u = torch.fft.fftfreq(N, 1.0 / N).round().abs()                              # |lag| per index
+        t1 = torch.where(u <= Rw / 2, torch.ones(N), torch.where(u <= Rw, torch.cos(0.5 * math.pi * (u - Rw / 2) / (Rw / 2)) ** 2, torch.zeros(N)))
+        win = (t1[:, None] * t1[None, :]).float()                                     # separable taper, lag 0 at index 0
+        nF = len(self.filters)
+        kernF = torch.zeros(nF, K, K, N, N)                                          # host: (filter, K', K, lag y, lag x), lag 0 at index 0
+        G0 = torch.zeros(nF, K, K, dtype=torch.float64)
+        for k in range(K):
+            xAs = {}
+            for f, pk in plist.items():
+                v = torch.zeros(K, N, N, device=dev)
+                for (py, px) in pk:
+                    v[k, py, px] = 1.0
+                xAs[f] = v
+            out = self._render_sum_by_filter(xAs, lambda t, S, Lb: t.w * S)
+            for i, f in enumerate(self.filters):
+                pk = plist[f]
+                o = out[f].cpu()
+                for (py, px) in pk:
+                    r_ = torch.roll(o, shifts=(-py, -px), dims=(-2, -1))
+                    kernF[i, :, k] += (r_ * win if len(pk) > 1 else r_) / len(pk)
+                    G0[i, :, k] += o[:, py, px].double() / len(pk)
+            del out
+        G0 = 0.5 * (G0 + G0.transpose(-1, -2))
+        self.G0 = G0
+        self.fc = torch.roll(kernF.sum(0), shifts=(c, c), dims=(-2, -1)).to(dev)    # all filters at their probes' coverage (origin at the centre node)
+        cref = {f: torch.stack([cf[f][p] for p in plist[f]]).mean() for f in self.filters}   # coverage the averaged model stands for
+        d_lin = torch.stack([(cf[f] / cref[f].clamp(min=1e-30)).clamp(min=0) for f in self.filters]).double().cpu()   # (F, N, N)
+        if getattr(self, "coverage_kind", "quadratic") == "quadratic" and hasattr(self, "wsplat"):
+            # quadratic coverage q_f = W_f (*) psi_f^2: the information sum_i w_i psi_ij^2 of node j (at a bright source the weights fall inside
+            # the footprint, and the linear coverage sum_i w_i psi_ij overstates it). psi_f^2(l) ~ g_f(2 l), g_f(l) = 1^T G_f(l) 1 the
+            # flat-spectrum delta response (the footprint's autocorrelation): exact for a Gaussian footprint.
+            dq = []
+            for i, f in enumerate(self.filters):
+                g = kernF[i].double().sum((0, 1))                                    # (N, N), lag 0 at index 0
+                lag = torch.fft.fftfreq(N, 1.0 / N).round().long()                    # signed lags 0, 1, ..., -1
+                L2 = (2 * lag) % N
+                h = g[L2][:, L2] * ((2 * lag.abs() < N // 2)[:, None] & (2 * lag.abs() < N // 2)[None, :]).double()
+                h = h.clamp(min=0)
+                Wf = self.wsplat.get(f, torch.zeros(N * N, dtype=torch.float64)).view(N, N).cpu()
+                n2 = 2 * N
+                hp = torch.zeros(n2, n2, dtype=torch.float64)
+                hl = lag.clone()
+                hp[hl[:, None] % n2, hl[None, :] % n2] = h
+                q = torch.fft.irfft2(torch.fft.rfft2(Wf, s=(n2, n2)) * torch.fft.rfft2(hp), s=(n2, n2))[:N, :N].clamp(min=0)
+                dq.append(q / max(float(torch.stack([q[p] for p in plist[f]]).mean()), 1e-300))
+            d = torch.stack(dq)
+        else:
+            d = d_lin
+        self.d_filter = d
+        self.d_filter_linear = d_lin
+        diag = torch.einsum("fhw,fk->khw", d, torch.diagonal(G0, dim1=-2, dim2=-1))  # (K, N, N): diagonal of the data part of M_j
+        covc = self.cov.double().cpu()
+        ref = torch.quantile(covc[covc > 0], 0.9).item() if bool((covc > 0).any()) else 1.0
+        rel = (covc / max(ref, 1e-300)).clamp(min=0)
+        self.covered = (rel > 1e-3).to(dev)
+        dmed = float(torch.stack([diag[k][self.covered.cpu()].median() for k in range(K)]).max())
+        self.mu = dmed / rho ** 2 if mu is None else float(mu)
+        mu_ = self.mu
+        self.node_noise = 1.0 / math.sqrt(dmed)
+        self.dA = (diag + mu_).float().to(dev)
+        self.fmask = (rel > 0.05).to(dev)
+        self.fscale = torch.where(self.fmask, rel.float().to(dev), torch.ones_like(rel, dtype=torch.float32, device=dev)).rsqrt()
+        self.kappa = (diag[:, c, c] / float(covc[c, c]) if float(covc[c, c]) > 0 else diag[:, c, c] * 0).tolist()
+        # regions by coverage pattern: k-means (k-means++ start, fixed seed) on theta_f(j)
+        gf = torch.linalg.eigvalsh(G0)[:, -1].clamp(min=1e-300)
+        dl = (mu_ / gf)[:, None, None]                                               # coverage at which filter f's information equals the prior
+        th = torch.log(d + dl).reshape(nF, -1).T                                     # (N^2, F): log coverage, so distances are ratios
+        gen = torch.Generator().manual_seed(12345)
+        cent = [th.mean(0)]
+        for _ in range(1, R_):
+            dist = torch.stack([((th - c0) ** 2).sum(1) for c0 in cent]).min(0).values
+            cent.append(th[int(torch.multinomial(dist / dist.sum(), 1, generator=gen))] if float(dist.sum()) > 0 else th[0])
+        cent = torch.stack(cent)
+        for _ in range(30):
+            lab = torch.cdist(th, cent).argmin(1)
+            cent = torch.stack([th[lab == r].mean(0) if bool((lab == r).any()) else cent[r] for r in range(R_)])
+        lab = torch.cdist(th, cent).argmin(1).view(N, N)
+        used = [r for r in range(R_) if bool((lab == r).any())]
+        S1 = Smoother(N, 1.0, sm_nodes, dtype=torch.float64).M if sm_nodes > 0 else torch.eye(N, dtype=torch.float64)
+        a = torch.stack([S1 @ (lab == r).double() @ S1.T for r in used])
+        a = a / a.sum(0, keepdim=True).clamp(min=1e-300)
+        self.region_label = lab
+        self.region_sqrt_a = a.sqrt().float().to(dev)                               # (R, N, N)
+        Mr_half, finv_r, empty, dbar_all = [], [], [], []
+        for i, r in enumerate(used):
+            m = (lab == r)
+            dbar = (torch.exp(th.T.reshape(nF, N, N)[:, m].mean(1)) - dl[:, 0, 0]).clamp(min=0)   # geometric mean (in log coverage) per filter
+            dbar_all.append(dbar.tolist())
+            Mr = torch.einsum("f,fkl->kl", dbar, G0) + mu_ * torch.eye(K, dtype=torch.float64)
+            ev, V = torch.linalg.eigh(0.5 * (Mr + Mr.T))
+            Mr_half.append(((V * ev.clamp(min=0).sqrt()[None]) @ V.T).float())
+            if float((dbar * gf).max()) < 1e-2 * mu_:                               # no data in this region (below 1 per cent of the prior): C_r = mu I
+                empty.append(True)
+                finv_r.append(None)
+                continue
+            empty.append(False)
+            kr = torch.einsum("f,fklhw->klhw", dbar.float(), kernF)
+            fh = torch.fft.fft2(kr).permute(2, 3, 0, 1)
+
+            def _inv(b):
+                b = 0.5 * (b + b.conj().transpose(-1, -2))
+                ev, V = torch.linalg.eigh(b)
+                ev = ev.clamp(min=0) + mu_
+                return (V * (1.0 / ev)[..., None, :]) @ V.conj().transpose(-1, -2)
+            finv_r.append(_eigh_rows(fh, _inv).to(dev))
+            del fh, kr
+        del kernF
+        self.region_Mhalf = [m.to(dev) for m in Mr_half]
+        self.region_finv = finv_r
+        self.region_empty = empty
+        self.region_dbar = dbar_all
+        self.finv = next((x for x in finv_r if x is not None), None)                 # (for code that reads op.finv: a covered region's inverse)
+        Mi = []
+        for r0 in range(0, N, 32):                                                   # per-node M_j^{-1/2}, in blocks of rows, on the host
+            Mj = torch.einsum("fhw,fkl->hwkl", d[:, r0:r0 + 32], G0) + mu_ * torch.eye(K, dtype=torch.float64)
+            lam, Vj = torch.linalg.eigh(0.5 * (Mj + Mj.transpose(-1, -2)))
+            Mi.append(((Vj * lam.clamp(min=mu_).rsqrt()[..., None, :]) @ Vj.transpose(-1, -2)).float())
+        self.Minvh = torch.cat(Mi).to(dev)                                           # (N, N, K, K)
+        names = (lambda f: self.model.fset.names[f]) if hasattr(self.model.fset, "names") else (lambda f: f)
+        cen = {names(f): round(float(d[i, c, c]), 4) for i, f in enumerate(self.filters)}
+        log(f"preconditioner 'filter': probe nodes (row, column) per filter {({names(f): p for f, p in probes.items()})} ({[len(plist[f]) for f in self.filters]} "
+            f"probes per filter averaged, window +-{Rw} nodes); coverage of the box centre "
+            f"relative to each filter's probe {cen} (0 = the filter does not reach the centre); {len(used)} coverage regions (nodes per region "
+            f"{[int((lab == r).sum()) for r in used]}; mean relative coverage per filter "
+            f"{[[round(x, 2) for x in db] for db in dbar_all]}; {sum(empty)} without data)")
+
+    def _region_solve(self, i, u):
+        """C_r^{-1} u for region i (u: (K, N, N))."""
+        if self.region_empty[i]:
+            return u / self.mu
+        Uh = torch.fft.fft2(u).permute(1, 2, 0)
+        return torch.fft.ifft2(torch.einsum("hwij,hwj->hwi", self.region_finv[i], Uh).permute(2, 0, 1)).real
+
+    def local_fourier_sigma(self, phi, s):
+        """sigma of the product at scale s with the 'filter' preconditioner taken as the approximation of F^{-1}, M_j and the region weights
+        assumed constant over the smoothing kernel g_s around each output node x:
+            sigma^2(x) = sum_r a_r(x) u_rx^T Q_rs u_rx,   u_rx = M_r^{1/2} M_x^{-1/2} phi,   Q_rs = N^-2 sum_w |g_s^(w)|^2 Re C_r^{-1}(w).
+        Follows each filter's own coverage (gaps, edges, bright sources), unlike circulant_sigma of the 'fourier' mode. (N, N), NaN where the
+        all-filter coverage is below 0.05 of its 90th percentile."""
+        N, c = self.N, (self.N - 1) // 2
+        sm = Smoother(N, self.model.sky.pitch, s, dtype=torch.float64)
+        g = sm.weights_at(c, c)
+        gh2 = torch.fft.fft2(torch.roll(g, (-c, -c), (0, 1))).abs() ** 2             # (N, N)
+        ph = phi.double().cpu()
+        if not hasattr(self, "_Minvh_host"):
+            self._Minvh_host = self.Minvh.cpu().double()
+            self._Qcache = {}
+        w = torch.einsum("hwkl,l->hwk", self._Minvh_host, ph)                         # M_x^{-1/2} phi
+        var = torch.zeros(N, N, dtype=torch.float64)
+        for i in range(len(self.region_Mhalf)):
+            key = (i, round(float(s), 9))
+            if key in self._Qcache:
+                Q = self._Qcache[key]
+            elif self.region_empty[i]:
+                Q = float(gh2.sum()) / N ** 2 / self.mu * torch.eye(self.K, dtype=torch.float64)
+            else:
+                fi = self.region_finv[i]
+                g2 = gh2.to(device=fi.device, dtype=torch.float32).reshape(-1)
+                Q = (g2.to(torch.complex64) @ fi.reshape(N * N, -1)).to(torch.complex128).real.cpu().view(self.K, self.K) / N ** 2
+            self._Qcache[key] = Q
+            Mh = self.region_Mhalf[i].cpu().double()
+            u = torch.einsum("kl,hwl->hwk", Mh, w)
+            var += self.region_sqrt_a[i].cpu().double() ** 2 * torch.einsum("hwk,kl,hwl->hw", u, Q, u)
+        sig = var.clamp(min=0).sqrt()
+        return torch.where(self.fmask.cpu(), sig, torch.full_like(sig, float("nan")))
 
     def _lb(self, t, pix):
         """Background basis of a tile (Legendre terms times the exposure gain), no gradient."""
@@ -416,7 +700,10 @@ class SkyNormalOperator:
     def circulant_sigma(self, phi, s):
         """sigma of the product at scale s from the Fourier model of F alone (uniform-coverage approximation): sigma_c(s) at the centre's
         coverage, scaled by 1 / sqrt(relative coverage) elsewhere. Costs nothing beyond the preconditioner's K + 1 applications; ignores the
-        background terms, the edges and coverage gradients. Returns (N, N) (NaN where the relative coverage is below 0.05)."""
+        background terms, the edges and coverage gradients. Returns (N, N) (NaN where the relative coverage is below 0.05).
+        With precond_mode 'filter' this is local_fourier_sigma (each filter's own coverage)."""
+        if self.precond_mode == "filter":
+            return self.local_fourier_sigma(phi, s)
         N, c = self.N, (self.N - 1) // 2
         q = self._circ_q(phi)
         g = Smoother(N, self.model.sky.pitch, s, dtype=torch.float64, device=q.device).weights_at(c, c)
@@ -484,6 +771,15 @@ class SkyNormalOperator:
         if self.precond_mode == "jacobi":
             return torch.cat([rA / self.dA.reshape(-1), self.gauge(zb)])
         R = rA.view(self.K, self.N, self.N)
+        if self.precond_mode == "filter":
+            y = torch.einsum("hwkl,lhw->khw", self.Minvh, R)
+            z = torch.zeros_like(y)
+            for i, Mh in enumerate(self.region_Mhalf):
+                sa = self.region_sqrt_a[i]
+                v = self._region_solve(i, torch.einsum("kl,lhw->khw", Mh, sa * y))
+                z += sa * torch.einsum("kl,lhw->khw", Mh, v)
+            zA = torch.einsum("hwkl,lhw->khw", self.Minvh, z)
+            return torch.cat([zA.reshape(-1), self.gauge(zb)])
         u = torch.where(self.fmask, R * self.fscale, torch.zeros_like(R))
         Uh = torch.fft.fft2(u).permute(1, 2, 0)                                   # (N, N, K)
         z = torch.fft.ifft2(torch.einsum("hwij,hwj->hwi", self.finv, Uh).permute(2, 0, 1)).real
@@ -507,7 +803,7 @@ class SkyNormalOperator:
         return torch.cat([kA.reshape(-1).to(self.dev), torch.zeros(self.nb, device=self.dev)])
 
 
-def pcg(op, b, tol=1e-3, maxiter=300, x0=None, snapshots=None, monitor=None, label="solve"):
+def pcg(op, b, tol=1e-3, maxiter=300, x0=None, snapshots=None, monitor=None, label="solve", keep_every=0):
     """Preconditioned conjugate gradients for op.apply (symmetric positive definite on the gauge subspace). Returns x, info.
     monitor (optional): progress line every few iterations and the time budget; when it asks to stop, the iteration ends cleanly before the next
     application and info['truncated'] is True (x is the last iterate; info['rel_residual'] the residual reached)."""
@@ -518,7 +814,8 @@ def pcg(op, b, tol=1e-3, maxiter=300, x0=None, snapshots=None, monitor=None, lab
         p = z.clone()
         rz = torch.dot(r, z)
         bn = float(b.norm())
-        hist = []
+        hist, alphas, betas, rzs = [], [], [], []
+        x_mark, it_mark, x_mark_prev, it_mark_prev = None, 0, None, 0
         it, truncated = 0, False
         if monitor is not None:
             monitor.residual = 1.0
@@ -528,6 +825,8 @@ def pcg(op, b, tol=1e-3, maxiter=300, x0=None, snapshots=None, monitor=None, lab
                 break
             Ap = op.apply(p)
             a = rz / torch.dot(p, Ap)
+            alphas.append(float(a))
+            rzs.append(float(rz))
             x += a * p
             r -= a * Ap
             rel = float(r.norm()) / max(bn, 1e-30)
@@ -536,20 +835,53 @@ def pcg(op, b, tol=1e-3, maxiter=300, x0=None, snapshots=None, monitor=None, lab
                 monitor.report(label, it, rel)
             if snapshots is not None and it in snapshots:
                 snapshots[it] = x.clone()
+            if keep_every and it % keep_every == 0:          # marks every keep_every iterations (two copies held: the last two marks)
+                x_mark_prev, it_mark_prev = x_mark, it_mark
+                x_mark, it_mark = x.clone(), it
             if rel < tol:
                 break
             z = op.precond(r)
             rz_new = torch.dot(r, z)
+            betas.append(float(rz_new / rz))
             p = z + (rz_new / rz) * p
             rz = rz_new
-    return x, {"iterations": it, "rel_residual": hist[-1] if hist else 1.0, "history": hist[::10], "truncated": truncated}
+    ritz = lanczos_ritz(alphas, betas)
+    # error of the iterate in the operator's own metric, ||x* - x||_F (CG minimises it): Hestenes-Stiefel / Strakos-Tichy estimate with a delay
+    # of d iterations, ||x* - x_{m-d}||_F^2 >= sum_{j=m-d}^{m-1} alpha_j r_j.z_j; for a converging solve it approximates (from below) the error d
+    # iterations before the end, which bounds the final error (the F-norm error decreases monotonically). Relative to ||x||_F ~ sqrt(x.b).
+    d = min(10, len(alphas) - 1)
+    errF = math.sqrt(max(sum(alphas[j] * rzs[j] for j in range(len(alphas) - d, len(alphas))), 0.0)) if d >= 1 else float("nan")
+    xb = abs(float(torch.dot(x, b))) if x0 is None else float("nan")
+    extra = {}
+    if keep_every:                                            # an iterate keep_every / 2 to 3 keep_every / 2 iterations before the last one
+        ref, ref_it = (x_mark, it_mark) if (x_mark is not None and it - it_mark >= max(1, keep_every // 2)) else (x_mark_prev, it_mark_prev)
+        if ref is not None and 0 < ref_it < it:
+            extra = {"x_back": ref, "iter_back": ref_it}
+    return x, {**extra, "iterations": it, "rel_residual": hist[-1] if hist else 1.0, "history": hist[::10], "truncated": truncated,
+               "ritz_min": ritz[0] if ritz else float("nan"), "ritz_max": ritz[-1] if ritz else float("nan"),
+               "err_F_est": errF, "rel_err_F_est": errF / math.sqrt(xb) if xb > 0 else float("nan")}
+
+
+def lanczos_ritz(alphas, betas):
+    """Ritz values (ascending) of the preconditioned operator P^{-1} F from the conjugate-gradient coefficients (the Lanczos tridiagonal matrix
+    T: T_jj = 1/alpha_j + beta_{j-1}/alpha_{j-1}, T_j,j+1 = sqrt(beta_j)/alpha_j). Their spread is the condition number CG has met so far."""
+    m = len(alphas)
+    if m == 0 or not all(math.isfinite(a) and a != 0 for a in alphas):
+        return []
+    T = np.zeros((m, m))
+    for j in range(m):
+        T[j, j] = 1.0 / alphas[j] + (betas[j - 1] / alphas[j - 1] if j > 0 else 0.0)
+        if j + 1 < m and j < len(betas):
+            T[j, j + 1] = T[j + 1, j] = math.sqrt(max(betas[j], 0.0)) / alphas[j]
+    return np.sort(np.linalg.eigvalsh(T)).tolist()
 
 
 # ============================================================================= estimators
-def posterior_samples(op, n, seed=0, tol=1e-3, maxiter=300, log=print, monitor=None):
+def posterior_samples(op, n, seed=0, tol=1e-3, maxiter=300, log=print, monitor=None, accept_tol=None):
     """n draws of the coefficient error from the linearised posterior: (n, K, N, N) and the solver records. With a monitor, a draw that the
     time budget cuts is DISCARDED (an unconverged draw has too small a variance); the draws completed so far are returned (None if none) and
-    monitor.hit is set."""
+    monitor.hit is set. accept_tol (default None: every finished draw is kept, the 18 Nov behaviour): a draw whose relative residual is above
+    it is discarded too, and said so in the log (record kept with 'rejected': True)."""
     gen = torch.Generator().manual_seed(seed)
     out, recs = [], []
     with torch.no_grad():
@@ -562,6 +894,10 @@ def posterior_samples(op, n, seed=0, tol=1e-3, maxiter=300, log=print, monitor=N
                 log(f"  posterior draw {i + 1}/{n}: stopped by the time budget at iteration {info['iterations']} (relative residual "
                     f"{info['rel_residual']:.2e}); this draw is discarded")
                 break
+            if accept_tol is not None and not info["rel_residual"] <= accept_tol:
+                log(f"  WARNING posterior draw {i + 1}/{n}: NOT CONVERGED (relative residual {info['rel_residual']:.2e} above the tolerance "
+                    f"{accept_tol:.1e} after {info['iterations']} iterations); this draw is discarded")
+                continue
             out.append(x[:op.nA].view(op.K, op.N, op.N).cpu())
             info["seconds"] = time.perf_counter() - t0
             recs.append(info)
@@ -570,7 +906,7 @@ def posterior_samples(op, n, seed=0, tol=1e-3, maxiter=300, log=print, monitor=N
     return (torch.stack(out) if out else None), recs
 
 
-def gauss_newton_polish(op, tol=1e-4, maxiter=60, monitor=None):
+def gauss_newton_polish(op, tol=1e-4, maxiter=60, monitor=None, keep_every=0):
     """One Gauss-Newton step from the fit with the response held: A_pol = A_fit + [F^{-1} g]_A, g = residual_rhs(). For the grid sky (linear
     in A) this is the minimiser of the weighted least squares with the weak prior, i.e. the estimator the linearised posterior describes;
     positivity is not imposed. The backgrounds move too (returned) within the gauge. Returns (A_pol (K, N, N), delta_b (n_rows, 6), info).
@@ -579,7 +915,9 @@ def gauss_newton_polish(op, tol=1e-4, maxiter=60, monitor=None):
     if monitor is not None and monitor.stop_now("Gauss-Newton step"):
         return (op.A_fit.clone().detach(), torch.zeros(len(op.rows), 6), {"iterations": 0, "rel_residual": 1.0, "history": [], "truncated": True})
     with torch.no_grad():
-        x, info = pcg(op, op.residual_rhs(), tol=tol, maxiter=maxiter, monitor=monitor, label="Gauss-Newton step")
+        x, info = pcg(op, op.residual_rhs(), tol=tol, maxiter=maxiter, monitor=monitor, label="Gauss-Newton step", keep_every=keep_every)
+        if "x_back" in info:                                  # the sky of the step some iterations earlier (for the change diagnostic)
+            info["A_back"] = (op.A_fit + info.pop("x_back")[:op.nA].view(op.K, op.N, op.N)).detach().cpu()
         return (op.A_fit + x[:op.nA].view(op.K, op.N, op.N)).detach(), x[op.nA:].view(-1, 6).detach(), info
 
 
@@ -699,24 +1037,41 @@ def alternate_groups(groups, half):
 
 
 # ============================================================================= one call: the whole map
-def solve_shared(op, n_samples=8, method="draws", polish=True, tol=1e-4, maxiter=60, seed=0, log=print, monitor=None):
+def solve_shared(op, n_samples=8, method="draws", polish=True, tol=1e-4, maxiter=60, seed=0, log=print, monitor=None, accept_tol=None):
     """The part of the map that does not depend on the band: the Gauss-Newton step (all K spectral coefficients at once) and the posterior
     draws (K coefficients each). Done once for any number of bands. The step comes first (it is the product), the draws after it. With a
     monitor, the time budget can cut either: the step is then the last iterate, a cut draw is discarded, and no further draw is started.
     Returns a dict: A_pol (None without the step), db, polish (info), samples (None without draws), recs, seconds_samples, truncated, where,
-    residual (of the solve that was cut, else of the step), n_samples_requested."""
+    residual (of the solve that was cut, else of the step), n_samples_requested.
+    accept_tol (default None: the 18 Nov behaviour, the last iterate is the product whatever its residual): the step counts as converged only
+    when its relative residual is at most accept_tol; otherwise 'polish_converged' is False, the log says so plainly, and band_readout writes
+    the fit's own sky as SKY (POLISHED false) with the unconverged step aside. Draws above accept_tol are discarded."""
     sh = {"A_pol": None, "db": None, "polish": None, "samples": None, "recs": [], "seconds_samples": 0.0, "truncated": False, "where": "",
-          "residual": float("nan"), "n_samples_requested": n_samples if method == "draws" else 0, "method": method}
+          "residual": float("nan"), "n_samples_requested": n_samples if method == "draws" else 0, "method": method, "accept_tol": accept_tol,
+          "polish_converged": None}
     with torch.no_grad():
         if polish:
-            A_pol, db, info = gauss_newton_polish(op, tol=tol, maxiter=maxiter, monitor=monitor)
+            A_pol, db, info = gauss_newton_polish(op, tol=tol, maxiter=maxiter, monitor=monitor, keep_every=10 if accept_tol is not None else 0)
             sh.update(A_pol=A_pol.cpu(), db=db.cpu(), polish=info, residual=info["rel_residual"])
+            ritz = (f"; preconditioned spectrum (Lanczos estimate from the iterations) {info['ritz_min']:.3g} to {info['ritz_max']:.3g}, ratio "
+                    f"{info['ritz_max'] / info['ritz_min']:.3g}" if info.get("ritz_min", 0) and math.isfinite(info.get("ritz_min", float("nan"))) else "")
             log(f"Gauss-Newton step from the fit: {info['iterations']} iterations, relative residual {info['rel_residual']:.2e}"
                 + (" (TRUNCATED by the time budget)" if info["truncated"] else "")
-                + f"; background constants moved by {db[:, 0].abs().max().item():.4g} at most (gauge-preserving)")
+                + (f"; estimated error of the step in the posterior metric (F-norm, 10 iterations before the end) {info['err_F_est']:.3g}, relative "
+                   f"{info['rel_err_F_est']:.2e}" if math.isfinite(info.get("err_F_est", float("nan"))) else "")
+                + f"; background constants moved by {db[:, 0].abs().max().item():.4g} at most (gauge-preserving)" + ritz)
+            if accept_tol is not None:
+                conv = info["iterations"] > 0 and info["rel_residual"] <= accept_tol
+                sh["polish_converged"] = bool(conv)
+                if not conv:
+                    log(f"WARNING: the Gauss-Newton step did NOT CONVERGE (relative residual {info['rel_residual']:.2e} after {info['iterations']} "
+                        f"iterations; tolerance {accept_tol:.1e}). SKY is the fit's own sky and is NOT polished (header POLISHED = F, CONVERGD = F); "
+                        f"the unconverged step is written as SKY_UNCONV for inspection only")
+                else:
+                    log(f"Gauss-Newton step converged (relative residual {info['rel_residual']:.2e} <= tolerance {accept_tol:.1e}): SKY is polished")
         t0 = time.perf_counter()
         if method == "draws" and n_samples > 0 and not (monitor is not None and monitor.hit):
-            samp, recs = posterior_samples(op, n_samples, seed=seed, tol=tol, maxiter=maxiter, log=log, monitor=monitor)
+            samp, recs = posterior_samples(op, n_samples, seed=seed, tol=tol, maxiter=maxiter, log=log, monitor=monitor, accept_tol=accept_tol)
             sh.update(samples=samp, recs=recs)
         sh["seconds_samples"] = time.perf_counter() - t0
     if monitor is not None and monitor.hit:
@@ -746,6 +1101,22 @@ def band_readout(model, op, shared, band, resolution="auto", alpha_max=2.0, scal
     img_fit = sm(band_of(A_fit, phi.double()))
     pol_info = shared["polish"]
     img = sm(band_of(shared["A_pol"].double(), phi.double())) if shared["A_pol"] is not None else img_fit
+    conv = shared.get("polish_converged")
+    chg = {}
+    if pol_info and pol_info.get("A_back") is not None:      # change of the product over the last iterations, in units of the Fourier sigma
+        sc_ = op.circulant_sigma(phi, s_use) if s_use > 0 else None
+        if sc_ is not None:
+            dimg = img - sm(band_of(pol_info["A_back"].double(), phi.double()))
+            ok_ = cov & torch.isfinite(sc_) & (sc_ > 0)
+            z_ = (dimg / sc_)[ok_]
+            if z_.numel():
+                chg = {"change_rms": float(z_.pow(2).mean().sqrt()), "change_max": float(z_.abs().max()), "change_from": int(pol_info["iter_back"])}
+                log(f"band {band}: the step's product changed by {chg['change_rms']:.3g} sigma rms, {chg['change_max']:.3g} sigma at most, between "
+                    f"iteration {chg['change_from']} and the last ({pol_info['iterations']}); for a solve that converges at least twice as fast per "
+                    f"10 iterations, the remaining error is below that change")
+    img_unconv = None
+    if conv is False:                       # an unconverged step is not the estimator sigma describes: SKY is the fit, the step is kept aside
+        img_unconv, img = img, img_fit
     sig_c = op.circulant_sigma(phi, s_use)
     if samp is not None:
         var = sm(band_of(samp, phi).double()).pow(2).mean(0)
@@ -773,7 +1144,9 @@ def band_readout(model, op, shared, band, resolution="auto", alpha_max=2.0, scal
             "seconds_per_apply": op.t_apply / max(op.n_apply, 1), "mu": op.mu, "rho": op.rho if rho is None else rho, "node_noise": op.node_noise,
             "n_pix": op.n_pix, "n_huber_downweighted": op.n_huber, "polish": pol_info, "method": method, "op": op,
             "truncated": shared["truncated"], "truncated_in": shared["where"], "residual": shared["residual"],
-            "n_samples_requested": shared["n_samples_requested"], "sigma_source": "draws" if samp is not None else "circulant"}
+            "n_samples_requested": shared["n_samples_requested"], "sigma_source": "draws" if samp is not None else "circulant",
+            "polish_converged": conv, "accept_tol": shared.get("accept_tol"), "image_unconverged": img_unconv, **chg,
+            "precond": getattr(op, "precond_mode", "")}
 
 
 def uncertainty_map(model, exps, cfg, band, n_samples=8, rho=10.0, scales_pitch=SCALES_DEFAULT, resolution="auto", alpha_max=2.0, tol=1e-4,
@@ -801,12 +1174,25 @@ def write_product(path, res, band, pitch, meta=None):
               **({"SKY_FIT": res["image_fit"].numpy().astype(np.float32)} if "image_fit" in res else {}),
               **({"SIGMA_CIRC": torch.nan_to_num(res["sigma_circulant"], nan=0.0).numpy().astype(np.float32)} if "sigma_circulant" in res else {}),
               "RESOLUTION": res["s_star"].numpy().astype(np.float32), "COVERED": res["covered"].numpy().astype(np.uint8),
-              "SIGMA_SCALES": res["sigma_scales"].numpy().astype(np.float32)}
+              "SIGMA_SCALES": res["sigma_scales"].numpy().astype(np.float32),
+              **({"SKY_UNCONV": res["image_unconverged"].numpy().astype(np.float32)} if res.get("image_unconverged") is not None else {}),
+              **{k: v.numpy().astype(np.float32) for k, v in (res.get("extra_images") or {}).items()}}
+    conv = res.get("polish_converged")
+    polished = bool(res.get("polish")) and res["polish"].get("iterations", 1) > 0 and conv is not False
     hdr = {"BAND": str(band), "PRODRES": (res["resolution"], "[arcsec] width of the Gaussian smoothing of SKY and SIGMA"),
            "RESMED": (res["resolution_median"], "[arcsec] median supported resolution over covered nodes"),
            "CORRLEN": (res["corr_length"], "[arcsec] lag where the error correlation falls to 1/2"),
            "PRIORRHO": (res["rho"], "prior sd per coefficient in node-noise units"), "NSAMPLE": (len(res["cg_iterations"]), "posterior draws"),
-           "POLISHED": (bool(res.get("polish")) and res["polish"].get("iterations", 1) > 0, "SKY = fit + one Gauss-Newton step (SKY_FIT = the fit)"),
+           "POLISHED": (polished, "SKY = fit + one converged Gauss-Newton step"),
+           **({"CONVERGD": (bool(conv), "step residual <= ACCTOL (F: SKY = SKY_FIT)"),
+               "ACCTOL": (float(res.get("accept_tol") or float("nan")), "rel. residual accepted as converged")} if conv is not None else {}),
+           **({"PRECOND": (str(res["precond"]), "preconditioner of the solves")} if res.get("precond") else {}),
+           **({"RITZMIN": (float(res["polish"].get("ritz_min", float("nan"))), "Lanczos min of the precond. spectrum"),
+               "RITZMAX": (float(res["polish"].get("ritz_max", float("nan"))), "Lanczos max of the precond. spectrum"),
+               "POLERRF": (float(res["polish"].get("rel_err_F_est", float("nan"))), "est. rel. F-norm error of the step")}
+              if res.get("polish") and "ritz_min" in res["polish"] else {}),
+           **({"POLCHG": (res["change_rms"], "step change, last iters, rms [sigma]"), "POLCHGMX": (res["change_max"], "same, max [sigma]"),
+               "POLCHGIT": (res["change_from"], "change measured from this iteration")} if "change_rms" in res else {}),
            "UNITS": "band surface brightness (sky units)",
            "NSAMPREQ": (res.get("n_samples_requested", len(res["cg_iterations"])), "posterior draws requested"),
            "SIGMETH": (res.get("sigma_source", "draws" if res["cg_iterations"] else "circulant"), "SIGMA from draws or circulant"),
@@ -918,15 +1304,87 @@ def add_args(ap):
     g.add_argument("--unc-prior", type=float, default=10.0, help="prior sd of each coefficient in units of the median node noise")
     g.add_argument("--unc-resolution", default="auto", help="'auto' (median supported resolution) or a width in arcsec")
     g.add_argument("--unc-alpha", type=float, default=2.0)
-    g.add_argument("--unc-tol", type=float, default=1e-4)
-    g.add_argument("--unc-maxiter", type=int, default=60)
+    g.add_argument("--unc-tol", type=float, default=1e-4, help="relative residual at which a conjugate-gradient solve stops")
+    g.add_argument("--unc-maxiter", type=int, default=100, help="iterations per solve at most (19 Nov: 100, was 60)")
+    g.add_argument("--unc-precond", choices=["filter", "fourier", "jacobi"], default="filter",
+                   help="filter (19 Nov, default): one Fourier model per filter and per-node K x K scaling by each filter's coverage; fourier: the 18 Nov "
+                        "preconditioner (one Fourier model probed at the centre node; reproduces the truth-problem calibration bit for bit); jacobi")
+    g.add_argument("--unc-regions", type=int, default=8, help="--unc-precond filter: number of coverage regions, each with its own Fourier model "
+                   "(device memory about 8 K^2 N^2 bytes per region: 433 MB at K = 12, N = 613)")
+    g.add_argument("--unc-probes", type=int, default=1, help="--unc-precond filter: probes per filter whose windowed responses are averaged (the "
+                   "Fourier model averaged over sub-pixel phases; placed in the same passes, no extra cost); 1 = one probe, no window (the tested default)")
+    g.add_argument("--unc-accept-tol", type=float, default=1e-3,
+                   help="a solve whose final relative residual is above this did NOT converge: the step is then not applied (SKY = SKY_FIT, "
+                        "POLISHED F, CONVERGD F, step written as SKY_UNCONV) and a draw is discarded; the log says so. 0 = the 18 Nov behaviour (no check)")
     g.add_argument("--unc-exact", type=int, default=0, help="exact solves at this many random covered pixels (cross-check)")
     g.add_argument("--unc-state-b", default="", help="diff: second state (first is --state)")
     g.add_argument("--unc-diff-mode", choices=["halves", "seeds"], default="halves")
     return ap
 
 
-def diff_products(path_a, path_b, out, mode="halves", window_px=8.0, ext="SKY"):
+def _local_peaks(img, mask, n, min_sep):
+    """Local maxima (3 x 3) inside mask, brightest first, at least min_sep nodes apart: [(row, col)]."""
+    t = torch.as_tensor(img, dtype=torch.float64)
+    mx = torch.nn.functional.max_pool2d(t[None, None], 3, 1, 1)[0, 0]
+    m = torch.as_tensor(mask) & (t == mx) & torch.isfinite(t)
+    cand = torch.nonzero(m)
+    vals = t[cand[:, 0], cand[:, 1]]
+    out = []
+    for i in torch.argsort(-vals).tolist():
+        y, x = int(cand[i, 0]), int(cand[i, 1])
+        if all((y - yy) ** 2 + (x - xx) ** 2 >= min_sep ** 2 for yy, xx in out):
+            out.append((y, x))
+        if len(out) >= n:
+            break
+    return out
+
+
+def calibration_difference(img_a, img_b, sig_a, sig_b, covered, pitch, n_src=40, win=6, min_snr=30.0):
+    """Response and registration differences between two fits (e.g. the halves), from their products at one resolution. Per bright source (local
+    maxima of I = (I_a + I_b) / 2 with peak S/N >= min_snr, window +-win nodes) a weighted least-squares fit of
+        I_a - I_b = (s - 1) I - delta . grad I + v lap I + c
+    (flux scale s, position difference delta [arcsec], width term v = (V_a - V_b) / 2 [arcsec^2] for Gaussian variances V, constant c).
+    Returns the medians over sources (a difference common to the whole image: zero point, astrometric frame, resolution), the robust spreads
+    (source to source), and maps: the difference with the common terms removed, and sigma_cal = the error that the source-to-source part implies
+    for ONE fit with the halves convention (spread / 2, as h = (I_a - I_b) / 2):
+        sigma_cal^2 = (e_s I)^2 + (e_x dI/dx)^2 + (e_y dI/dy)^2 + (e_v lap I)^2.
+    Arrays are numpy (N, N), rows = Y, columns = X."""
+    a, b = np.asarray(img_a, np.float64), np.asarray(img_b, np.float64)
+    cov = np.asarray(covered, bool) & np.isfinite(a) & np.isfinite(b)
+    sig = np.sqrt(np.asarray(sig_a, np.float64) ** 2 + np.asarray(sig_b, np.float64) ** 2)
+    cov &= sig > 0
+    I = 0.5 * (a + b)
+    gy, gx = np.gradient(I, pitch)
+    lap = np.gradient(np.gradient(I, pitch, axis=0), pitch, axis=0) + np.gradient(np.gradient(I, pitch, axis=1), pitch, axis=1)
+    inner = cov.copy()
+    e = win + 2
+    inner[:e], inner[-e:], inner[:, :e], inner[:, -e:] = False, False, False, False
+    snr = np.where(cov, I / np.where(sig > 0, sig, 1.0), 0.0)
+    pk = [p for p in _local_peaks(np.where(inner, I, -np.inf), inner, 4 * n_src, 2 * win) if snr[p] >= min_snr][:n_src]
+    rows = []
+    for (y, x) in pk:
+        sl = (slice(y - win, y + win + 1), slice(x - win, x + win + 1))
+        m = cov[sl].ravel()
+        D = (a - b)[sl].ravel()[m]
+        W = 1.0 / sig[sl].ravel()[m]
+        X = np.stack([I[sl].ravel()[m], -gx[sl].ravel()[m], -gy[sl].ravel()[m], lap[sl].ravel()[m], np.ones(int(m.sum()))], 1)
+        coef = np.linalg.lstsq(X * W[:, None], D * W, rcond=None)[0]
+        rows.append([coef[0], coef[1], coef[2], coef[3], float(np.sqrt(np.mean((D * W) ** 2))), float(np.sqrt(np.mean(((D - X @ coef) * W) ** 2)))])
+    if not rows:
+        return {"n_sources": 0}
+    R = np.asarray(rows)
+    med = np.median(R[:, :4], 0)
+    rob = 1.4826 * np.median(np.abs(R[:, :4] - med), 0)
+    aligned = (a - b) - (med[0] * I - med[1] * gx - med[2] * gy + med[3] * lap)
+    eps = rob / 2.0
+    sig_cal = np.sqrt((eps[0] * I) ** 2 + (eps[1] * gx) ** 2 + (eps[2] * gy) ** 2 + (eps[3] * lap) ** 2) * cov
+    return {"n_sources": len(rows), "scale_minus_1": float(med[0]), "shift_arcsec": [float(med[1]), float(med[2])], "width_arcsec2": float(med[3]),
+            "spread_scale": float(rob[0]), "spread_shift_arcsec": [float(rob[1]), float(rob[2])], "spread_width_arcsec2": float(rob[3]),
+            "source_pull_rms_before_median": float(np.median(R[:, 4])), "source_pull_rms_after_median": float(np.median(R[:, 5])),
+            "aligned": aligned, "sigma_cal": sig_cal, "mean_image": I}
+
+
+def diff_products(path_a, path_b, out, mode="halves", window_px=8.0, ext="SKY", calib=True):
     """Difference of two product files written by 'map' (same grid and resolution): e.g. the polished skies of fits on the two halves
     (--train-half 0 / 1), or of two seeds. Writes h (SKY), the implied sigma (SIGMA: local rms of h over a Gaussian window of window_px nodes,
     within the nodes covered in both) and returns the global rms over the common covered nodes."""
@@ -935,6 +1393,8 @@ def diff_products(path_a, path_b, out, mode="halves", window_px=8.0, ext="SKY"):
         a, b = ha[ext].data.astype(np.float64), hb[ext].data.astype(np.float64)
         cov = (ha["COVERED"].data > 0) & (hb["COVERED"].data > 0)
         pitch, res_a, res_b = float(ha[ext].header["CDELT1"]), ha[0].header["PRODRES"], hb[0].header["PRODRES"]
+        sa = ha["SIGMA"].data.astype(np.float64) if "SIGMA" in ha else None
+        sb = hb["SIGMA"].data.astype(np.float64) if "SIGMA" in hb else None
     if abs(res_a - res_b) > 1e-6:
         raise SystemExit(f"products at different resolutions: {res_a} and {res_b} arcsec")
     fac = 0.5 if mode == "halves" else 1 / math.sqrt(2)
@@ -945,7 +1405,31 @@ def diff_products(path_a, path_b, out, mode="halves", window_px=8.0, ext="SKY"):
     glob = float(h[torch.tensor(cov)].pow(2).mean().sqrt())
     res = {"image": h, "sigma": local, "s_star": torch.full_like(h, float("nan")), "covered": torch.tensor(cov), "sigma_scales": local[None],
            "resolution": res_a, "resolution_median": float("nan"), "corr_length": float("nan"), "rho": float("nan"), "cg_iterations": [], "scales": [res_a]}
-    write_product(out, res, f"difference ({mode})", pitch, {"SIGGLOB": glob, "MODE": mode})
+    meta = {"SIGGLOB": glob, "MODE": mode}
+    if calib and sa is not None and sb is not None and mode == "halves":
+        cd = calibration_difference(a, b, sa, sb, cov, pitch)
+        if cd.get("n_sources", 0) > 0:
+            # what the two fits' stated sigma cannot explain on bright sources: the common terms (zero point, frame, resolution) in the header, the
+            # source-to-source part as SIGMA_CAL; pulls of h before and after, against the stated sigma of h ((sa^2 + sb^2)^(1/2) / 2)
+            sh = 0.5 * np.sqrt(sa ** 2 + sb ** 2)
+            ok = cov & (sh > 0)
+            pull0 = (fac * (a - b))[ok] / sh[ok]
+            pull1 = (fac * cd["aligned"])[ok] / np.sqrt(sh[ok] ** 2 + cd["sigma_cal"][ok] ** 2)
+            I = cd["mean_image"][ok]
+            br = I >= np.percentile(I, 90)
+            meta.update({"CALNSRC": cd["n_sources"], "ZPDIFF": (cd["scale_minus_1"], "flux scale a/b - 1, common to sources"),
+                         "FRAMEDX": (cd["shift_arcsec"][0] * 1e3, "[mas] position a - b, common"), "FRAMEDY": (cd["shift_arcsec"][1] * 1e3, "[mas]"),
+                         "WIDTHDIF": (cd["width_arcsec2"], "[arcsec2] (V_a - V_b) / 2, common"),
+                         "CALSCALE": (cd["spread_scale"], "source-to-source spread of the scale"),
+                         "CALSHX": (cd["spread_shift_arcsec"][0] * 1e3, "[mas] spread of the shift"), "CALSHY": (cd["spread_shift_arcsec"][1] * 1e3, "[mas]"),
+                         "PULLBRT0": (float(np.sqrt(np.mean(pull0[br] ** 2))), "rms h/sigma, brightest 10%"),
+                         "PULLBRT1": (float(np.sqrt(np.mean(pull1[br] ** 2))), "same, aligned, with SIGMA_CAL")})
+            res["extra_images"] = {"H_ALIGNED": torch.tensor(fac * cd["aligned"]), "SIGMA_CAL": torch.tensor(cd["sigma_cal"])}
+            print(f"calibration difference of the two fits ({cd['n_sources']} bright sources): flux scale {cd['scale_minus_1']:+.4f}, position "
+                  f"({cd['shift_arcsec'][0] * 1e3:+.1f}, {cd['shift_arcsec'][1] * 1e3:+.1f}) mas, width {cd['width_arcsec2']:+.2e} arcsec^2 common; "
+                  f"source-to-source spreads {cd['spread_scale']:.4f}, ({cd['spread_shift_arcsec'][0] * 1e3:.1f}, {cd['spread_shift_arcsec'][1] * 1e3:.1f}) mas; "
+                  f"pull rms of the brightest 10 per cent {meta['PULLBRT0'][0]:.2f} -> {meta['PULLBRT1'][0]:.2f} after alignment with SIGMA_CAL")
+    write_product(out, res, f"difference ({mode})", pitch, meta)
     return glob
 
 
@@ -1010,14 +1494,16 @@ def main(argv=None):
                 n_bands=len(bands))
     cuda = torch.device(model.dev).type == "cuda"
     op = SkyNormalOperator(model, exps, cfg, rho=cfg.unc_prior, tile=cfg.unc_tile or None, chunk=cfg.unc_chunk or None, log=log,
-                           batch_px=cfg.unc_batch_px if (explicit_batch or cuda) else None, plan=plan)
+                           batch_px=cfg.unc_batch_px if (explicit_batch or cuda) else None, plan=plan, precond_mode=cfg.unc_precond,
+                           n_regions=cfg.unc_regions, n_probes=cfg.unc_probes)
+    acc = cfg.unc_accept_tol if cfg.unc_accept_tol and cfg.unc_accept_tol > 0 else None
     pl = plan_passes(op.K, **plan)
     mon = Monitor(op, log=log, max_minutes=cfg.unc_max_minutes, t0=T0, planned_apps=pl["setup"] + pl["polish"] + pl["draws"] + pl["exact"],
                   reserve=60.0 + 30.0 * len(bands))            # time kept for the per-band read-outs (Fourier eigendecomposition, smoothing) and the files
     if cfg.unc_max_minutes:
         log(f"time budget {cfg.unc_max_minutes:g} min from the start of the run (reserve {mon.reserve:.0f} s for writing)")
     shared = solve_shared(op, n_samples=cfg.unc_samples, method=cfg.unc_method, polish=bool(cfg.unc_polish), tol=cfg.unc_tol, maxiter=cfg.unc_maxiter,
-                          log=log, monitor=mon)
+                          log=log, monitor=mon, accept_tol=acc)
     for b in bands:
         res = band_readout(model, op, shared, b, resolution=cfg.unc_resolution, alpha_max=cfg.unc_alpha, n_exact=cfg.unc_exact, log=log, monitor=mon,
                            rho=cfg.unc_prior, tol=cfg.unc_tol)
@@ -1031,7 +1517,8 @@ def main(argv=None):
         if res["exact"]:
             log("exact / sampled sigma: " + json.dumps(res["exact"]))
     log(f"done: {len(bands)} band(s), {op.n_apply} applications + {op.n_forward} forward-only pass, {mon.elapsed() / 60:.1f} min"
-        + (" (solve truncated by the time budget)" if shared["truncated"] else ""))
+        + (" (solve truncated by the time budget)" if shared["truncated"] else "")
+        + ("; the Gauss-Newton step did NOT CONVERGE: SKY is NOT polished" if shared.get("polish_converged") is False else ""))
 
 
 def resolve_bands(model, spec):
