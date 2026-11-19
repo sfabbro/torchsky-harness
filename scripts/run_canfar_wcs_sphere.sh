@@ -24,10 +24,10 @@ case "${mode}" in
   cpu | cuda | optimization-cpu | optimization-cuda | real-data-gates | spectral | sphere | sparse | healsparse | spin | geometry | cuhpx | \
   wcs-paper2 | wcs-tpv | wcs-spectral | wcs-tabular | sht-profile | moc | catalog | \
   catalog-scale | catalog-scale-1e6 | catalog-scale-1e7 | catalog-scale-real | \
-  catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | catalog-match-cuda | \
+  catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | catalog-match-cuda | catalog-match-gpu-peers | \
   observed | geom-cuda | world-cuda | gpu-validate) ;;
   *)
-    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, catalog-match-real, catalog-match-cuda, observed, geom-cuda, or world-cuda)" >&2
+    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, catalog-match-real, catalog-match-cuda, catalog-match-gpu-peers, observed, geom-cuda, or world-cuda)" >&2
     exit 2
     ;;
 esac
@@ -592,6 +592,23 @@ case "${mode}" in
       --sizes 100000,1000000,10000000 --layouts sparse,dense,crowded --modes best,all,knn2 \
       --runs 3 --device cuda --astropy-max-n 0 --threads "${catalog_threads}" \
       --json-out "${artifact_root}/catalog_match_perf_cuda.json"
+    ;;
+  catalog-match-gpu-peers)
+    # GPU nearest-neighbour peers (CuPy KDTree, FAISS, cuVS, torch_cluster, Open3D)
+    # installed at job time; see scripts/install_gpu_nn_peers.sh.
+    install_env cuda-bench
+    record_versions cuda-bench
+    pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+      python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'"
+    pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+      bash "${source_root}/scripts/install_gpu_nn_peers.sh" "${artifact_root}"
+    vos_upload after_gpu_peer_install || echo "after_gpu_peer_install VOS upload failed; continuing job" >&2
+    pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+      python "${source_root}/benchmarks/bench_catalog_match_perf.py" \
+      --sizes 100000,1000000,10000000 --layouts sparse,dense,crowded --modes best,all,knn2 \
+      --runs 3 --device cuda --astropy-max-n 0 --threads "${catalog_threads}" \
+      --brute-force-max-n 1000000 --cupy-ball-max-n 1000000 --worker-timeout 1800 \
+      --json-out "${artifact_root}/catalog_match_gpu_peers.json"
     ;;
   catalog-match-real)
     install_env test

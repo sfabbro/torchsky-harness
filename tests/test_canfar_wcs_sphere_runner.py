@@ -76,6 +76,10 @@ def test_canfar_wcs_sphere_runner_contract() -> None:
     assert "\n  catalog-match-real)" in runner
     assert "\n  catalog-match-cuda)" in runner
     assert "catalog_match_perf_cuda.json" in runner
+    assert "\n  catalog-match-gpu-peers)" in runner
+    assert "install_gpu_nn_peers.sh" in runner
+    assert "catalog_match_gpu_peers.json" in runner
+    assert (ROOT / "scripts" / "install_gpu_nn_peers.sh").exists()
     assert "bench_catalog_match_real.py" in runner
     assert "bench_catalog_crossmatch.py" not in runner
     assert "test_crossmatch_engine.py" in runner
@@ -125,6 +129,7 @@ def test_canfar_wcs_sphere_launcher_payload_has_no_shell_vars() -> None:
     assert "world-cuda" in launcher
     assert "catalog-scale" in launcher
     assert "catalog-scale-1e7" in launcher
+    assert 'launch_one catalog-match-gpu-peers 1 "catalog-match-gpu-peers-${STAMP}"' in launcher
     assert "wcs-spectral" in launcher
     assert "wcs-tabular" in launcher
     assert launcher.count('--env "TORCHSKY_SPIN_THREADS=${CPU}"') >= 2
