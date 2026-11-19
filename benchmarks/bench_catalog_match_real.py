@@ -216,7 +216,15 @@ def run_field(name: str, root: Path, ra: float, dec: float, r: float) -> dict[st
         terms=(HistogramRatio(cw.columns["w1"], colour_edges, left_values=gaia.columns["g"]),),
     )
     row["gaia_catwise_s"] = time.perf_counter() - t1
-    for key, res in (("gaia_2mass", g2t), ("gaia_catwise", g2c)):
+    # Variant: CatWISE errors calibrated per W1 magnitude bin (in crowded fields
+    # every source is blended, so the blend-count bins collapse to one).
+    g2c_mag = associate(
+        gaia, cw, epoch="right", motion_prior=prior, max_radius_arcsec=60.0,
+        assign="optimal", calibrate="scale_floor", calibrate_by=cw.columns["w1"],
+        calibrate_edges=torch.tensor([0.0, 11.0, 12.5, 13.5, 14.5, 15.5, 30.0], dtype=D),
+        terms=(HistogramRatio(cw.columns["w1"], colour_edges, left_values=gaia.columns["g"]),),
+    )
+    for key, res in (("gaia_2mass", g2t), ("gaia_catwise", g2c), ("gaia_catwise_magbins", g2c_mag)):
         row[key] = {
             "completeness": res.completeness, "matched": int(res.match.sum()), "capped": res.n_capped,
             "fitted_right_error_scale": res.right_scale.tolist() if isinstance(res.right_scale, torch.Tensor) else res.right_scale,
