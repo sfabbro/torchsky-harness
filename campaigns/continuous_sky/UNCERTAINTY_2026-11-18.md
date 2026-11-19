@@ -305,3 +305,135 @@ The command line was tested for option handling only (`tests/test_uncertainty.py
   bright-source means.
 * Linearising the item sky in its own parameters.
 * A run on real files (option `--train-half` and the command line are untested on real data); a correlation-length map.
+
+
+## 9. Real-data adaptation, 18 Nov
+
+First runs on the SMACS field (99 training exposures, about 8.1 million training pixels, 12 spectral coefficients, item sky; the fit renders
+5 patches of about 2,500 pixels per step and peaks near 3 GB) ran out of GPU memory in the first render of `SkyNormalOperator.__init__` with
+the defaults (tiles of 256 pixels, 32 per render: 2.1 million pixels in one render) and with `--unc-chunk 4` (262,000 pixels). Changes, all in
+`fieldop/uncertainty.py`; no other file of the package was touched. Tests: `tests/test_uncertainty.py` (the 11 original tests unchanged, plus
+9 new ones: 20 in all, 22 s).
+
+### 9a. What changed
+
+1. **Memory-safe batching.** One list of batches (`op.batches`) serves every pass: the weights pass, the coverage and preconditioner
+   responses, `apply`, the draws' right-hand sides, the Gauss-Newton step's right-hand side and the exact solves. The batch is packed by a
+   pixel budget (`--unc-batch-px`, default 16000, about the fit's batch). On a CUDA device the default tile is 64 x 64 detector pixels, so
+   a render holds 3 tiles = 12,288 pixels (the earlier failing runs held 2.1 million and 262,000; the `--unc-tile 64 --unc-chunk 8` run held
+   32,768). On CPU the validated default is unchanged (tile = `--region-px`, 32 tiles per render) unless `--unc-batch-px` is written.
+   `--unc-tile` and `--unc-chunk` win when given (`--unc-chunk` over the budget).
+   * A tile now holds only the exposure, its slice, the validity mask (bool) and the weights w and w r (float32): 9 bytes per pixel, about
+     75 MB for 8.1 million pixels. Before, each tile also kept its pixel dictionary (positions, row and column as 64-bit integers, data,
+     noise, validity, normalised positions: about 50 to 65 bytes per pixel), the background basis (24 bytes), the normalised residual and the
+     weights: about 100 bytes per pixel, roughly 0.8 GB on the device for 8.1 million pixels (estimated from the arrays, not measured). The
+     pixel dictionary and the background basis are now rebuilt for each batch and released with it.
+   * The per-tile lists that held references (`rs`, the random numbers `zs` of a draw, the dictionaries of tiles) are gone: the background
+     right-hand side `L^T r` is accumulated batch by batch, and the random numbers of a draw are drawn tile by tile on the host in the same
+     order as before.
+   * Autograd: every application enables gradients itself (only the sky coefficients carry one; the model's parameters are frozen once per
+     pass), each batch ends with its own backward, which frees its graph, and its tensors are deleted before the next batch. The solvers
+     (`pcg`, `posterior_samples`, `gauss_newton_polish`) and the readout run under `torch.no_grad()`; the weights pass already did.
+   * The preconditioner's and the cheap sigma's eigendecompositions are done in blocks of 32 frequency rows (they were one batched
+     decomposition of all N^2 frequencies, in double precision for every scale of every band: about 3 GB at N = 600); the cheap sigma now
+     decomposes once per band instead of once per band and scale (`_circ_q`, cached).
+2. **All bands from one solve.** `--unc-band` takes a comma-separated list or `all` (every filter of the fit, by name). The operator, the
+   preconditioner, the Gauss-Newton step and the draws are done once (`solve_shared`, over all 12 spectral coefficients); the per-band part
+   (`band_readout`) is the Fourier sigma, sigma from the draws, supported resolution, the product, the correlation length and, if asked, the
+   exact cross-check. One file per band; `--unc-out` must contain `{band}` for several bands (refused before any work otherwise); a single
+   band keeps today's behaviour. `uncertainty_map` still does both for one band.
+3. **Progress and cost.** At start: tiles, training pixels, batches per pass, planned passes. Then the time of the first forward-only pass
+   and of the first full application, a line every 5 conjugate-gradient iterations (iteration, relative residual, passes so far, elapsed,
+   estimated time left: the planned passes minus those done, times the mean pass time, so an upper bound), one line per draw (with the
+   same pass, elapsed and time-left figures), and a final line. `--unc-max-minutes M` (default 0 = none): the budget runs from the start of
+   the process. Before each application the run checks whether it would end after the deadline (estimated from the previous application, plus
+   15 per cent, plus a reserve of 60 s + 30 s per band for the readouts and the files); if so the solve stops, the outputs are written and the
+   exit status is 0. Order of work: set-up, the Gauss-Newton step, the draws one by one (before, draws came first; the numbers do not depend on
+   the order). A step cut short uses its last iterate; a draw that is cut is discarded (an unconverged draw has too small a variance), and no
+   further draw starts; with no complete draw, SIGMA is the Fourier sigma. Header keys of every file: `TRUNCATD` (T/F), `TRUNCIN` (the solve
+   that was cut), `RESIDUAL` (its relative residual), `POLRESID`, `POLITER`, `NSAMPLE` (draws completed), `NSAMPREQ`, `SIGMETH` (draws or
+   circulant), `NPASSES`; `POLISHED` is false when the step did not run at all.
+4. **Cheap mode.** `--unc-method circulant --unc-polish 0` does, in order: one forward-only pass (the weights), one full application
+   (coverage J^T w), K full applications (the Fourier preconditioner's delta responses), and nothing else, however many bands are read
+   out (tested by counting: `n_forward = 1`, `n_apply = K + 1` before and after the readouts). At K = 12: 13 applications and one forward-only
+   pass, about 13.5 full-pass equivalents (a forward-only pass is about 0.55 of an application). On the truth problem (K = 3) the whole
+   set-up took 5.5 s. In this mode SKY is the fit's own sky and SIGMA is the Fourier approximation of the posterior's sigma; as in section 4,
+   that sigma is not the error of SKY_FIT.
+
+### 9b. Checks done (CPU, no GPU here)
+
+* Default path unchanged: on the tiny test field the old and the new operator give bit-identical `apply`, coverage, mu, Fourier sigma, product,
+  sigma, draws and supported resolution (maximum difference 0.0).
+* Tilings: tiles of 4, 16 and 64 detector pixels, a 40-pixel budget, one tile per render and a 100-pixel budget give the same F u as the
+  default to float32 round-off (relative 2e-7 at most; the test requires 1e-5). On this field the exposures are 16 pixels wide, so a
+  64-pixel tile is a whole exposure. What this does not show: on real data the render takes its code-field nodes and its overlap-add windows
+  per tile (`region_nodes` with the tile's bounds), so a 64-pixel tile could differ from a 256-pixel tile by more than round-off; the CPU test
+  field cannot show that.
+* Several bands from one solve equal separate single-band runs (SKY, SKY_FIT, SIGMA, SIGMA_CIRC, SIGMA_SCALES, RESOLUTION to 1e-6 relative; they
+  are in fact equal) and use the applications of one run. The time budget truncates cleanly (step cut; draw cut and discarded; header keys;
+  exit status 0).
+* Calibration rerun (`tests/check_uncertainty_rerun.py`, writes into a copy of the results directory): noise realisation 0, grid and items, both
+  parts of the original run (2 draws; 1 draw plus the Gauss-Newton step; about 4 min each on two cores). The posterior draws and the
+  polished coefficients are bit-identical to the saved ones (maximum absolute difference 0.0; 60 iterations, same residuals). The summary of
+  all six realisations rebuilt from them equals `summary_{grid,items}_n8.json` in all 1,054 numbers except the timing: at s = 0.111
+  arcsec the polished product's pulls are unchanged: grid empty total +0.32 +- 0.20 (rms 1.27 +- 0.07), inner rms 1.10, with a quadratic removed
+  0.96 +- 0.02; items +0.18 +- 0.19 (1.14 +- 0.05), inner 1.02, 0.96 +- 0.02; half-difference over analytic sigma 1.00 +- 0.03 for both. These are the
+  tables of section 4 (no run-to-run noise to allow for, since the draws are the same numbers).
+
+### 9c. Recommended commands for the SMACS fit on a 10.75 GB GPU
+
+Use the fit's `metrics.json` (its configuration) and the `fieldop_state.pt` next to it. `expandable_segments` reduces fragmentation of the
+many small, differently sized buffers.
+
+(a) Cheap mode, all six bands, about 13.5 full passes:
+
+```
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True PYTHONNOUSERSITE=1 python -m fieldop.uncertainty \
+    --unc-config OUT/metrics.json --device cuda \
+    --unc-band F090W,F150W,F200W,F277W,F356W,F444W --unc-out OUT/sky_{band}_uncertainty.fits \
+    --unc-method circulant --unc-polish 0 --unc-batch-px 16000 --unc-max-minutes 90
+```
+
+(b) Full polished map, all six bands, with draws and a time budget:
+
+```
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True PYTHONNOUSERSITE=1 python -m fieldop.uncertainty \
+    --unc-config OUT/metrics.json --device cuda \
+    --unc-band F090W,F150W,F200W,F277W,F356W,F444W --unc-out OUT/sky_{band}_uncertainty.fits \
+    --unc-method draws --unc-samples 8 --unc-polish 1 --unc-batch-px 16000 --unc-max-minutes 480
+```
+
+Set the budget to the job's wall limit minus 15 minutes (480 is an example). If the SMACS fit's filter names differ from these six, use
+`--unc-band all` (the log prints the bands used). If a render still runs out of memory, halve `--unc-batch-px` (8000, then 4000); that costs
+only speed.
+
+**Expected number of passes** (one pass = one forward and one adjoint render of every training pixel, about 500 batches of 16,000 pixels):
+set-up 13 + 1 forward-only; Gauss-Newton step 61 (right-hand side + 60 iterations); each draw 61. Total at most 13 + 61 + 8 x 61 = 562, once
+for the six bands (not 6 x 562). The step is done before the draws, so a truncated run has the product after 74 passes and then one more draw
+per 61 passes. Time: unknown until the first pass is timed (the log prints it at the start, with the projected total). My estimate from
+the CPU ratio of section 6 (a fit step costs 2.5 times a pass over the same pixels) is that one application takes about 200 fit-step times;
+for example 60 s would make (a) 14 minutes and (b) 9.4 hours, so 6 draws within 480 minutes. Per-band exact solves (`--unc-exact`) are not
+shared (about 41 passes per pixel and band); leave them off on this run.
+
+### 9d. Approximations added by this change
+
+* A truncated Gauss-Newton step is the last conjugate-gradient iterate (its residual is in the header); it is not the converged step.
+* A draw cut by the budget is discarded, so a truncated run has fewer draws than requested (`NSAMPLE` against `NSAMPREQ`; sigma's sampling
+  error is 1 / sqrt(2 n) in variance); with none, SIGMA is the Fourier approximation (`SIGMETH`).
+* The time-left figure is an upper bound (it assumes every solve runs to `--unc-maxiter`); the budget test uses the last pass's duration.
+* The budget starts with the process (data loading included) and cannot interrupt the set-up (13 applications), which is needed for
+  everything; if the budget is shorter than the set-up the outputs hold the Fourier sigma at the fit's sky.
+* The cheap sigma's eigendecomposition is done in blocks; results equal the unblocked ones (test: blocks of 5 rows against one block, relative 1e-10).
+* A different tiling changes the sums by round-off (2e-7 relative here) and, on real data, possibly more (see 9b).
+
+### 9e. Not verified (no GPU, no real data here)
+
+* The peak GPU memory of a 16,000-pixel batch of 64-pixel tiles on the real field: only the pixel count per batch was reduced (170 times
+  against the first failure, 2.7 times against the `--unc-tile 64 --unc-chunk 8` run). The fit's 3 GB peak at 12,500 pixels includes its
+  optimiser and parameter gradients, which the operator does not hold, but a render's per-tile fixed costs (kernel values, code field,
+  FFT windows) are larger for small tiles; the first batch of the first run will tell.
+* The time per pass, hence the passes affordable in a given budget; the number of conjugate-gradient iterations with 12 coefficients, chip
+  gaps and several constrained by one filter only (the 60-iteration cap was measured at K = 3).
+* That 64-pixel tiles give the same render as 256-pixel tiles on real data (9b), and the speed of the blocked eigendecompositions on a GPU.
+* The command line end to end on real files, and `--unc-band all` on the real filter set (tested with a fake model builder on the test field).
+* That the item sky's operator behaves as on the truth problem at the SMACS scale (section 2d is unchanged).

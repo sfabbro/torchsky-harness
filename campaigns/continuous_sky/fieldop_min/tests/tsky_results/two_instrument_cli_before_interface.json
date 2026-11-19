@@ -1,0 +1,43 @@
+{
+ "heldout_summary": {
+  "written": {
+   "chi2_input_noise": 469.4703493413237,
+   "chi2_model_noise": 448.4042814589038,
+   "n_px": 1552
+  },
+  "all_pixel_old": {
+   "chi2_input_noise": 467.91112243023116,
+   "chi2_model_noise": 446.90104942715044,
+   "n_px": 1552
+  }
+ },
+ "heldout_own": {
+  "A1_0": {
+   "chi2": 895.1405029296875,
+   "n": 576,
+   "chi2_model_noise": 855.3480224609375
+  },
+  "A2_0": {
+   "chi2": 255.80828857421875,
+   "n": 576,
+   "chi2_model_noise": 244.08251953125
+  },
+  "B1_0": {
+   "chi2": 164.17869567871094,
+   "n": 400,
+   "chi2_model_noise": 156.62863159179688
+  }
+ },
+ "state_sha256": "fdb9ab9ca4faff467a116870cdb41445838d24318abace8d1804304ffe1dab0a",
+ "instrument_mean_log_throughput": {
+  "A": {
+   "mean_log_g": -1.5054402169312198e-10,
+   "n_train_exposures": 4
+  },
+  "B": {
+   "mean_log_g": 0.011279016733169556,
+   "n_train_exposures": 2
+  }
+ },
+ "package": "/tmp/claude-0/-home-claude/286b9f86-e33d-5aff-95e8-42cb96d595fe/scratchpad/before"
+}

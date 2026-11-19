@@ -1,0 +1,22 @@
+[
+ {
+  "N": 95,
+  "pitch": 0.06,
+  "items": 1500,
+  "K": 12,
+  "patch_nodes_nnz": 528132.0,
+  "cpu_s_fwd_bwd": 0.07665712100015298,
+  "grid_numbers": 108300,
+  "item_numbers": 25500
+ },
+ {
+  "N": 613,
+  "pitch": 0.04,
+  "items": 60000,
+  "K": 12,
+  "patch_nodes_nnz": 21630432.0,
+  "cpu_s_fwd_bwd": 2.966716115000054,
+  "grid_numbers": 4509228,
+  "item_numbers": 1020000
+ }
+]

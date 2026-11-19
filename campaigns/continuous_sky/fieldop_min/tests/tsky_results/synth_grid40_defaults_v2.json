@@ -1,0 +1,209 @@
+{
+ "pkg": ".",
+ "sky_form": "grid",
+ "seed": 0,
+ "steps": 40,
+ "fit_seconds": 26.940637127000173,
+ "s_per_step": 0.6735159281750043,
+ "setup_seconds": 10.61816449800017,
+ "heldout_seconds": 63.65653203800002,
+ "train_loss_log": [
+  [
+   0,
+   0.968270086000075,
+   3.4863011837005615,
+   28.69994140625
+  ],
+  [
+   10,
+   7.779515580000179,
+   1.5751703977584839,
+   4.871933901549069
+  ],
+  [
+   20,
+   14.571382806999964,
+   1.152897596359253,
+   2.854073486328125
+  ],
+  [
+   30,
+   21.19123814700015,
+   0.8775745630264282,
+   1.9789267147288603
+  ]
+ ],
+ "heldout_chi2": 7.230338843291347,
+ "heldout_chi2_snr5": 62.980117930121075,
+ "heldout_summary": {
+  "written": {
+   "chi2_input_noise": 7.230338843291347,
+   "chi2_model_noise": 2.5481893552126853,
+   "n_px": 4356
+  },
+  "all_pixel_old": {
+   "chi2_input_noise": 7.180675216176512,
+   "chi2_model_noise": 2.2830123462405525,
+   "n_px": 4356
+  }
+ },
+ "legacy_defaults": false,
+ "gauge_ref_inst": 0,
+ "kernel_norm_radius": 2.0,
+ "held_xfit": 1,
+ "heldout_n_px": 4356,
+ "heldout_n_px_snr5": 429,
+ "heldout_per_exposure": {
+  "A1_0": {
+   "chi2": 16.934843063354492,
+   "n": 1600,
+   "chi2_bright": 195.16342163085938,
+   "n_bright": 130,
+   "chi2_model_noise": 4.961919784545898,
+   "all_pixel_old": {
+    "chi2": 16.944072723388672,
+    "n": 1600,
+    "chi2_bright": 195.56813049316406,
+    "n_bright": 130,
+    "chi2_model_noise": 4.337513446807861
+   },
+   "closed_form_stripes_half_fits": {
+    "fit_half0": {},
+    "fit_half1": {}
+   }
+  },
+  "A2_0": {
+   "chi2": 1.5897332429885864,
+   "n": 1600,
+   "chi2_bright": 5.403078079223633,
+   "n_bright": 170,
+   "chi2_model_noise": 1.1199966669082642,
+   "all_pixel_old": {
+    "chi2": 1.5222474336624146,
+    "n": 1600,
+    "chi2_bright": 4.75589656829834,
+    "n_bright": 173,
+    "chi2_model_noise": 1.0762079954147339
+   },
+   "closed_form_stripes_half_fits": {
+    "fit_half0": {},
+    "fit_half1": {}
+   }
+  },
+  "B1_0": {
+   "chi2": 1.6055656671524048,
+   "n": 1156,
+   "chi2_bright": 5.6488566398620605,
+   "n_bright": 129,
+   "chi2_model_noise": 1.1841232776641846,
+   "all_pixel_old": {
+    "chi2": 1.4990562200546265,
+    "n": 1156,
+    "chi2_bright": 4.863079071044922,
+    "n_bright": 128,
+    "chi2_model_noise": 1.1097296476364136
+   },
+   "closed_form_stripes_half_fits": {
+    "fit_half0": {},
+    "fit_half1": {}
+   }
+  }
+ },
+ "heldout_truth_noise_chi2": 0.9892498652140299,
+ "sky_fitted_numbers": 108300,
+ "sky_grid_N": 95,
+ "state_sha256": "fab5f6aa45dfc8154e879e90305467ce1529578b643f1ae4a08b4182086be964",
+ "state_sha256_with_legacy_resid": "fab5f6aa45dfc8154e879e90305467ce1529578b643f1ae4a08b4182086be964",
+ "registration": {
+  "iters": [
+   {
+    "iter": 0,
+    "rms_translation_mas": 13.9609375,
+    "seconds": 5.489664129999937
+   }
+  ]
+ },
+ "total_seconds": 102.97785229600004,
+ "sky_error": {
+  "summary": {
+   "raw": {
+    "all": 0.5194805138713418,
+    "near_point_sources": 0.5118561609461221,
+    "elsewhere": 0.6856049412532491
+   },
+   "gauge_adjusted": {
+    "all": 0.18290808713173567,
+    "near_point_sources": 0.18106864335189637,
+    "elsewhere": 0.1908025584081515
+   },
+   "gauge_adjusted_blur": [
+    "truth",
+    0.08
+   ],
+   "gauge_adjusted_and_flux_scaled": {
+    "all": 0.14335538388786284,
+    "near_point_sources": 0.10129591448713365,
+    "elsewhere": 0.17098109888780832
+   },
+   "n_nodes": {
+    "all": 19321,
+    "near_point_sources": 1830,
+    "elsewhere": 17491
+   },
+   "sig_c": 0.06,
+   "r_near": 0.15,
+   "mean_true_shift_mas": [
+    -3.931712984357196,
+    6.970127767138842
+   ]
+  }
+ },
+ "before_sky_zero_px": {
+  "state_sha256": "579e2b1c1d6490dc5b85d59c1f48f8797d114b3a77c921e2d38da44d1872473f",
+  "state_sha256_with_legacy_resid": "579e2b1c1d6490dc5b85d59c1f48f8797d114b3a77c921e2d38da44d1872473f",
+  "heldout_chi2": 7.320529686517952
+ },
+ "sky_zero_px_note": "18 Nov build B: default --sky-zero-px 20000; every exposure of this synthetic field has fewer pixels, so all are rendered and the hash is unchanged (re-run, identical)",
+ "before_sky_zero_median_default": {
+  "state_sha256": "579e2b1c1d6490dc5b85d59c1f48f8797d114b3a77c921e2d38da44d1872473f",
+  "state_sha256_with_legacy_resid": "579e2b1c1d6490dc5b85d59c1f48f8797d114b3a77c921e2d38da44d1872473f",
+  "heldout_chi2": 7.320529686517952,
+  "heldout_chi2_snr5": 60.82327586279975,
+  "heldout_truth_noise_chi2": 0.9892498652140299,
+  "sky_error": {
+   "summary": {
+    "raw": {
+     "all": 0.5196298869324966,
+     "near_point_sources": 0.5098455059673238,
+     "elsewhere": 0.7255770326164013
+    },
+    "gauge_adjusted": {
+     "all": 0.1811742487295929,
+     "near_point_sources": 0.1763016131498213,
+     "elsewhere": 0.20124519578610245
+    },
+    "gauge_adjusted_blur": [
+     "truth",
+     0.08
+    ],
+    "gauge_adjusted_and_flux_scaled": {
+     "all": 0.1495063865171445,
+     "near_point_sources": 0.10143563421013314,
+     "elsewhere": 0.18528439088218374
+    },
+    "n_nodes": {
+     "all": 19321,
+     "near_point_sources": 1830,
+     "elsewhere": 17491
+    },
+    "sig_c": 0.06,
+    "r_near": 0.15,
+    "mean_true_shift_mas": [
+     -3.931712984357196,
+     6.970127767138842
+    ]
+   }
+  }
+ },
+ "sky_zero_median_note": "19 Nov 2026: re-recorded after --sky-zero default went back to median (and the unseen-band changes, which do not touch fields where every filter has training data: the legacy hash ff0f1183... is unchanged). Command: tests/synth_small.py --sky-form grid --seed 0 --steps 40 --gauge-ref-inst 0 --kernel-norm-radius 2.0"
+}

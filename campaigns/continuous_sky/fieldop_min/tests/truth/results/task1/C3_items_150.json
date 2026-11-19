@@ -1,0 +1,73 @@
+{
+ "sky_form": "items",
+ "steps": 150,
+ "fit_seconds": 67.15540877100011,
+ "setup_seconds": 24.924619070000062,
+ "prepass_seconds": 2.682524949000026,
+ "heldout_seconds": 6.123241633999896,
+ "total_seconds": 100.90259966200006,
+ "heldout_chi2": 1.0013288259506226,
+ "noise_only_chi2": 0.9938483834266663,
+ "ratio_to_floor": 1.0075267441681242,
+ "loss_curve": [
+  [
+   0,
+   0.3,
+   0.8209,
+   1.8813
+  ],
+  [
+   25,
+   8.9,
+   0.6033,
+   1.1549
+  ],
+  [
+   50,
+   18.8,
+   0.4779,
+   0.9785
+  ],
+  [
+   75,
+   30.0,
+   0.4293,
+   0.9109
+  ],
+  [
+   100,
+   42.2,
+   0.5807,
+   1.1491
+  ],
+  [
+   125,
+   55.0,
+   0.5523,
+   1.075
+  ]
+ ],
+ "kernel_start": {
+  "steps": 2500,
+  "rms_log_error": 0.011666211299598217,
+  "rel_l1_error": 0.006757660303264856,
+  "integral_ratio": 0.9999749064445496
+ },
+ "n_train": 8,
+ "log_tail": [
+  "step    125 t    55.0s prog 0.833 ablation-z {} loss 0.5523 chi2/px(batch) 1.075 chi2/px(input noise) 1.075 noise-floor [1e-06] gauge-shift [-0.00, 0.00] mas dil 1 Mref 0e-6 floor 0e-6 tau {'k_space': 0.0, 'k_time': 0.0, 'k_lambda': 0.0, 'k_exp': 0.0}"
+ ],
+ "config": {
+  "form": "items",
+  "n_train": 8,
+  "seed": 0,
+  "steps": 150,
+  "freeze_kernel": 1,
+  "sky_neg": null,
+  "blur_floor": null,
+  "kernel_steps": 2500,
+  "npix": 44,
+  "item_count": 0
+ },
+ "wall_seconds": 102.61552763899999
+}

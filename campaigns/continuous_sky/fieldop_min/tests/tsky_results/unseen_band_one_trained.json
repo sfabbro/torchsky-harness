@@ -1,0 +1,42 @@
+{
+ "field": "one",
+ "mode": "trained",
+ "steps": 60,
+ "unseen_filters_in_model": [],
+ "loss_first_last": [
+  3.074207067489624,
+  0.5795541405677795
+ ],
+ "per_filter": {
+  "A1": {
+   "chi2": 10.268160820007324,
+   "zero_sky_chi2": 306.0899658203125,
+   "n_px": 3200,
+   "chi2_bright": 116.07302494576797,
+   "zero_sky_chi2_bright": 3772.0372338577695
+  },
+  "A2": {
+   "chi2": 1.8496386408805847,
+   "zero_sky_chi2": 75.35879898071289,
+   "n_px": 3200,
+   "chi2_bright": 7.401647770658452,
+   "zero_sky_chi2_bright": 675.5523336578648
+  },
+  "A3": {
+   "chi2": 1.6308009624481201,
+   "zero_sky_chi2": 48.52956771850586,
+   "n_px": 3200,
+   "chi2_bright": 3.6245784255059,
+   "zero_sky_chi2_bright": 342.6836637790017
+  }
+ },
+ "noise_scale_unseen": null,
+ "middle_filter": "A2",
+ "held_chi2_middle": 1.8496386408805847,
+ "zero_sky_chi2_middle": 75.35879898071289,
+ "noise_scale_exp_h_middle_filter": [
+  1.0742663145065308
+ ],
+ "warnings": [],
+ "total_seconds": 102.43691922100015
+}

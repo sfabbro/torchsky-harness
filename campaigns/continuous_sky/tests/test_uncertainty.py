@@ -269,3 +269,178 @@ def test_diff_products(tmp_path):
         paths.append(U.write_product(str(tmp_path / f"p{k}.fits"), res, "A1", 0.05))
     glob = U.diff_products(paths[0], paths[1], str(tmp_path / "d.fits"), mode="halves")
     assert abs(glob / (0.3 / math.sqrt(2)) - 1) < 0.08
+
+
+# ----------------------------------------------------------------------------- 6. real-data adaptation (18 Nov): batching, bands, progress, budget
+def _rand_x(op, seed=1):
+    g = torch.Generator().manual_seed(seed)
+    u = torch.randn(op.nA + op.nb, generator=g)
+    return torch.cat([u[:op.nA], op.gauge(u[op.nA:])])
+
+
+def test_pack_batches_and_plan():
+    assert U.pack_batches([5, 5, 5, 5, 5], chunk=2) == [[0, 1], [2, 3], [4]]
+    assert U.pack_batches([4, 4, 4, 9, 1], batch_px=8) == [[0, 1], [2], [3], [4]]        # a tile above the budget goes alone
+    assert U.pack_batches([], batch_px=8) == []
+    p = U.plan_passes(12, "draws", True, 8, 60)
+    assert p["setup"] == 13 and p["forward_only"] == 1 and p["polish"] == 61 and p["draws"] == 8 * 61 and p["total"] == 13 + 61 + 8 * 61
+    c = U.plan_passes(12, "circulant", False, 8, 60)
+    assert c["total"] == 13 and c["polish"] == 0 and c["draws"] == 0           # cheap mode: the preconditioner's K + 1 applications (+ 1 forward-only)
+
+
+def test_batching_policy():
+    r = U.resolve_batching
+    assert r("cuda", 256) == (64, 16000, None)                       # CUDA default: 64-pixel tiles, 16000 pixels per batched render
+    assert r("cpu", 256) == (256, None, 32)                          # CPU default: the validated one (tile = region, 32 tiles per render)
+    assert r("cuda", 256, tile=128) == (128, 16000, None)            # explicit tile wins
+    assert r("cuda", 256, chunk=8) == (64, None, 8)                  # explicit chunk wins over the budget
+    assert r("cuda", 256, tile=64, chunk=8, batch_px=1000) == (64, None, 8)
+    assert r("cpu", 256, batch_px=5000) == (256, 5000, None)         # on CPU a budget only when asked for
+    assert U.pack_batches([4096] * 7, batch_px=16000) == [[0, 1, 2], [3, 4, 5], [6]]      # 3 tiles of 64 x 64 = 12288 pixels per render
+
+
+def test_tiling_and_batching_equivalence(tiny):
+    """Other tilings / pixel budgets give the same F u to float32 round-off (the render of a pixel does not depend on its tile; the sums differ
+    in order). The default tiling is the validated one (tile = --region-px, 32 tiles per render)."""
+    model, exps, cfg, op = tiny
+    u = _rand_x(op)
+    ref = op.apply(u)
+    for kw in (dict(tile=4), dict(tile=64), dict(tile=4, batch_px=40), dict(tile=8, chunk=1), dict(batch_px=100)):
+        o2 = U.SkyNormalOperator(model, exps, cfg, rho=10.0, log=lambda s: None, **kw)
+        assert o2.n_pix == op.n_pix
+        assert float((o2.apply(u) - ref).norm() / ref.norm()) < 1e-5, kw
+        assert abs(o2.mu / op.mu - 1) < 1e-5, kw
+    o3 = U.SkyNormalOperator(model, exps, cfg, rho=10.0, log=lambda s: None, tile=4, batch_px=40)
+    for b in o3.batches:                                          # budget respected (a tile of 16 pixels fits 2 per batch of 40)
+        assert len(b) == 1 or sum(o3.tiles[i].n for i in b) <= 40
+    assert len(o3.batches) > len(op.batches)
+
+
+def test_tiles_hold_little_and_graphs_are_freed(tiny):
+    """A tile keeps only the mask (bool) and w, w r (float32): no pixel dictionary, no background basis; nothing grows with the number of
+    applications; the render of a batch leaves no live graph behind."""
+    model, exps, cfg, op = tiny
+    t = op.tiles[0]
+    assert set(t.__slots__) == {"op", "eid", "row", "e", "sl", "n", "mask", "w", "wr"}
+    assert t.w.dtype == torch.float32 and t.wr.dtype == torch.float32 and t.mask.dtype == torch.bool and t.w.numel() == t.n
+    assert set(t["pix"]).issuperset({"X", "Y", "d", "xi"}) and t["Lb"].shape == (t.n, 6)
+    nbytes = lambda: sum(x.numel() * x.element_size() for tt in op.tiles for x in (tt.mask, tt.w, tt.wr))
+    before = nbytes()
+    u = _rand_x(op)
+    for _ in range(3):
+        op.apply(u)
+    assert nbytes() == before
+    flags = [p.requires_grad for p in model.parameters()]
+    op.apply(u)
+    assert flags == [p.requires_grad for p in model.parameters()]            # frozen() restored the flags
+    with torch.no_grad():
+        x = op.apply(u)                                           # also fine under a caller's no_grad: the operator enables grad itself
+    assert torch.allclose(x, op.apply(u))
+
+
+def test_cheap_mode_costs_the_preconditioner_only(tiny):
+    """--unc-method circulant --unc-polish 0: one forward-only pass (the weights) + K + 1 applications (coverage and the K delta responses of the
+    Fourier preconditioner), and nothing more however many bands are read out."""
+    model, exps, cfg, _ = tiny
+    op = U.SkyNormalOperator(model, exps, cfg, rho=10.0, log=lambda s: None)
+    assert (op.n_forward, op.n_apply) == (1, op.K + 1)
+    sh = U.solve_shared(op, method="circulant", polish=False, log=lambda s: None)
+    for b in (0, "coef:1", "coef:2"):
+        res = U.band_readout(model, op, sh, b, log=lambda s: None)
+        assert torch.isfinite(res["sigma"]).all() and res["sigma_source"] == "circulant"
+    assert (op.n_forward, op.n_apply) == (1, op.K + 1)
+    full = U.plan_passes(op.K, "circulant", False, 8, 60)
+    assert full["total"] == op.n_apply
+
+
+def _fake_main(monkeypatch, tiny, tmp_path):
+    model, exps, cfg, _ = tiny
+    monkeypatch.setattr(U, "build_from_args", lambda c, log=print: (model, exps, model.fset, {}))
+    monkeypatch.setattr(U, "read_coeffs", lambda m, s, st, log=print, cfg=None: m.sky.coeffs().detach().clone())
+    st = tmp_path / "state.pt"
+    torch.save({}, st)
+    return ["--state", str(st), "--region-px", "8", "--pred-margin", str(cfg.pred_margin), "--unc-samples", "2", "--unc-maxiter", "12",
+            "--unc-tol", "1e-9"]
+
+
+def test_bands_from_one_solve_equal_separate_runs(tiny, monkeypatch, tmp_path, capsys):
+    pytest.importorskip("astropy")
+    from astropy.io import fits
+    base = _fake_main(monkeypatch, tiny, tmp_path)
+    U.main(base + ["--unc-band", "A1,coef:1,coef:2", "--unc-out", str(tmp_path / "multi_{band}.fits")])
+    out = capsys.readouterr().out
+    assert "tiles" in out and "batches per pass" in out and "planned passes" in out and "first pass" in out and "posterior draw 2/2" in out
+    assert out.count("operator applications") == 3 and "done: 3 band(s)" in out
+    n_multi = int(out.split("done: 3 band(s), ")[1].split(" applications")[0])
+    for b in ("A1", "coef:1", "coef:2"):
+        U.main(base + ["--unc-band", b, "--unc-out", str(tmp_path / f"one_{b.replace(':', '')}.fits")])
+        with fits.open(tmp_path / f"multi_{b.replace(':', '')}.fits") as hm, fits.open(tmp_path / f"one_{b.replace(':', '')}.fits") as h1:
+            for ext in ("SKY", "SKY_FIT", "SIGMA", "SIGMA_CIRC", "SIGMA_SCALES", "RESOLUTION"):
+                x, y = np.nan_to_num(hm[ext].data.astype(np.float64)), np.nan_to_num(h1[ext].data.astype(np.float64))
+                assert np.abs(x - y).max() <= 1e-6 * max(np.abs(y).max(), 1e-30), (b, ext)
+            assert hm[0].header["TRUNCATD"] is False and hm[0].header["NSAMPLE"] == 2
+    out = capsys.readouterr().out
+    n_one = int(out.split("done: 1 band(s), ")[1].split(" applications")[0])
+    assert n_multi == n_one                                       # three bands cost the applications of one
+    with pytest.raises(SystemExit):                               # several bands need a {band} pattern: refused before any work
+        U.main(base + ["--unc-band", "A1,coef:1", "--unc-out", str(tmp_path / "x.fits")])
+
+
+def test_time_budget_truncates_cleanly(tiny, tmp_path):
+    pytest.importorskip("astropy")
+    from astropy.io import fits
+    model, exps, cfg, _ = tiny
+    # a clock that counts applications: 1 second per application, budget 12 s, no reserve
+    op = U.SkyNormalOperator(model, exps, cfg, rho=10.0, log=lambda s: None)
+    mon = U.Monitor(op, log=lambda s: None, max_minutes=12 / 60, t0=0.0, reserve=0.0, clock=lambda: float(op.n_apply))
+    res = U.uncertainty_map(model, exps, cfg, 0, n_samples=2, maxiter=15, tol=1e-12, log=lambda s: None, op=op, monitor=mon)
+    assert res["truncated"] and res["truncated_in"] == "Gauss-Newton step" and op.n_apply <= 12
+    assert 1 <= res["polish"]["iterations"] < 15 and res["polish"]["truncated"] and res["residual"] == res["polish"]["rel_residual"] > 1e-12
+    assert res["samples"] is None and res["sigma_source"] == "circulant" and torch.isfinite(res["sigma"]).all()
+    p = U.write_product(str(tmp_path / "t.fits"), res, 0, model.sky.pitch)
+    with fits.open(p) as h:
+        assert h[0].header["TRUNCATD"] is True and abs(h[0].header["RESIDUAL"] / res["residual"] - 1) < 1e-6 and h[0].header["TRUNCIN"] == "Gauss-Newton step"
+        assert h[0].header["SIGMETH"] == "circulant" and h[0].header["NSAMPLE"] == 0 and h[0].header["NSAMPREQ"] == 2
+    # budget enough for the step (4 set-up + 16) but not for the first draw: the cut draw is discarded
+    op2 = U.SkyNormalOperator(model, exps, cfg, rho=10.0, log=lambda s: None)
+    mon2 = U.Monitor(op2, log=lambda s: None, max_minutes=25 / 60, t0=0.0, reserve=0.0, clock=lambda: float(op2.n_apply))
+    res2 = U.uncertainty_map(model, exps, cfg, 0, n_samples=2, maxiter=15, tol=1e-12, log=lambda s: None, op=op2, monitor=mon2)
+    assert res2["truncated"] and res2["truncated_in"].startswith("draw") and not res2["polish"]["truncated"]
+    assert res2["samples"] is None and res2["cg_iterations"] == [] and op2.n_apply <= 25
+    # no budget: nothing truncated
+    op3 = U.SkyNormalOperator(model, exps, cfg, rho=10.0, log=lambda s: None)
+    res3 = U.uncertainty_map(model, exps, cfg, 0, n_samples=1, maxiter=6, tol=1e-12, log=lambda s: None, op=op3, monitor=U.Monitor(op3, log=lambda s: None))
+    assert not res3["truncated"] and len(res3["cg_iterations"]) == 1
+
+
+def test_command_line_budget_exits_cleanly_and_reports_progress(tiny, monkeypatch, tmp_path, capsys):
+    pytest.importorskip("astropy")
+    from astropy.io import fits
+    base = _fake_main(monkeypatch, tiny, tmp_path)
+    U.main(base + ["--unc-band", "A1", "--unc-out", str(tmp_path / "b.fits"), "--unc-max-minutes", "1e-9"])      # returns normally = exit status 0
+    out = capsys.readouterr().out
+    assert "time budget" in out and "TRUNCATED" in out and "written" in out
+    with fits.open(tmp_path / "b.fits") as h:
+        assert h[0].header["TRUNCATD"] is True and h[0].header["POLITER"] == 0 and h[0].header["POLISHED"] is False
+    # progress lines every 5 iterations, with passes so far, elapsed and time left
+    U.main(base + ["--unc-band", "A1", "--unc-out", str(tmp_path / "c.fits"), "--unc-maxiter", "11", "--unc-samples", "1"])
+    out = capsys.readouterr().out
+    assert "iteration 5, relative residual" in out and "iteration 10, relative residual" in out and "passes so far" in out and "estimated time left" in out
+    assert "iteration 4," not in out
+
+
+def test_blocked_eigendecomposition_equals_unblocked(tiny):
+    model, exps, cfg, op = tiny
+    assert op.N > 8
+    c = (op.N - 1) // 2
+    fh = torch.fft.fft2(torch.roll(op.fc.double(), (-c, -c), (-2, -1))).permute(2, 3, 0, 1)
+    ph = U.band_vector(model, 0).double()
+
+    def q(b):
+        b = 0.5 * (b + b.conj().transpose(-1, -2))
+        ev, V = torch.linalg.eigh(b)
+        return ((V.conj().transpose(-1, -2) @ ph.to(V.dtype)).abs() ** 2 / (ev.clamp(min=0) + op.mu)).sum(-1)
+    full, blocks = q(fh), U._eigh_rows(fh, q, rows=5)
+    assert torch.allclose(full, blocks, rtol=1e-10, atol=0)
+    assert torch.allclose(op._circ_q(U.band_vector(model, 0)), full, rtol=1e-10, atol=0)
+    assert len(op._qcache) >= 1

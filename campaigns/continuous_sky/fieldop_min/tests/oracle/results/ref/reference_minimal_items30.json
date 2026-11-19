@@ -1,0 +1,203 @@
+{
+ "pkg": "/home/claude/work/fieldop_tsky",
+ "sky_form": "items",
+ "seed": 0,
+ "steps": 30,
+ "fit_seconds": 25.96605902799979,
+ "s_per_step": 0.8655353009333263,
+ "setup_seconds": 10.011743432000003,
+ "heldout_seconds": 58.98037956100006,
+ "train_loss_log": [
+  [
+   0,
+   0.7586035849999462,
+   7.3521246910095215,
+   118.383857421875
+  ],
+  [
+   10,
+   8.965642184999979,
+   2.278071880340576,
+   7.556143798828125
+  ],
+  [
+   20,
+   17.795676933999857,
+   1.817708969116211,
+   6.335860958614865
+  ]
+ ],
+ "heldout_chi2": 12.246984589745738,
+ "heldout_chi2_snr5": 112.4015793056663,
+ "heldout_summary": {
+  "written": {
+   "chi2_input_noise": 12.246984589745738,
+   "chi2_model_noise": 4.9573428643964865,
+   "n_px": 4356
+  },
+  "all_pixel_old": {
+   "chi2_input_noise": 12.798687956768838,
+   "chi2_model_noise": 4.781168444207001,
+   "n_px": 4356
+  }
+ },
+ "legacy_defaults": false,
+ "gauge_ref_inst": 0,
+ "kernel_norm_radius": 2.0,
+ "held_xfit": 1,
+ "heldout_n_px": 4356,
+ "heldout_n_px_snr5": 436,
+ "heldout_per_exposure": {
+  "A1_0": {
+   "chi2": 28.230894088745117,
+   "n": 1600,
+   "chi2_bright": 298.0838317871094,
+   "n_bright": 146,
+   "chi2_model_noise": 10.33092975616455,
+   "all_pixel_old": {
+    "chi2": 30.003755569458008,
+    "n": 1600,
+    "chi2_bright": 309.344970703125,
+    "n_bright": 150,
+    "chi2_model_noise": 10.014965057373047
+   },
+   "closed_form_stripes_half_fits": {
+    "fit_half0": {},
+    "fit_half1": {}
+   }
+  },
+  "A2_0": {
+   "chi2": 2.8884682655334473,
+   "n": 1600,
+   "chi2_bright": 18.115615844726562,
+   "n_bright": 170,
+   "chi2_model_noise": 1.693831205368042,
+   "all_pixel_old": {
+    "chi2": 2.752070426940918,
+    "n": 1600,
+    "chi2_bright": 16.8652286529541,
+    "n_bright": 170,
+    "chi2_model_noise": 1.6220202445983887
+   },
+   "closed_form_stripes_half_fits": {
+    "fit_half0": {},
+    "fit_half1": {}
+   }
+  },
+  "B1_0": {
+   "chi2": 3.076890230178833,
+   "n": 1156,
+   "chi2_bright": 20.059953689575195,
+   "n_bright": 120,
+   "chi2_model_noise": 2.0368235111236572,
+   "all_pixel_old": {
+    "chi2": 2.890798568725586,
+    "n": 1156,
+    "chi2_bright": 18.2320499420166,
+    "n_bright": 122,
+    "chi2_model_noise": 1.9096827507019043
+   },
+   "closed_form_stripes_half_fits": {
+    "fit_half0": {},
+    "fit_half1": {}
+   }
+  }
+ },
+ "heldout_truth_noise_chi2": 0.9892498652140299,
+ "sky_fitted_numbers": 25500,
+ "sky_grid_N": 95,
+ "state_sha256": "b2f1847598982e34bf7b2824e69d9b29072456258830b8c5b4c0528d6dd8042c",
+ "state_sha256_with_legacy_resid": "17074e4ee8300006c319a41e538bdcb4d7df08d4e62ce03c1cbc84c4d0d4c1bd",
+ "registration": {
+  "iters": [
+   {
+    "iter": 0,
+    "rms_translation_mas": 12.595107078552246,
+    "seconds": 5.237888690999853
+   }
+  ]
+ },
+ "spectral_setup": {
+  "mode": "union",
+  "domain_um": [
+   0.7,
+   5.3
+  ],
+  "reference_domain_um": [
+   0.7,
+   5.3
+  ],
+  "node_range_um": [
+   1.043529868152537,
+   2.647414350291275
+  ],
+  "curve_grid_um": [
+   0.55,
+   5.6,
+   48
+  ],
+  "curve_support_um": [
+   0.8968796992481203,
+   3.0866666666666664
+  ],
+  "curve_grid_changed": false,
+  "spec_k_rule": "fixed",
+  "spec_k_requested": 12,
+  "spec_k": 12,
+  "ln_spacing": 0.18403470586334622,
+  "outside_old_domain": []
+ },
+ "total_seconds": 96.59625725500018,
+ "minimal": true,
+ "fit_record": {
+  "dilation_max": 1.1745407581329346,
+  "dilation_final": 1.1744563579559326,
+  "noise_floor_final": [
+   0.01107,
+   0.011179
+  ],
+  "noise_at_bound_final": {
+   "floor": [],
+   "noise_scale": []
+  }
+ },
+ "tau": {
+  "k_space": {
+   "mode": "off",
+   "init": 0.3,
+   "value": 0.0
+  },
+  "k_time": {
+   "mode": "off",
+   "init": 0.3,
+   "value": 0.0
+  },
+  "k_lambda": {
+   "mode": "off",
+   "init": 1.0,
+   "value": 0.0
+  },
+  "k_exp": {
+   "mode": "learned",
+   "init": 0.3,
+   "value": 0.15000003576278687
+  },
+  "g_space": {
+   "mode": "off",
+   "init": 0.02,
+   "value": 0.0
+  },
+  "g_time": {
+   "mode": "off",
+   "init": 0.02,
+   "value": 0.0
+  },
+  "g_exp": {
+   "mode": "learned",
+   "init": 0.02,
+   "value": 0.009999996982514858
+  }
+ },
+ "n_val_exposures": 0,
+ "n_train_exposures": 21
+}

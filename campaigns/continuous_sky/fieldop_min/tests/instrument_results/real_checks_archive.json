@@ -1,0 +1,1069 @@
+{
+ "box": {
+  "id": 0,
+  "ra": 110.87451784172,
+  "dec": -73.454056922825,
+  "size_arcsec": 140.0
+ },
+ "hst_wcs": "archive",
+ "valid": {
+  "JWST F090W NRCB1": {
+   "whole_chip": {
+    "dq_policy_only": 0.8872015476226807,
+    "dq_and_finite": 0.8872015476226807,
+    "dq_zero_and_finite": 0.8872015476226807,
+    "ignore_bits": 0,
+    "jwst_ignoring_jump_bit_4": 0.9902966022491455
+   },
+   "in_box": 0.8872015476226807
+  },
+  "JWST F277W NRCBLONG": {
+   "whole_chip": {
+    "dq_policy_only": 0.8404018878936768,
+    "dq_and_finite": 0.8404018878936768,
+    "dq_zero_and_finite": 0.8404018878936768,
+    "ignore_bits": 0,
+    "jwst_ignoring_jump_bit_4": 0.976374626159668
+   },
+   "in_box": 0.8458444533284352
+  },
+  "WFC3_IR F105W iczgz2nsq": {
+   "whole_chip": {
+    "dq_policy_only": 0.9841450462752238,
+    "dq_and_finite": 0.9841450462752238,
+    "dq_zero_and_finite": 0.9602614676579173,
+    "ignore_bits": 528
+   },
+   "in_box": 0.9858101587555793
+  },
+  "WFC3_IR F105W iczgz4kcq": {
+   "whole_chip": {
+    "dq_policy_only": 0.9842598103863466,
+    "dq_and_finite": 0.9842598103863466,
+    "dq_zero_and_finite": 0.9602420161136592,
+    "ignore_bits": 528
+   },
+   "in_box": 0.9859418430617918
+  },
+  "WFC3_IR F160W iczgz2nxq": {
+   "whole_chip": {
+    "dq_policy_only": 0.9842228524522562,
+    "dq_and_finite": 0.9842228524522562,
+    "dq_zero_and_finite": 0.9603431641438014,
+    "ignore_bits": 528
+   },
+   "in_box": 0.9859176727591473
+  },
+  "WFC3_IR F160W iczgzbmgq": {
+   "whole_chip": {
+    "dq_policy_only": 0.984143101120798,
+    "dq_and_finite": 0.984143101120798,
+    "dq_zero_and_finite": 0.9599940089243685,
+    "ignore_bits": 528
+   },
+   "in_box": 0.9843902760222902
+  },
+  "WFC3_IR F140W iczgz6j9q": {
+   "whole_chip": {
+    "dq_policy_only": 0.9842705087356886,
+    "dq_and_finite": 0.9842705087356886,
+    "dq_zero_and_finite": 0.9602527144630012,
+    "ignore_bits": 528
+   },
+   "in_box": 0.984848207199956
+  },
+  "ACS_WFC F814W jczgz3k8q_sci1": {
+   "whole_chip": {
+    "dq_policy_only": 0.9657093286514282,
+    "dq_and_finite": 0.9657093286514282,
+    "dq_zero_and_finite": 0.9324475526809692,
+    "ignore_bits": 80
+   },
+   "in_box": 0.9599518247879684
+  },
+  "ACS_WFC F814W jczgz3k8q_sci2": {
+   "whole_chip": {
+    "dq_policy_only": 0.9651068449020386,
+    "dq_and_finite": 0.9651068449020386,
+    "dq_zero_and_finite": 0.9319096803665161,
+    "ignore_bits": 80
+   },
+   "in_box": 0.9634546989344299
+  }
+ },
+ "noise": {
+  "JWST F090W NRCB1": {
+   "median_sigma": 0.02430034428834915,
+   "robust_scatter": 0.025045450776815414,
+   "robust_scatter_first_differences": 0.023382136598229408,
+   "ratio_scatter_over_sigma": 1.0306624174118042,
+   "ratio_diff_scatter_over_sigma": 0.9622142314910889,
+   "n_blank": 3272238,
+   "blank_median_MJy_sr": 0.20308241248130798
+  },
+  "JWST F277W NRCBLONG": {
+   "median_sigma": 0.0055129253305494785,
+   "robust_scatter": 0.007005839608609676,
+   "robust_scatter_first_differences": 0.005564701743423939,
+   "ratio_scatter_over_sigma": 1.2708024978637695,
+   "ratio_diff_scatter_over_sigma": 1.0093917846679688,
+   "n_blank": 1516301,
+   "blank_median_MJy_sr": 0.09582404792308807
+  },
+  "WFC3_IR F105W iczgz2nsq": {
+   "median_sigma": 0.022808026522397995,
+   "robust_scatter": 0.01872817613184452,
+   "robust_scatter_first_differences": 0.017857791855931282,
+   "ratio_scatter_over_sigma": 0.8211221694946289,
+   "ratio_diff_scatter_over_sigma": 0.782960832118988,
+   "n_blank": 586841,
+   "blank_median_MJy_sr": 0.124496228992939
+  },
+  "WFC3_IR F105W iczgz4kcq": {
+   "median_sigma": 0.019712459295988083,
+   "robust_scatter": 0.01678389124572277,
+   "robust_scatter_first_differences": 0.015881143510341644,
+   "ratio_scatter_over_sigma": 0.851435661315918,
+   "ratio_diff_scatter_over_sigma": 0.8056398630142212,
+   "n_blank": 586416,
+   "blank_median_MJy_sr": 0.12461820244789124
+  },
+  "WFC3_IR F160W iczgz2nxq": {
+   "median_sigma": 0.020462457090616226,
+   "robust_scatter": 0.018364932388067245,
+   "robust_scatter_first_differences": 0.017115198075771332,
+   "ratio_scatter_over_sigma": 0.8974940180778503,
+   "ratio_diff_scatter_over_sigma": 0.8364195227622986,
+   "n_blank": 550669,
+   "blank_median_MJy_sr": 0.1517823040485382
+  },
+  "WFC3_IR F160W iczgzbmgq": {
+   "median_sigma": 0.016423504799604416,
+   "robust_scatter": 0.01501788105815649,
+   "robust_scatter_first_differences": 0.013895926997065544,
+   "ratio_scatter_over_sigma": 0.9144138693809509,
+   "ratio_diff_scatter_over_sigma": 0.8460999727249146,
+   "n_blank": 514088,
+   "blank_median_MJy_sr": 0.18424399197101593
+  },
+  "WFC3_IR F140W iczgz6j9q": {
+   "median_sigma": 0.019475392997264862,
+   "robust_scatter": 0.016655903309583664,
+   "robust_scatter_first_differences": 0.015641381964087486,
+   "ratio_scatter_over_sigma": 0.8552281260490417,
+   "ratio_diff_scatter_over_sigma": 0.8031356334686279,
+   "n_blank": 539772,
+   "blank_median_MJy_sr": 0.1300525665283203
+  },
+  "ACS_WFC F814W jczgz3k8q_sci1": {
+   "median_sigma": 0.044722411781549454,
+   "robust_scatter": 0.05337631329894066,
+   "robust_scatter_first_differences": 0.054595958441495895,
+   "ratio_scatter_over_sigma": 1.1935025453567505,
+   "ratio_diff_scatter_over_sigma": 1.2207740545272827,
+   "n_blank": 590237,
+   "blank_median_MJy_sr": 0.260444700717926
+  },
+  "ACS_WFC F814W jczgz3k8q_sci2": {
+   "median_sigma": 0.044363707304000854,
+   "robust_scatter": 0.049834419041872025,
+   "robust_scatter_first_differences": 0.050075702369213104,
+   "ratio_scatter_over_sigma": 1.1233149766921997,
+   "ratio_diff_scatter_over_sigma": 1.1287537813186646,
+   "n_blank": 4211030,
+   "blank_median_MJy_sr": 0.25883185863494873
+  }
+ },
+ "units": {
+  "WFC3_IR F105W iczgz2nsq": {
+   "exposure F090W r=0.4": {
+    "median_ratio_hst_over_jwst": 1.2147614604972012,
+    "quartiles": [
+     1.1519201448438772,
+     1.243135640304469
+    ],
+    "n": 20
+   },
+   "exposure F090W r=0.8": {
+    "median_ratio_hst_over_jwst": 1.1823915234474316,
+    "quartiles": [
+     1.14374455125116,
+     1.2865700825112294
+    ],
+    "n": 20
+   },
+   "exposure F090W r=1.2": {
+    "median_ratio_hst_over_jwst": 1.2182817442019724,
+    "quartiles": [
+     1.1866798009720099,
+     1.343928148743823
+    ],
+    "n": 16
+   }
+  },
+  "WFC3_IR F105W iczgz4kcq": {
+   "exposure F090W r=0.4": {
+    "median_ratio_hst_over_jwst": 1.2325039688757462,
+    "quartiles": [
+     1.1736904927432308,
+     1.2754871605169669
+    ],
+    "n": 20
+   },
+   "exposure F090W r=0.8": {
+    "median_ratio_hst_over_jwst": 1.2256855384237553,
+    "quartiles": [
+     1.1478562291945766,
+     1.3176991266130256
+    ],
+    "n": 20
+   },
+   "exposure F090W r=1.2": {
+    "median_ratio_hst_over_jwst": 1.2493716552261924,
+    "quartiles": [
+     1.172044792125981,
+     1.3167892448077723
+    ],
+    "n": 16
+   }
+  },
+  "WFC3_IR F160W iczgz2nxq": {},
+  "WFC3_IR F160W iczgzbmgq": {},
+  "WFC3_IR F140W iczgz6j9q": {},
+  "ACS_WFC F814W jczgz3k8q_sci2": {
+   "exposure F090W r=0.4": {
+    "median_ratio_hst_over_jwst": 0.7701420892516766,
+    "quartiles": [
+     0.7364097453737947,
+     0.8748412937239325
+    ],
+    "n": 21
+   },
+   "exposure F090W r=0.8": {
+    "median_ratio_hst_over_jwst": 0.7977311675266406,
+    "quartiles": [
+     0.7268241998163303,
+     1.0131026758648791
+    ],
+    "n": 22
+   },
+   "exposure F090W r=1.2": {
+    "median_ratio_hst_over_jwst": 0.8302774858394604,
+    "quartiles": [
+     0.7234805720354955,
+     1.1489637377919175
+    ],
+    "n": 19
+   }
+  }
+ },
+ "geometry": {
+  "official mosaic F090W (aligned) against the NRCB1 exposure": null,
+  "official mosaic F150W (aligned) against the NRCB1 exposure": null,
+  "WFC3_IR F105W iczgz2nsq": {
+   "n": 17,
+   "median_offset_mas": [
+    6.862619461445618,
+    11.884225487579059
+   ],
+   "offset_rms_about_median_mas": 23.454701560097433,
+   "similarity": {
+    "scale_err_ppm": 230.57294511289734,
+    "rotation_err_arcsec": 47.55908384953416,
+    "translation_mas": [
+     1.0681858430494628,
+     8.7653819309792
+    ],
+    "scale_minus_1_ppm": 205.62624635411808,
+    "rotation_arcsec_of_angle": -28.844204871650913,
+    "residual_rms_mas": 22.03597912644071,
+    "rotation_displacement_at_30arcsec_mas": 4.195219542750807,
+    "n": 17,
+    "radius_span_arcsec": 32.06676240596674
+   },
+   "similarity_clipped": {
+    "scale_err_ppm": 230.57294511289734,
+    "rotation_err_arcsec": 47.55908384953416,
+    "translation_mas": [
+     1.0681858430494628,
+     8.7653819309792
+    ],
+    "scale_minus_1_ppm": 205.62624635411808,
+    "rotation_arcsec_of_angle": -28.844204871650913,
+    "residual_rms_mas": 22.03597912644071,
+    "rotation_displacement_at_30arcsec_mas": 4.195219542750807,
+    "n": 17,
+    "radius_span_arcsec": 32.06676240596674
+   },
+   "n_clipped": 0
+  },
+  "WFC3_IR F105W iczgz4kcq": {
+   "n": 17,
+   "median_offset_mas": [
+    20.38407222443972,
+    20.948812738236455
+   ],
+   "offset_rms_about_median_mas": 24.66937188713015,
+   "similarity": {
+    "scale_err_ppm": 237.90337938046582,
+    "rotation_err_arcsec": 49.07109445344124,
+    "translation_mas": [
+     13.801757670016457,
+     15.328839569482167
+    ],
+    "scale_minus_1_ppm": 399.62400933046814,
+    "rotation_arcsec_of_angle": 47.18755023587418,
+    "residual_rms_mas": 22.539036043608007,
+    "rotation_displacement_at_30arcsec_mas": 6.8631509797185934,
+    "n": 17,
+    "radius_span_arcsec": 31.80727585014697
+   },
+   "similarity_clipped": {
+    "scale_err_ppm": 237.90337938046582,
+    "rotation_err_arcsec": 49.07109445344124,
+    "translation_mas": [
+     13.801757670016457,
+     15.328839569482167
+    ],
+    "scale_minus_1_ppm": 399.62400933046814,
+    "rotation_arcsec_of_angle": 47.18755023587418,
+    "residual_rms_mas": 22.539036043608007,
+    "rotation_displacement_at_30arcsec_mas": 6.8631509797185934,
+    "n": 17,
+    "radius_span_arcsec": 31.80727585014697
+   },
+   "n_clipped": 0
+  },
+  "WFC3_IR F160W iczgz2nxq": {
+   "n": 17,
+   "median_offset_mas": [
+    -1.735895946985977,
+    7.678682269512294
+   ],
+   "offset_rms_about_median_mas": 24.76413513614796,
+   "similarity": {
+    "scale_err_ppm": 251.61518862808668,
+    "rotation_err_arcsec": 51.89935813119891,
+    "translation_mas": [
+     -6.580348839825945,
+     3.2557795192471595
+    ],
+    "scale_minus_1_ppm": 124.92017594190052,
+    "rotation_arcsec_of_angle": -5.328217278772069,
+    "residual_rms_mas": 23.838096879397796,
+    "rotation_displacement_at_30arcsec_mas": 0.7749577898018765,
+    "n": 17,
+    "radius_span_arcsec": 31.80727585014697
+   },
+   "similarity_clipped": {
+    "scale_err_ppm": 251.61518862808668,
+    "rotation_err_arcsec": 51.89935813119891,
+    "translation_mas": [
+     -6.580348839825945,
+     3.2557795192471595
+    ],
+    "scale_minus_1_ppm": 124.92017594190052,
+    "rotation_arcsec_of_angle": -5.328217278772069,
+    "residual_rms_mas": 23.838096879397796,
+    "rotation_displacement_at_30arcsec_mas": 0.7749577898018765,
+    "n": 17,
+    "radius_span_arcsec": 31.80727585014697
+   },
+   "n_clipped": 0
+  },
+  "WFC3_IR F160W iczgzbmgq": {
+   "n": 20,
+   "median_offset_mas": [
+    -15.697600818007196,
+    23.897043636658122
+   ],
+   "offset_rms_about_median_mas": 24.07056380032567,
+   "similarity": {
+    "scale_err_ppm": 191.71196521155602,
+    "rotation_err_arcsec": 39.54343135961168,
+    "translation_mas": [
+     -18.961518651035902,
+     16.59242782627679
+    ],
+    "scale_minus_1_ppm": -11.673071096174326,
+    "rotation_arcsec_of_angle": -18.498609346571556,
+    "residual_rms_mas": 22.406652244988408,
+    "rotation_displacement_at_30arcsec_mas": 2.690513667815587,
+    "n": 20,
+    "radius_span_arcsec": 33.59162940961009
+   },
+   "similarity_clipped": {
+    "scale_err_ppm": 191.71196521155602,
+    "rotation_err_arcsec": 39.54343135961168,
+    "translation_mas": [
+     -18.961518651035902,
+     16.59242782627679
+    ],
+    "scale_minus_1_ppm": -11.673071096174326,
+    "rotation_arcsec_of_angle": -18.498609346571556,
+    "residual_rms_mas": 22.406652244988408,
+    "rotation_displacement_at_30arcsec_mas": 2.690513667815587,
+    "n": 20,
+    "radius_span_arcsec": 33.59162940961009
+   },
+   "n_clipped": 0
+  },
+  "WFC3_IR F140W iczgz6j9q": {
+   "n": 20,
+   "median_offset_mas": [
+    -6.119071298394729,
+    17.270954055375043
+   ],
+   "offset_rms_about_median_mas": 25.83918545386858,
+   "similarity": {
+    "scale_err_ppm": 218.43938688544307,
+    "rotation_err_arcsec": 45.05635781266044,
+    "translation_mas": [
+     -7.446568029082279,
+     14.891080829841918
+    ],
+    "scale_minus_1_ppm": 7.370914126392236,
+    "rotation_arcsec_of_angle": -20.81128817477841,
+    "residual_rms_mas": 25.53046375143816,
+    "rotation_displacement_at_30arcsec_mas": 3.026879168593704,
+    "n": 20,
+    "radius_span_arcsec": 33.59162940961009
+   },
+   "similarity_clipped": {
+    "scale_err_ppm": 218.43938688544307,
+    "rotation_err_arcsec": 45.05635781266044,
+    "translation_mas": [
+     -7.446568029082279,
+     14.891080829841918
+    ],
+    "scale_minus_1_ppm": 7.370914126392236,
+    "rotation_arcsec_of_angle": -20.81128817477841,
+    "residual_rms_mas": 25.53046375143816,
+    "rotation_displacement_at_30arcsec_mas": 3.026879168593704,
+    "n": 20,
+    "radius_span_arcsec": 33.59162940961009
+   },
+   "n_clipped": 0
+  },
+  "ACS_WFC F814W jczgz3k8q_sci2": {
+   "n": 19,
+   "median_offset_mas": [
+    -7.374168162739281,
+    13.276701730617013
+   ],
+   "offset_rms_about_median_mas": 28.10229084075933,
+   "similarity": {
+    "scale_err_ppm": 253.04191956994353,
+    "rotation_err_arcsec": 52.19364251248774,
+    "translation_mas": [
+     -11.144930289539445,
+     13.199984776400164
+    ],
+    "scale_minus_1_ppm": -50.77656040353151,
+    "rotation_arcsec_of_angle": -35.00651832284076,
+    "residual_rms_mas": 27.47755036357264,
+    "rotation_displacement_at_30arcsec_mas": 5.0914917032774545,
+    "n": 19,
+    "radius_span_arcsec": 35.26866513513134
+   },
+   "similarity_clipped": {
+    "scale_err_ppm": 253.04191956994353,
+    "rotation_err_arcsec": 52.19364251248774,
+    "translation_mas": [
+     -11.144930289539445,
+     13.199984776400164
+    ],
+    "scale_minus_1_ppm": -50.77656040353151,
+    "rotation_arcsec_of_angle": -35.00651832284076,
+    "residual_rms_mas": 27.47755036357264,
+    "rotation_displacement_at_30arcsec_mas": 5.0914917032774545,
+    "n": 19,
+    "radius_span_arcsec": 35.26866513513134
+   },
+   "n_clipped": 0
+  },
+  "JWST F277W NRCBLONG (same visit, other detector)": {
+   "n": 12,
+   "similarity": {
+    "scale_err_ppm": 291.95588815721237,
+    "rotation_err_arcsec": 60.220224703446355,
+    "translation_mas": [
+     3.4982851630904754,
+     0.9579174957634606
+    ],
+    "scale_minus_1_ppm": -337.45515168026594,
+    "rotation_arcsec_of_angle": 60.69942846092919,
+    "residual_rms_mas": 21.899356381211003,
+    "rotation_displacement_at_30arcsec_mas": 8.828374006016405,
+    "n": 12,
+    "radius_span_arcsec": 30.563456130363374
+   }
+  }
+ },
+ "conversion": {
+  "WFC3_IR F105W iczgz2nsq": {
+   "to_sky_MJy_sr_per_unit": 0.2954675705140122,
+   "unit": "ELECTRONS/S",
+   "photfnu_jy_s_per_e": 1.1422846e-07,
+   "photfnu_source": "PHOTFNU",
+   "omega_nom_sr": 3.86602359782773e-13,
+   "t_unit_s": 1.0,
+   "bunit": "ELECTRONS/S",
+   "nominal_scale_arcsec": 0.1282500028610229,
+   "nominal_scale_source": "IDCSCALE",
+   "wcs": "IDC_w3m18525i-FIT_REL_GAIAeDR3",
+   "lookup_tables": false,
+   "pivot_um": 1.0551047
+  },
+  "WFC3_IR F105W iczgz4kcq": {
+   "to_sky_MJy_sr_per_unit": 0.29550719779411627,
+   "unit": "ELECTRONS/S",
+   "photfnu_jy_s_per_e": 1.1424378e-07,
+   "photfnu_source": "PHOTFNU",
+   "omega_nom_sr": 3.86602359782773e-13,
+   "t_unit_s": 1.0,
+   "bunit": "ELECTRONS/S",
+   "nominal_scale_arcsec": 0.1282500028610229,
+   "nominal_scale_source": "IDCSCALE",
+   "wcs": "IDC_w3m18525i-FIT_REL_GAIAeDR3",
+   "lookup_tables": false,
+   "pivot_um": 1.0551047
+  },
+  "WFC3_IR F160W iczgz2nxq": {
+   "to_sky_MJy_sr_per_unit": 0.39660153674735077,
+   "unit": "ELECTRONS/S",
+   "photfnu_jy_s_per_e": 1.5332709e-07,
+   "photfnu_source": "PHOTFNU",
+   "omega_nom_sr": 3.86602359782773e-13,
+   "t_unit_s": 1.0,
+   "bunit": "ELECTRONS/S",
+   "nominal_scale_arcsec": 0.1282500028610229,
+   "nominal_scale_source": "IDCSCALE",
+   "wcs": "IDC_w3m18525i-FIT_REL_GAIAeDR3",
+   "lookup_tables": false,
+   "pivot_um": 1.5369176
+  },
+  "WFC3_IR F160W iczgzbmgq": {
+   "to_sky_MJy_sr_per_unit": 0.39668120516949207,
+   "unit": "ELECTRONS/S",
+   "photfnu_jy_s_per_e": 1.5335789e-07,
+   "photfnu_source": "PHOTFNU",
+   "omega_nom_sr": 3.86602359782773e-13,
+   "t_unit_s": 1.0,
+   "bunit": "ELECTRONS/S",
+   "nominal_scale_arcsec": 0.1282500028610229,
+   "nominal_scale_source": "IDCSCALE",
+   "wcs": "IDC_w3m18525i-FIT_REL_GAIAeDR3",
+   "lookup_tables": false,
+   "pivot_um": 1.5369176
+  },
+  "WFC3_IR F140W iczgz6j9q": {
+   "to_sky_MJy_sr_per_unit": 0.24724760618044042,
+   "unit": "ELECTRONS/S",
+   "photfnu_jy_s_per_e": 9.5586508e-08,
+   "photfnu_source": "PHOTFNU",
+   "omega_nom_sr": 3.86602359782773e-13,
+   "t_unit_s": 1.0,
+   "bunit": "ELECTRONS/S",
+   "nominal_scale_arcsec": 0.1282500028610229,
+   "nominal_scale_source": "IDCSCALE",
+   "wcs": "IDC_w3m18525i-FIT_REL_GAIAeDR3",
+   "lookup_tables": false,
+   "pivot_um": 1.3922907
+  },
+  "ACS_WFC F814W jczgz3k8q_sci1": {
+   "to_sky_MJy_sr_per_unit": 0.0047933896489418155,
+   "unit": "ELECTRONS",
+   "photfnu_jy_s_per_e": 1.5322561590852185e-07,
+   "photfnu_source": "1e23 PHOTFLAM PHOTPLAM^2 / c",
+   "omega_nom_sr": 5.876107634774472e-14,
+   "t_unit_s": 544.0,
+   "bunit": "ELECTRONS",
+   "nominal_scale_arcsec": 0.05,
+   "nominal_scale_source": "IDCSCALE",
+   "wcs": "IDC_4bb1536mj-FIT_REL_GAIAeDR3",
+   "lookup_tables": true,
+   "pivot_um": 0.80455356
+  },
+  "ACS_WFC F814W jczgz3k8q_sci2": {
+   "to_sky_MJy_sr_per_unit": 0.0047933896489418155,
+   "unit": "ELECTRONS",
+   "photfnu_jy_s_per_e": 1.5322561590852185e-07,
+   "photfnu_source": "1e23 PHOTFLAM PHOTPLAM^2 / c",
+   "omega_nom_sr": 5.876107634774472e-14,
+   "t_unit_s": 544.0,
+   "bunit": "ELECTRONS",
+   "nominal_scale_arcsec": 0.05,
+   "nominal_scale_source": "IDCSCALE",
+   "wcs": "IDC_4bb1536mj-FIT_REL_GAIAeDR3",
+   "lookup_tables": true,
+   "pivot_um": 0.80455356
+  }
+ },
+ "n_sources_found": 23,
+ "units_mosaic": {
+  "WFC3_IR F105W iczgz2nsq": {
+   "apertures": {
+    "mosaic F090W r=0.4": {
+     "median_ratio_hst_over_jwst": 1.2442169399134209,
+     "quartiles": [
+      1.1790212197184244,
+      1.296409795970303
+     ],
+     "n": 27
+    },
+    "mosaic F090W r=0.8": {
+     "median_ratio_hst_over_jwst": 1.2658562608171147,
+     "quartiles": [
+      1.203796283652296,
+      1.3234222747749707
+     ],
+     "n": 27
+    },
+    "mosaic F090W r=1.2": {
+     "median_ratio_hst_over_jwst": 1.2713605525854592,
+     "quartiles": [
+      1.1931772469002895,
+      1.3331455778009373
+     ],
+     "n": 27
+    }
+   },
+   "n_sources_in_mosaic": 27,
+   "registration": {
+    "n": 27,
+    "median_offset_mas": [
+     12.06177091353311,
+     124.22172190963553
+    ],
+    "offset_rms_about_median_mas": 23.169486848777264,
+    "similarity": {
+     "scale_err_ppm": 243.45921434600584,
+     "rotation_err_arcsec": 50.2170676761492,
+     "translation_mas": [
+      36.91812809110928,
+      89.53226567665418
+     ],
+     "scale_minus_1_ppm": -635.3735212369927,
+     "rotation_arcsec_of_angle": 122.95681467758273,
+     "residual_rms_mas": 19.385909592406225,
+     "rotation_displacement_at_30arcsec_mas": 17.883343782402573,
+     "n": 27,
+     "radius_span_arcsec": 17.178997169176927
+    },
+    "similarity_clipped": {
+     "scale_err_ppm": 243.45921434600584,
+     "rotation_err_arcsec": 50.2170676761492,
+     "translation_mas": [
+      36.91812809110928,
+      89.53226567665418
+     ],
+     "scale_minus_1_ppm": -635.3735212369927,
+     "rotation_arcsec_of_angle": 122.95681467758273,
+     "residual_rms_mas": 19.385909592406225,
+     "rotation_displacement_at_30arcsec_mas": 17.883343782402573,
+     "n": 27,
+     "radius_span_arcsec": 17.178997169176927
+    },
+    "n_clipped": 0
+   }
+  },
+  "WFC3_IR F105W iczgz4kcq": {
+   "apertures": {
+    "mosaic F090W r=0.4": {
+     "median_ratio_hst_over_jwst": 1.2621221862874887,
+     "quartiles": [
+      1.2279196959951724,
+      1.3179992266631957
+     ],
+     "n": 27
+    },
+    "mosaic F090W r=0.8": {
+     "median_ratio_hst_over_jwst": 1.2765780944850467,
+     "quartiles": [
+      1.234703987609305,
+      1.3196434794003773
+     ],
+     "n": 27
+    },
+    "mosaic F090W r=1.2": {
+     "median_ratio_hst_over_jwst": 1.270607613173247,
+     "quartiles": [
+      1.2147425210393665,
+      1.3212871671230015
+     ],
+     "n": 27
+    }
+   },
+   "n_sources_in_mosaic": 27,
+   "registration": {
+    "n": 27,
+    "median_offset_mas": [
+     35.0699571826496,
+     136.4230245328697
+    ],
+    "offset_rms_about_median_mas": 17.750120703148212,
+    "similarity": {
+     "scale_err_ppm": 202.63265113868144,
+     "rotation_err_arcsec": 41.7959845264556,
+     "translation_mas": [
+      26.896300704834175,
+      108.9002607313564
+     ],
+     "scale_minus_1_ppm": 99.57010383976339,
+     "rotation_arcsec_of_angle": 115.94075355264789,
+     "residual_rms_mas": 16.135015739684675,
+     "rotation_displacement_at_30arcsec_mas": 16.86289905614182,
+     "n": 27,
+     "radius_span_arcsec": 17.178997169176927
+    },
+    "similarity_clipped": {
+     "scale_err_ppm": 202.63265113868144,
+     "rotation_err_arcsec": 41.7959845264556,
+     "translation_mas": [
+      26.896300704834175,
+      108.9002607313564
+     ],
+     "scale_minus_1_ppm": 99.57010383976339,
+     "rotation_arcsec_of_angle": 115.94075355264789,
+     "residual_rms_mas": 16.135015739684675,
+     "rotation_displacement_at_30arcsec_mas": 16.86289905614182,
+     "n": 27,
+     "radius_span_arcsec": 17.178997169176927
+    },
+    "n_clipped": 0
+   }
+  },
+  "ACS_WFC F814W jczgz3k8q_sci1": {
+   "apertures": {
+    "mosaic F090W r=0.4": {
+     "median_ratio_hst_over_jwst": 0.8107237319868277,
+     "quartiles": [
+      0.7873887383804066,
+      0.9527978518915325
+     ],
+     "n": 8
+    },
+    "mosaic F090W r=0.8": {
+     "median_ratio_hst_over_jwst": 0.8191789506289346,
+     "quartiles": [
+      0.7319366960215072,
+      1.103547686615721
+     ],
+     "n": 11
+    },
+    "mosaic F090W r=1.2": {
+     "median_ratio_hst_over_jwst": 0.8157890316101063,
+     "quartiles": [
+      0.7240393122308588,
+      1.2870020305873962
+     ],
+     "n": 11
+    }
+   },
+   "n_sources_in_mosaic": 27,
+   "registration": {
+    "n": 9,
+    "median_offset_mas": [
+     -9.119294284332113,
+     130.7341444788186
+    ],
+    "offset_rms_about_median_mas": 151.22609142190967,
+    "similarity": {
+     "scale_err_ppm": 5185.747959224472,
+     "rotation_err_arcsec": 1069.6372980557112,
+     "translation_mas": [
+      305.4845485356097,
+      103.63343029390612
+     ],
+     "scale_minus_1_ppm": -4797.633703220283,
+     "rotation_arcsec_of_angle": -23.56407325954767,
+     "residual_rms_mas": 136.30977891666853,
+     "rotation_displacement_at_30arcsec_mas": 3.4272555296688263,
+     "n": 9,
+     "radius_span_arcsec": 15.268552020854242
+    },
+    "similarity_clipped": {
+     "scale_err_ppm": 772.5332479071677,
+     "rotation_err_arcsec": 159.34642069901201,
+     "translation_mas": [
+      32.290183407269524,
+      95.07111863448058
+     ],
+     "scale_minus_1_ppm": -682.0771964944905,
+     "rotation_arcsec_of_angle": 124.02348544909208,
+     "residual_rms_mas": 18.658647261487296,
+     "rotation_displacement_at_30arcsec_mas": 18.03848475738279,
+     "n": 8,
+     "radius_span_arcsec": 14.930565167311565
+    },
+    "n_clipped": 1
+   }
+  },
+  "ACS_WFC F814W jczgz3k8q_sci2": {
+   "apertures": {
+    "mosaic F090W r=0.4": {
+     "median_ratio_hst_over_jwst": 0.7583405067816466,
+     "quartiles": [
+      0.7430433119109002,
+      0.8470095190320758
+     ],
+     "n": 16
+    },
+    "mosaic F090W r=0.8": {
+     "median_ratio_hst_over_jwst": 0.7882005932364924,
+     "quartiles": [
+      0.7526974625988248,
+      0.8696419112051169
+     ],
+     "n": 16
+    },
+    "mosaic F090W r=1.2": {
+     "median_ratio_hst_over_jwst": 0.8294375189455878,
+     "quartiles": [
+      0.7303693379423495,
+      0.9620548783928465
+     ],
+     "n": 16
+    }
+   },
+   "n_sources_in_mosaic": 27,
+   "registration": {
+    "n": 14,
+    "median_offset_mas": [
+     -3.9926339883322726,
+     125.3282371028246
+    ],
+    "offset_rms_about_median_mas": 21.352086421652853,
+    "similarity": {
+     "scale_err_ppm": 524.3106028665113,
+     "rotation_err_arcsec": 108.14682491355924,
+     "translation_mas": [
+      23.10070387464691,
+      92.86632243048088
+     ],
+     "scale_minus_1_ppm": -743.2122345927272,
+     "rotation_arcsec_of_angle": 162.50247998885558,
+     "residual_rms_mas": 19.28908382715701,
+     "rotation_displacement_at_30arcsec_mas": 23.63502765384774,
+     "n": 14,
+     "radius_span_arcsec": 12.658282361224444
+    },
+    "similarity_clipped": {
+     "scale_err_ppm": 524.3106028665113,
+     "rotation_err_arcsec": 108.14682491355924,
+     "translation_mas": [
+      23.10070387464691,
+      92.86632243048088
+     ],
+     "scale_minus_1_ppm": -743.2122345927272,
+     "rotation_arcsec_of_angle": 162.50247998885558,
+     "residual_rms_mas": 19.28908382715701,
+     "rotation_displacement_at_30arcsec_mas": 23.63502765384774,
+     "n": 14,
+     "radius_span_arcsec": 12.658282361224444
+    },
+    "n_clipped": 0
+   }
+  },
+  "WFC3_IR F160W iczgz2nxq": {
+   "apertures": {
+    "mosaic F150W r=0.4": {
+     "median_ratio_hst_over_jwst": 0.9169664017241925,
+     "quartiles": [
+      0.8850403138699386,
+      0.9384789310096429
+     ],
+     "n": 24
+    },
+    "mosaic F150W r=0.8": {
+     "median_ratio_hst_over_jwst": 0.9265714781226311,
+     "quartiles": [
+      0.9040794602948987,
+      0.960127102990316
+     ],
+     "n": 24
+    },
+    "mosaic F150W r=1.2": {
+     "median_ratio_hst_over_jwst": 0.9453922590479946,
+     "quartiles": [
+      0.9011574183815445,
+      0.9604765375482759
+     ],
+     "n": 24
+    }
+   },
+   "n_sources_in_mosaic": 24,
+   "registration": {
+    "n": 24,
+    "median_offset_mas": [
+     0.60982920428998,
+     108.97985500357655
+    ],
+    "offset_rms_about_median_mas": 17.506164351720013,
+    "similarity": {
+     "scale_err_ppm": 224.25889093474913,
+     "rotation_err_arcsec": 46.256716687844744,
+     "translation_mas": [
+      2.5613541985975985,
+      95.59193479257777
+     ],
+     "scale_minus_1_ppm": -59.85532549079853,
+     "rotation_arcsec_of_angle": 59.276056886739184,
+     "residual_rms_mas": 17.13782799883091,
+     "rotation_displacement_at_30arcsec_mas": 8.621353002275484,
+     "n": 24,
+     "radius_span_arcsec": 17.371507929679307
+    },
+    "similarity_clipped": {
+     "scale_err_ppm": 224.25889093474913,
+     "rotation_err_arcsec": 46.256716687844744,
+     "translation_mas": [
+      2.5613541985975985,
+      95.59193479257777
+     ],
+     "scale_minus_1_ppm": -59.85532549079853,
+     "rotation_arcsec_of_angle": 59.276056886739184,
+     "residual_rms_mas": 17.13782799883091,
+     "rotation_displacement_at_30arcsec_mas": 8.621353002275484,
+     "n": 24,
+     "radius_span_arcsec": 17.371507929679307
+    },
+    "n_clipped": 0
+   }
+  },
+  "WFC3_IR F160W iczgzbmgq": {
+   "apertures": {
+    "mosaic F150W r=0.4": {
+     "median_ratio_hst_over_jwst": 0.9160626261313358,
+     "quartiles": [
+      0.896592316458757,
+      0.9441267850293883
+     ],
+     "n": 24
+    },
+    "mosaic F150W r=0.8": {
+     "median_ratio_hst_over_jwst": 0.9303698398346446,
+     "quartiles": [
+      0.9092528034962799,
+      0.9622893261434897
+     ],
+     "n": 24
+    },
+    "mosaic F150W r=1.2": {
+     "median_ratio_hst_over_jwst": 0.9273000210628999,
+     "quartiles": [
+      0.8777981556594971,
+      0.9694329827687715
+     ],
+     "n": 24
+    }
+   },
+   "n_sources_in_mosaic": 24,
+   "registration": {
+    "n": 24,
+    "median_offset_mas": [
+     -13.928627674435035,
+     130.446955010755
+    ],
+    "offset_rms_about_median_mas": 19.65198906320365,
+    "similarity": {
+     "scale_err_ppm": 239.416415867863,
+     "rotation_err_arcsec": 49.38318063135901,
+     "translation_mas": [
+      -16.532154261341248,
+      103.28152850932493
+     ],
+     "scale_minus_1_ppm": -8.077239567527705,
+     "rotation_arcsec_of_angle": 114.0573115176029,
+     "residual_rms_mas": 18.29616359082882,
+     "rotation_displacement_at_30arcsec_mas": 16.58896351629184,
+     "n": 24,
+     "radius_span_arcsec": 17.371507929679307
+    },
+    "similarity_clipped": {
+     "scale_err_ppm": 215.58691181210668,
+     "rotation_err_arcsec": 44.467992594334035,
+     "translation_mas": [
+      -21.238494631901972,
+      115.71757159974626
+     ],
+     "scale_minus_1_ppm": 113.00334216635122,
+     "rotation_arcsec_of_angle": 68.90591205052137,
+     "residual_rms_mas": 15.693244032118729,
+     "rotation_displacement_at_30arcsec_mas": 10.02195866142696,
+     "n": 23,
+     "radius_span_arcsec": 17.335986237262627
+    },
+    "n_clipped": 1
+   }
+  },
+  "WFC3_IR F140W iczgz6j9q": {
+   "apertures": {
+    "mosaic F150W r=0.4": {
+     "median_ratio_hst_over_jwst": 0.8140717168011873,
+     "quartiles": [
+      0.7894042929360691,
+      0.8511041395800621
+     ],
+     "n": 24
+    },
+    "mosaic F150W r=0.8": {
+     "median_ratio_hst_over_jwst": 0.8241341608504393,
+     "quartiles": [
+      0.8047925143558902,
+      0.854979385288902
+     ],
+     "n": 24
+    },
+    "mosaic F150W r=1.2": {
+     "median_ratio_hst_over_jwst": 0.8285999091274954,
+     "quartiles": [
+      0.7591542134490423,
+      0.8656279666374531
+     ],
+     "n": 24
+    }
+   },
+   "n_sources_in_mosaic": 24,
+   "registration": {
+    "n": 24,
+    "median_offset_mas": [
+     -1.6888630592148957,
+     121.49736475936268
+    ],
+    "offset_rms_about_median_mas": 16.55730100163196,
+    "similarity": {
+     "scale_err_ppm": 209.63547410920944,
+     "rotation_err_arcsec": 43.24042044965427,
+     "translation_mas": [
+      -0.8697274694782209,
+      105.5157888931213
+     ],
+     "scale_minus_1_ppm": -41.238448185265675,
+     "rotation_arcsec_of_angle": 62.305837607774926,
+     "residual_rms_mas": 16.02030886161094,
+     "rotation_displacement_at_30arcsec_mas": 9.0620167455715,
+     "n": 24,
+     "radius_span_arcsec": 17.371507929679307
+    },
+    "similarity_clipped": {
+     "scale_err_ppm": 209.63547410920944,
+     "rotation_err_arcsec": 43.24042044965427,
+     "translation_mas": [
+      -0.8697274694782209,
+      105.5157888931213
+     ],
+     "scale_minus_1_ppm": -41.238448185265675,
+     "rotation_arcsec_of_angle": 62.305837607774926,
+     "residual_rms_mas": 16.02030886161094,
+     "rotation_displacement_at_30arcsec_mas": 9.0620167455715,
+     "n": 24,
+     "radius_span_arcsec": 17.371507929679307
+    },
+    "n_clipped": 0
+   }
+  }
+ },
+ "seconds": 58.81228256225586
+}
