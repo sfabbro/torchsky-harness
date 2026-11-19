@@ -81,6 +81,16 @@ def _unit(ra: np.ndarray, dec: np.ndarray) -> np.ndarray:
 
 
 def _peak_rss_bytes() -> int:
+    """This process's peak RSS.
+
+    On Linux ``ru_maxrss`` survives fork + exec, so a worker would report its
+    parent's peak; ``VmHWM`` belongs to the current address space and resets on exec.
+    """
+    status = Path("/proc/self/status")
+    if status.exists():
+        for line in status.read_text().splitlines():
+            if line.startswith("VmHWM:"):
+                return int(line.split()[1]) * 1024
     rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     return int(rss if sys.platform == "darwin" else rss * 1024)
 
