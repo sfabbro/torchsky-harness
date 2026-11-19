@@ -280,16 +280,25 @@ def _gpu_peer(args: argparse.Namespace, A: np.ndarray, B: np.ndarray, chord: flo
                     return np.empty(0, np.int64), np.empty(0, np.int64)
                 return np.concatenate(lefts), np.concatenate(rights)
             # kgrow: k-NN bounded by the radius; rows that fill all K slots are redone with 2K.
+            # A slot is a pair only if its index is valid and its distance within the chord
+            # (missing neighbours are index tree.n); a row is saturated if its last slot is a pair.
             pending, k = cp.arange(n), 8
             lefts, rights = [], []
             while pending.size:
+                if k > min(tree.n, 1 << 16):
+                    d, j = tree.query(Ad[pending[:1]], k=min(k // 2, tree.n), distance_upper_bound=chord)
+                    raise RuntimeError(f"k-regrow runaway: {int(pending.size)} rows still saturated at k={k // 2}; "
+                                       f"row 0 d[:4]={cp.asnumpy(d[0, :4])} j[:4]={cp.asnumpy(j[0, :4])} "
+                                       f"chord={chord:.3e} n={tree.n}")
+                print(f"kgrow k={k} pending={int(pending.size)}", file=sys.stderr, flush=True)
                 rows = _chunk_rows(16 * k)
                 saturated = []
                 for s in range(0, int(pending.size), rows):
                     r = pending[s:s + rows]
                     d, j = tree.query(Ad[r], k=k, distance_upper_bound=chord)
-                    full = cp.isfinite(d[:, -1])
-                    ri, ci = cp.nonzero(cp.isfinite(d) & ~full[:, None])
+                    pair = (j < tree.n) & (d <= chord)
+                    full = pair[:, -1]
+                    ri, ci = cp.nonzero(pair & ~full[:, None])
                     lefts.append(r[ri])
                     rights.append(j[ri, ci])
                     saturated.append(r[full])
@@ -682,14 +691,17 @@ def main() -> int:
                             try:
                                 proc = subprocess.run(cmd, capture_output=True, text=True, env=env,
                                                       timeout=args.worker_timeout)
-                            except subprocess.TimeoutExpired:
-                                results[engine] = {"timeout": True, "error": [f"exceeded --worker-timeout {args.worker_timeout}s"]}
+                            except subprocess.TimeoutExpired as exc:
+                                tail = exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+                                results[engine] = {"timeout": True, "error": [f"exceeded --worker-timeout {args.worker_timeout}s"],
+                                                   "stderr_tail": tail.strip().splitlines()[-15:]}
                                 continue
                             if proc.returncode == EXIT_UNAVAILABLE and engine in GPU_PEERS:
                                 unavailable[engine] = proc.stderr.strip().splitlines()[-1:] or ["unavailable"]
                                 results[engine] = {"unavailable": True, "error": unavailable[engine]}
                             elif proc.returncode != 0:
-                                results[engine] = {"error": proc.stderr.strip().splitlines()[-1:] or ["failed"]}
+                                results[engine] = {"error": proc.stderr.strip().splitlines()[-1:] or ["failed"],
+                                                   "stderr_tail": proc.stderr.strip().splitlines()[-15:]}
                             else:
                                 results[engine] = json.loads((Path(tmp) / f"{engine}.json").read_text())
                         ok_engines = [e for e in engines if "error" not in results[e]]
@@ -716,6 +728,8 @@ def main() -> int:
                             else:
                                 status = "TIMEOUT" if "timeout" in r else "ERROR"
                             row.update(status=status, reason=r["error"])
+                            if "stderr_tail" in r:
+                                row["stderr_tail"] = r["stderr_tail"]
                         else:
                             row.update(r)
                             row["rows_per_s"] = n / r["time_s"]

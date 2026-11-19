@@ -613,7 +613,7 @@ case "${mode}" in
       --layouts sparse,dense,crowded --modes best,all,knn2 \
       --runs 3 --device cuda --astropy-max-n 0 --threads "${catalog_threads}" \
       --gpu-peers "${TORCHSKY_CATALOG_GPU_PEERS:-cupy_kdtree,cupy_kdtree_kgrow,faiss_flat,cuvs_brute_force,torch_cluster,open3d_nns}" \
-      --brute-force-max-n 1000000 --cupy-ball-max-n 1000000 --worker-timeout 1800 \
+      --brute-force-max-n 1000000 --cupy-ball-max-n 1000000 --worker-timeout 900 \
       --json-out "${artifact_root}/catalog_match_gpu_peers.json"
     ;;
   catalog-match-real)
