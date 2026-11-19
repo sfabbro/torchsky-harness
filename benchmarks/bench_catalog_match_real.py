@@ -240,7 +240,7 @@ def run_field(name: str, root: Path, ra: float, dec: float, r: float) -> dict[st
             "max_pm_mas_yr": float(pm[fast].max()),
         }
     t1 = time.perf_counter()
-    many = associate_many([gaia, tmass, cw], epoch=t_epoch, motion_prior=prior, max_radius_arcsec=60.0, budget=4096)
+    many = associate_many([gaia, tmass, cw], motion_prior=prior, max_radius_arcsec=60.0, budget=4096)
     row["nway_s"] = time.perf_counter() - t1
     best = many.members[many.best]
     pair_t = torch.full((len(gaia),), -1, dtype=torch.int64)
