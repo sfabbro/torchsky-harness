@@ -48,6 +48,7 @@ from torchsky.catalogs import (
     Catalog,
     MotionPrior,
     PartitionPlan,
+    count_within,
     associate,
     associate_many,
     match_nearest,
@@ -202,16 +203,23 @@ def run_field(name: str, root: Path, ra: float, dec: float, r: float) -> dict[st
     )
     row["gaia_2mass_s"] = time.perf_counter() - t1
     t1 = time.perf_counter()
+    # CatWISE errors depend on blending: calibrate per number of Gaia sources
+    # within the WISE beam (6 arcsec) of each CatWISE source.
+    blend = count_within(cw.lon, cw.lat, gaia.lon, gaia.lat, 6.0).to(D)
     g2c = associate(
         gaia, cw, epoch="right", motion_prior=prior, max_radius_arcsec=60.0,
-        assign="optimal", calibrate="scale_floor",
+        assign="optimal", calibrate="scale_floor", calibrate_by=blend,
+        calibrate_edges=torch.tensor([0.0, 1.5, 2.5, 4.5, 1e9], dtype=D),
     )
     row["gaia_catwise_s"] = time.perf_counter() - t1
     for key, res in (("gaia_2mass", g2t), ("gaia_catwise", g2c)):
         row[key] = {
             "completeness": res.completeness, "matched": int(res.match.sum()), "capped": res.n_capped,
-            "fitted_right_error_scale": res.right_scale,
-            "fitted_floor_mas": float(res.floor_mas2.diagonal().mean()) ** 0.5 if res.floor_mas2 is not None else 0.0,
+            "fitted_right_error_scale": res.right_scale.tolist() if isinstance(res.right_scale, torch.Tensor) else res.right_scale,
+            "fitted_floor_mas": (
+                (res.floor_mas2.diagonal(dim1=-2, dim2=-1).mean(-1) ** 0.5).tolist()
+                if res.floor_mas2 is not None else 0.0
+            ),
             **_calibration(res, k2),
         }
     # High proper motion: association vs naive 2 arcsec nearest at stored epochs.
