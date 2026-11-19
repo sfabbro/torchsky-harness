@@ -1,0 +1,449 @@
+[
+  {
+    "case": "pairwise_dense",
+    "library": "torchsky",
+    "n_primary": 3000,
+    "n_background": 20000,
+    "completeness_true": [
+      0.7
+    ],
+    "time_s": 1.567620708141476,
+    "completeness_p50": 0.9729468599033816,
+    "purity_p50": 0.9433255269320843,
+    "completeness_p90": 0.9048309178743962,
+    "purity_p90": 0.9551249362570118,
+    "ece_p_any": 0.022467984970435968,
+    "completeness_fit": 0.7,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "pairwise_dense",
+    "library": "torchsky_em",
+    "n_primary": 3000,
+    "n_background": 20000,
+    "completeness_true": [
+      0.7
+    ],
+    "time_s": 0.11194333294406533,
+    "completeness_p50": 0.9719806763285024,
+    "purity_p50": 0.943272386310361,
+    "completeness_p90": 0.9033816425120773,
+    "purity_p90": 0.9550561797752809,
+    "ece_p_any": 0.02254378095592433,
+    "completeness_fit": 0.69172617530998,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "pairwise_dense",
+    "library": "torchsky_indep",
+    "n_primary": 3000,
+    "n_background": 20000,
+    "completeness_true": [
+      0.7
+    ],
+    "time_s": 0.040099750040099025,
+    "completeness_p50": 0.9739130434782609,
+    "purity_p50": 0.9411764705882353,
+    "completeness_p90": 0.9024154589371981,
+    "purity_p90": 0.9545222278998468,
+    "ece_p_any": 0.022032555916855857,
+    "completeness_fit": 0.7,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "pairwise_dense",
+    "library": "nway",
+    "n_primary": 3000,
+    "n_background": 20000,
+    "completeness_true": [
+      0.7
+    ],
+    "time_s": 5.4332757499068975,
+    "completeness_p50": 0.9560386473429952,
+    "purity_p50": 0.9500720115218435,
+    "completeness_p90": 0.7144927536231884,
+    "purity_p90": 0.9660352710646636,
+    "ece_p_any": 0.03497123460024121,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "nway_three",
+    "library": "torchsky",
+    "n_primary": 3000,
+    "n_background": 20000,
+    "completeness_true": [
+      0.7,
+      0.6
+    ],
+    "time_s": 0.24091212498024106,
+    "map_tuple_accuracy": 0.9286666666666666,
+    "cat1_component_accuracy": 0.953,
+    "cat2_component_accuracy": 0.9736666666666667,
+    "any_completeness_p50": 0.9939094023601066,
+    "any_purity_p50": 0.9834274952919021,
+    "any_completeness_p90": 0.9665017129805862,
+    "any_purity_p90": 0.9894777864380359,
+    "ece_p_any": 0.005561525685595818,
+    "completeness_fit": [
+      0.7000000000000001,
+      0.6
+    ],
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "nway_three",
+    "library": "torchsky_em",
+    "n_primary": 3000,
+    "n_background": 20000,
+    "completeness_true": [
+      0.7,
+      0.6
+    ],
+    "time_s": 0.2906683338806033,
+    "map_tuple_accuracy": 0.928,
+    "cat1_component_accuracy": 0.9523333333333334,
+    "cat2_component_accuracy": 0.9736666666666667,
+    "any_completeness_p50": 0.9935287400076133,
+    "any_purity_p50": 0.9834212509419744,
+    "any_completeness_p90": 0.9657403882755995,
+    "any_purity_p90": 0.9894695787831513,
+    "ece_p_any": 0.005486626547184998,
+    "completeness_fit": [
+      0.69172617530998,
+      0.5937286242134276
+    ],
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "nway_three",
+    "library": "torchsky_indep",
+    "n_primary": 3000,
+    "n_background": 20000,
+    "completeness_true": [
+      0.7,
+      0.6
+    ],
+    "time_s": 0.15489666583016515,
+    "map_tuple_accuracy": 0.9276666666666666,
+    "cat1_component_accuracy": 0.9526666666666667,
+    "cat2_component_accuracy": 0.973,
+    "any_completeness_p50": 0.9946707270650933,
+    "any_purity_p50": 0.9830699774266366,
+    "any_completeness_p90": 0.9653597259231063,
+    "any_purity_p90": 0.9898516783762685,
+    "ece_p_any": 0.00605698772350396,
+    "completeness_fit": [
+      0.7000000000000001,
+      0.6
+    ],
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "nway_three",
+    "library": "nway",
+    "n_primary": 3000,
+    "n_background": 20000,
+    "completeness_true": [
+      0.7,
+      0.6
+    ],
+    "time_s": 7.874846332939342,
+    "map_tuple_accuracy": 0.8173333333333334,
+    "cat1_component_accuracy": 0.8753333333333333,
+    "cat2_component_accuracy": 0.9393333333333334,
+    "any_completeness_p50": 0.9029311001141987,
+    "any_purity_p50": 0.9903966597077244,
+    "any_completeness_p90": 0.6577845451084887,
+    "any_purity_p90": 0.9959654178674352,
+    "ece_p_any": 0.12583064534327185,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "crowded_miscal",
+    "library": "torchsky",
+    "n_primary": 12000,
+    "n_secondary": [
+      2706
+    ],
+    "completeness_true": [
+      0.2005
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "time_s": 4.01023279200308,
+    "completeness_p50": 0.4704904405652535,
+    "purity_p50": 0.6271468144044321,
+    "completeness_p90": 0.08645054031587697,
+    "purity_p90": 0.9043478260869565,
+    "ece_p_any": 0.023371932220204304,
+    "completeness_fit": 0.1962462295487293,
+    "right_scale_fit": 1.9394643524195376,
+    "floor_mas_fit": 64.32699766266049,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "crowded_miscal",
+    "library": "torchsky_indep",
+    "n_primary": 12000,
+    "n_secondary": [
+      2706
+    ],
+    "completeness_true": [
+      0.2005
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "time_s": 1.5139494170434773,
+    "completeness_p50": 0.4310058187863674,
+    "purity_p50": 0.5216297786720322,
+    "completeness_p90": 0.0,
+    "purity_p90": 0.0,
+    "ece_p_any": 0.033431374865344275,
+    "completeness_fit": 0.20475459344537641,
+    "right_scale_fit": 1.9750799125214635,
+    "floor_mas_fit": 0.42076503164298035,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "crowded_miscal",
+    "library": "torchsky_plain",
+    "n_primary": 12000,
+    "n_secondary": [
+      2706
+    ],
+    "completeness_true": [
+      0.2005
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "time_s": 0.05420366604812443,
+    "completeness_p50": 0.36159600997506236,
+    "purity_p50": 0.5099648300117233,
+    "completeness_p90": 0.03366583541147132,
+    "purity_p90": 0.6377952755905512,
+    "ece_p_any": 0.08686828762309846,
+    "completeness_fit": 0.2005,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "crowded_miscal",
+    "library": "nway",
+    "n_primary": 12000,
+    "n_secondary": [
+      2706
+    ],
+    "completeness_true": [
+      0.2005
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "time_s": 6.109414374921471,
+    "completeness_p50": 0.3325020781379884,
+    "purity_p50": 0.5235602094240838,
+    "completeness_p90": 0.015378221113881962,
+    "purity_p90": 0.6065573770491803,
+    "ece_p_any": 0.08972806072453371,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "blend_shallow",
+    "library": "torchsky",
+    "n_primary": 12000,
+    "n_secondary": [
+      556
+    ],
+    "completeness_true": [
+      0.029666666666666668
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "time_s": 19.821236666990444,
+    "completeness_p50": 0.7359550561797753,
+    "purity_p50": 0.7528735632183908,
+    "completeness_p90": 0.4887640449438202,
+    "purity_p90": 0.9354838709677419,
+    "ece_p_any": 0.005873020022060628,
+    "completeness_fit": 0.032535353874064685,
+    "right_scale_fit": 1.555818594648783,
+    "floor_mas_fit": 352.05051464632453,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "blend_shallow",
+    "library": "torchsky_indep",
+    "n_primary": 12000,
+    "n_secondary": [
+      556
+    ],
+    "completeness_true": [
+      0.029666666666666668
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "time_s": 5.799600499914959,
+    "completeness_p50": 0.7134831460674157,
+    "purity_p50": 0.7912772585669782,
+    "completeness_p90": 0.2949438202247191,
+    "purity_p90": 0.9292035398230089,
+    "ece_p_any": 0.009095414811443311,
+    "completeness_fit": 0.033281657048722504,
+    "right_scale_fit": 1.6465921488712985,
+    "floor_mas_fit": 318.3021327878388,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "blend_shallow",
+    "library": "torchsky_plain",
+    "n_primary": 12000,
+    "n_secondary": [
+      556
+    ],
+    "completeness_true": [
+      0.029666666666666668
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "time_s": 0.03446195903234184,
+    "completeness_p50": 0.25280898876404495,
+    "purity_p50": 0.4918032786885246,
+    "completeness_p90": 0.019662921348314606,
+    "purity_p90": 0.4666666666666667,
+    "ece_p_any": 0.01301953899825186,
+    "completeness_fit": 0.029666666666666668,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "blend_shallow",
+    "library": "nway",
+    "n_primary": 12000,
+    "n_secondary": [
+      556
+    ],
+    "completeness_true": [
+      0.029666666666666668
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "time_s": 9.996752999955788,
+    "mag_prior": "nway --mag auto refused (too few secure matches); run without the magnitude prior",
+    "completeness_p50": 0.2556179775280899,
+    "purity_p50": 0.4972677595628415,
+    "completeness_p90": 0.019662921348314606,
+    "purity_p90": 0.5,
+    "ece_p_any": 0.019851434195943967,
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "nway_crowded",
+    "library": "torchsky",
+    "n_primary": 12000,
+    "n_secondary": [
+      2743,
+      2062
+    ],
+    "completeness_true": [
+      0.20358333333333334,
+      0.14683333333333334
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "time_s": 1.5044333750847727,
+    "map_tuple_accuracy": 0.8811666666666667,
+    "cat1_component_accuracy": 0.9299166666666666,
+    "cat2_component_accuracy": 0.9458333333333333,
+    "any_completeness_p50": 0.8589276418532015,
+    "any_purity_p50": 0.8520526723470179,
+    "any_completeness_p90": 0.527850078084331,
+    "any_purity_p90": 0.9593188268684958,
+    "ece_p_any": 0.010037085698336556,
+    "completeness_fit": [
+      0.2017580394823765,
+      0.1471087600576759
+    ],
+    "status": "OK",
+    "subject_version": "0.5.0",
+    "nway_gate": "not applied: nway did not complete"
+  },
+  {
+    "case": "nway_crowded",
+    "library": "torchsky_indep",
+    "n_primary": 12000,
+    "n_secondary": [
+      2743,
+      2062
+    ],
+    "completeness_true": [
+      0.20358333333333334,
+      0.14683333333333334
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "time_s": 0.22379737487062812,
+    "map_tuple_accuracy": 0.8406666666666667,
+    "cat1_component_accuracy": 0.9040833333333333,
+    "cat2_component_accuracy": 0.9269166666666667,
+    "any_completeness_p50": 0.862051015096304,
+    "any_purity_p50": 0.7725682295311407,
+    "any_completeness_p90": 0.2040603852160333,
+    "any_purity_p90": 0.9169590643274854,
+    "ece_p_any": 0.00916704728461006,
+    "completeness_fit": [
+      0.20213533205788678,
+      0.1498633417031443
+    ],
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "nway_crowded",
+    "library": "torchsky_plain",
+    "n_primary": 12000,
+    "n_secondary": [
+      2743,
+      2062
+    ],
+    "completeness_true": [
+      0.20358333333333334,
+      0.14683333333333334
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "time_s": 0.19456508313305676,
+    "map_tuple_accuracy": 0.8404166666666667,
+    "cat1_component_accuracy": 0.9040833333333333,
+    "cat2_component_accuracy": 0.9266666666666666,
+    "any_completeness_p50": 0.8615304528891202,
+    "any_purity_p50": 0.7724620770128354,
+    "any_completeness_p90": 0.20119729307652265,
+    "any_purity_p90": 0.914792899408284,
+    "ece_p_any": 0.008251443088547113,
+    "completeness_fit": [
+      0.20358333333333334,
+      0.14683333333333334
+    ],
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "nway_crowded",
+    "library": "nway",
+    "n_primary": 12000,
+    "n_secondary": [
+      2743,
+      2062
+    ],
+    "completeness_true": [
+      0.20358333333333334,
+      0.14683333333333334
+    ],
+    "primary_per_arcsec2": 0.37060182143811227,
+    "status": "UNAVAILABLE",
+    "reason": "TimeoutError: nway did not finish within 1200 s",
+    "subject_version": "0.5.0"
+  }
+]
