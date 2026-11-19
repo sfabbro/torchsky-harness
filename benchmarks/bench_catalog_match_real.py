@@ -46,6 +46,7 @@ import torchsky
 from torchsky.catalogs import (
     Astrometry,
     Catalog,
+    HistogramRatio,
     MotionPrior,
     PartitionPlan,
     count_within,
@@ -197,9 +198,11 @@ def run_field(name: str, root: Path, ra: float, dec: float, r: float) -> dict[st
     t_epoch = float(torch.median(torch.as_tensor(tmass.epoch)))
     t1 = time.perf_counter()
     # Pair epochs: each Gaia row is propagated to the 2MASS row's own date.
+    colour_edges = [torch.linspace(-10.0, 6.0, 65, dtype=D)]
     g2t = associate(
         gaia, tmass, epoch="right", motion_prior=prior, max_radius_arcsec=60.0,
         assign="optimal", calibrate="scale_floor",
+        terms=(HistogramRatio(tmass.columns["k"], colour_edges, left_values=gaia.columns["g"]),),
     )
     row["gaia_2mass_s"] = time.perf_counter() - t1
     t1 = time.perf_counter()
@@ -210,6 +213,7 @@ def run_field(name: str, root: Path, ra: float, dec: float, r: float) -> dict[st
         gaia, cw, epoch="right", motion_prior=prior, max_radius_arcsec=60.0,
         assign="optimal", calibrate="scale_floor", calibrate_by=blend,
         calibrate_edges=torch.tensor([0.0, 1.5, 2.5, 4.5, 1e9], dtype=D),
+        terms=(HistogramRatio(cw.columns["w1"], colour_edges, left_values=gaia.columns["g"]),),
     )
     row["gaia_catwise_s"] = time.perf_counter() - t1
     for key, res in (("gaia_2mass", g2t), ("gaia_catwise", g2c)):
