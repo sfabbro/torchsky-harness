@@ -17,7 +17,9 @@ association must satisfy:
 
 - **chi^2 calibration:** ``d^2`` of confident matches (posterior > 0.9) follows
   the truncated chi^2_2. Mean and tail fractions are reported against the theory.
-- **completeness:** the EM fit per catalogue.
+- **completeness:** the maximum-likelihood fit per catalogue, in the
+  exclusive (default) model; Gaia x CatWISE also in the independent model
+  (``gaia_catwise_indep``).
 - **high proper motion:** Gaia stars above 200 mas/yr recovered with posterior
   > 0.9, compared with a naive 2 arcsec nearest match without propagation.
 - **N-way:** consistency of N-way with pairwise MAP matches, and the certified
@@ -223,7 +225,19 @@ def run_field(name: str, root: Path, ra: float, dec: float, r: float) -> dict[st
         calibrate_edges=torch.tensor([0.0, 11.0, 12.5, 13.5, 14.5, 15.5, 30.0], dtype=D),
         terms=(HistogramRatio(cw.columns["w1"], colour_edges, left_values=gaia.columns["g"]),),
     )
-    for key, res in (("gaia_2mass", g2t), ("gaia_catwise", g2c), ("gaia_catwise_magbins", g2c_mag)):
+    # Variant: the independent (nway) posterior model, for comparison with the
+    # exclusive default in crowded fields.
+    t1 = time.perf_counter()
+    g2c_ind = associate(
+        gaia, cw, epoch="right", motion_prior=prior, max_radius_arcsec=60.0,
+        assign="optimal", calibrate="scale_floor", calibrate_by=blend,
+        calibrate_edges=torch.tensor([0.0, 1.5, 2.5, 4.5, 1e9], dtype=D),
+        terms=(HistogramRatio(cw.columns["w1"], colour_edges, left_values=gaia.columns["g"]),),
+        exclusive=False,
+    )
+    row["gaia_catwise_indep_s"] = time.perf_counter() - t1
+    for key, res in (("gaia_2mass", g2t), ("gaia_catwise", g2c), ("gaia_catwise_magbins", g2c_mag),
+                     ("gaia_catwise_indep", g2c_ind)):
         row[key] = {
             "completeness": res.completeness, "matched": int(res.match.sum()), "capped": res.n_capped,
             "fitted_right_error_scale": res.right_scale.tolist() if isinstance(res.right_scale, torch.Tensor) else res.right_scale,
