@@ -195,7 +195,6 @@ def run_field(name: str, root: Path, ra: float, dec: float, r: float) -> dict[st
         order=8, min_count=32,
     )
     k2 = -2 * math.log(1e-4)
-    t_epoch = float(torch.median(torch.as_tensor(tmass.epoch)))
     t1 = time.perf_counter()
     # Pair epochs: each Gaia row is propagated to the 2MASS row's own date.
     colour_edges = [torch.linspace(-10.0, 6.0, 65, dtype=D)]
