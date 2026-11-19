@@ -227,6 +227,8 @@ def main() -> int:
     p.add_argument("--n-background", type=int, default=20000)
     p.add_argument("--seed", type=int, default=5)
     p.add_argument("--json-out", type=Path, default=DEFAULT_OUTPUT_DIR / "catalog_match_injected.json")
+    p.add_argument("--no-nway-gate", action="store_true",
+                   help="record only: do not fail torchsky rows worse than nway (by > 0.01 on the gated metrics)")
     args = p.parse_args()
     ra0, ra1, de0, de1 = BOX
     box = MOC.from_polygon([ra0, ra1, ra1, ra0], [de0, de0, de1, de1], max_order=16)
@@ -254,6 +256,22 @@ def main() -> int:
                 row["subject_version"] = torchsky.__version__
                 rows.append(row)
                 print(json.dumps(row, default=float), flush=True)
+    if not args.no_nway_gate:
+        # Gate: torchsky (given completeness) vs nway on the same scene.
+        for case in scenarios:
+            ts = next(r for r in rows if r["case"] == case and r["library"] == "torchsky")
+            nw = next((r for r in rows if r["case"] == case and r["library"] == "nway"), None)
+            if nw is None or nw.get("status") != "OK" or ts.get("status") != "OK":
+                ts.update(status="FAIL", reason="nway comparator unavailable or torchsky failed")
+                continue
+            checks = (
+                [("completeness_p90", 1, 0.01), ("ece_p_any", -1, 0.01)]
+                if case.startswith("pairwise")
+                else [("map_tuple_accuracy", 1, 0.01), ("any_completeness_p90", 1, 0.01), ("ece_p_any", -1, 0.01)]
+            )
+            worse = [k for k, sign, tol in checks if sign * (ts[k] - nw[k]) < -tol]
+            if worse:
+                ts.update(status="FAIL", reason=f"worse than nway on {worse}")
     args.json_out.parent.mkdir(parents=True, exist_ok=True)
     args.json_out.write_text(json.dumps(rows, indent=2, default=float))
     failed = [r for r in rows if r["status"] == "FAIL"]

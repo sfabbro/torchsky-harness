@@ -319,6 +319,16 @@ CLAIMS: dict[str, EvaluationClaim] = {
             " association",
         ),
     ),
+    "bench_catalog_match_injected": EvaluationClaim(
+        scope="synthetic_truth",
+        required_rows=("pairwise_dense", "nway_three"),
+        comparators=("nway",),
+        limitations=(
+            "one seeded 0.25 deg^2 scene with isotropic errors (nway's error model)",
+            "gated: torchsky not worse than nway by > 0.01 on completeness@0.9,"
+            " p_any ECE and N-way MAP tuple accuracy",
+        ),
+    ),
     "bench_map_cube": EvaluationClaim(
         scope="synthetic_truth",
         required_rows=("cube_constant_bands",),
