@@ -195,13 +195,25 @@ def run_field(name: str, root: Path, ra: float, dec: float, r: float) -> dict[st
     k2 = -2 * math.log(1e-4)
     t_epoch = float(torch.median(torch.as_tensor(tmass.epoch)))
     t1 = time.perf_counter()
-    g2t = associate(gaia, tmass, epoch=t_epoch, motion_prior=prior, max_radius_arcsec=60.0, assign="optimal")
+    # Pair epochs: each Gaia row is propagated to the 2MASS row's own date.
+    g2t = associate(
+        gaia, tmass, epoch="right", motion_prior=prior, max_radius_arcsec=60.0,
+        assign="optimal", calibrate="scale_floor",
+    )
     row["gaia_2mass_s"] = time.perf_counter() - t1
     t1 = time.perf_counter()
-    g2c = associate(gaia, cw, epoch="right", motion_prior=prior, max_radius_arcsec=60.0, assign="optimal")
+    g2c = associate(
+        gaia, cw, epoch="right", motion_prior=prior, max_radius_arcsec=60.0,
+        assign="optimal", calibrate="scale_floor",
+    )
     row["gaia_catwise_s"] = time.perf_counter() - t1
-    row["gaia_2mass"] = {"completeness": g2t.completeness, "matched": int(g2t.match.sum()), "capped": g2t.n_capped, **_calibration(g2t, k2)}
-    row["gaia_catwise"] = {"completeness": g2c.completeness, "matched": int(g2c.match.sum()), "capped": g2c.n_capped, **_calibration(g2c, k2)}
+    for key, res in (("gaia_2mass", g2t), ("gaia_catwise", g2c)):
+        row[key] = {
+            "completeness": res.completeness, "matched": int(res.match.sum()), "capped": res.n_capped,
+            "fitted_right_error_scale": res.right_scale,
+            "fitted_floor_mas": float(res.floor_mas2.diagonal().mean()) ** 0.5 if res.floor_mas2 is not None else 0.0,
+            **_calibration(res, k2),
+        }
     # High proper motion: association vs naive 2 arcsec nearest at stored epochs.
     pm = torch.hypot(gaia.pm_lon_coslat_mas_yr.nan_to_num(0), gaia.pm_lat_mas_yr.nan_to_num(0))  # type: ignore[union-attr]
     fast = torch.nonzero(pm > 200.0, as_tuple=True)[0]
