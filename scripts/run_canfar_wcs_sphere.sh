@@ -128,12 +128,13 @@ clone_source() {
     return
   fi
   test ! -e "${source_root}"
-  local clone_url="https://github.com/astroai/torchsky-harness.git"
+  local repo="${TORCHSKY_HARNESS_REPO:-astroai/torchsky-harness}"
+  local clone_url="https://github.com/${repo}.git"
   if [[ -n "${GH_TOKEN:-}" ]]; then
-    clone_url="https://x-access-token:${GH_TOKEN}@github.com/astroai/torchsky-harness.git"
+    clone_url="https://x-access-token:${GH_TOKEN}@github.com/${repo}.git"
   fi
   if command -v gh >/dev/null && gh auth status >/dev/null 2>&1; then
-    gh repo clone astroai/torchsky-harness "${source_root}" -- --filter=blob:none
+    gh repo clone "${repo}" "${source_root}" -- --filter=blob:none
   else
     git clone --filter=blob:none "${clone_url}" "${source_root}"
   fi

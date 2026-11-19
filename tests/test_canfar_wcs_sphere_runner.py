@@ -105,7 +105,8 @@ def test_canfar_wcs_sphere_launcher_payload_has_no_shell_vars() -> None:
     assert "tr ' ' '\\t'" in launcher
     assert "vos:sfabbro/torchsky-runs" in launcher
     assert "refusing canfar payload" in launcher
-    assert "gh repo clone astroai/torchsky-harness" in launcher
+    assert "gh repo clone ${harness_repo}" in launcher
+    assert "TORCHSKY_HARNESS_REPO:-astroai/torchsky-harness" in launcher
     assert launcher.count("gh auth setup-git") == 2
     assert "git push before launching CANFAR" in launcher
     assert "optimization-cpu" in launcher
