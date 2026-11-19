@@ -24,10 +24,10 @@ case "${mode}" in
   cpu | cuda | optimization-cpu | optimization-cuda | real-data-gates | spectral | sphere | sparse | healsparse | spin | geometry | cuhpx | \
   wcs-paper2 | wcs-tpv | wcs-spectral | wcs-tabular | sht-profile | moc | catalog | \
   catalog-scale | catalog-scale-1e6 | catalog-scale-1e7 | catalog-scale-real | \
-  catalog-match-1e7 | catalog-match-1e8 | \
+  catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | \
   observed | geom-cuda | world-cuda | gpu-validate) ;;
   *)
-    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, observed, geom-cuda, or world-cuda)" >&2
+    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, catalog-match-real, observed, geom-cuda, or world-cuda)" >&2
     exit 2
     ;;
 esac
@@ -579,6 +579,14 @@ case "${mode}" in
       python "${source_root}/scripts/run_catalog_scale_contract.py" \
       --left-rows 10000000 --layout sparse --find best --engine-fast \
       --json-out "${artifact_root}/catalog_scale_1e7_sparse_best.json"
+    ;;
+  catalog-match-real)
+    install_env test
+    record_versions test
+    pixi run --manifest-path "${source_root}/pixi.toml" -e test -- \
+      python "${source_root}/benchmarks/bench_catalog_match_real.py" \
+      --hats-root /arc/projects/hats \
+      --json-out "${artifact_root}/catalog_match_real.json"
     ;;
   catalog-match-1e7 | catalog-match-1e8)
     install_env bench-all

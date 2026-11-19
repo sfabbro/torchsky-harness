@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Launch CANFAR headless CPU and/or CUDA jobs for torchsky WCS + sphere.
-# Usage: launch_canfar_wcs_sphere.sh [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|observed|geom-cuda|world-cuda|world|depth]
+# Usage: launch_canfar_wcs_sphere.sh [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|observed|geom-cuda|world-cuda|world|depth]
 #
 # Jobs clone TORCHSKY_COMMIT from GitHub (must already be pushed), run
 # scripts/run_canfar_wcs_sphere.sh from that clone, write
@@ -20,10 +20,10 @@ case "${MODE}" in
   cpu | cuda | all | optimization | optimization-cpu | optimization-cuda | real-data-gates | suite | many | spectral | sparse | healsparse | spin | sht | cuhpx | \
   wcs-paper2 | wcs-tpv | wcs-spectral | wcs-tabular | sht-profile | moc | catalog | \
   catalog-scale | catalog-scale-1e6 | catalog-scale-1e7 | catalog-scale-real | \
-  catalog-match-1e7 | catalog-match-1e8 | \
+  catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | \
   observed | geom-cuda | world-cuda | gpu-validate | world | depth) ;;
   *)
-    echo "usage: $0 [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|observed|geom-cuda|world-cuda|world|depth]" >&2
+    echo "usage: $0 [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|observed|geom-cuda|world-cuda|world|depth]" >&2
     exit 2
     ;;
 esac
@@ -226,7 +226,7 @@ fi
 if [[ "${MODE}" == "catalog-scale-real" ]]; then
   launch_one catalog-scale-real "" "catalog-scale-real-${STAMP}"
 fi
-if [[ "${MODE}" == "catalog-match-1e7" || "${MODE}" == "catalog-match-1e8" ]]; then
+if [[ "${MODE}" == "catalog-match-1e7" || "${MODE}" == "catalog-match-1e8" || "${MODE}" == "catalog-match-real" ]]; then
   launch_one "${MODE}" "" "${MODE}-${STAMP}"
 fi
 if [[ "${MODE}" == "observed" ]]; then
