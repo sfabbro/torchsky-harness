@@ -1,0 +1,790 @@
+[
+  {
+    "case": "north_pole",
+    "library": "torchsky",
+    "ra": 0.0,
+    "dec": 89.95,
+    "radius_deg": 0.25,
+    "read_s": 4.968492418993264,
+    "partitions_read": {
+      "gaia": 4,
+      "2mass": 4,
+      "catwise": 4
+    },
+    "n": {
+      "gaia": 1360,
+      "2mass": 845,
+      "catwise": 8859
+    },
+    "dropped_invalid_covariance": {
+      "gaia": 0,
+      "catwise": 0
+    },
+    "gaia_levels": {
+      "2": 142,
+      "4": 1153,
+      "6": 65
+    },
+    "gaia_2mass_s": 3.483385100000305,
+    "gaia_catwise_s": 49.215019404000486,
+    "gaia_catwise_indep_s": 11.781134545002715,
+    "gaia_2mass": {
+      "completeness": 0.47149142373721614,
+      "matched": 639,
+      "capped": 0,
+      "fitted_right_error_scale": 0.6277279350884855,
+      "fitted_floor_mas": 67.96261196200525,
+      "n_confident": 634,
+      "d2_mean": 1.9652607238329556,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.10725551843643188,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise": {
+      "completeness": 0.8911004188472459,
+      "matched": 1213,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        1.9747502894910933,
+        6.219036876103048,
+        2.1155488936580316,
+        2.1155488936580316
+      ],
+      "fitted_floor_mas": [
+        0.0003980318638846134,
+        103.20209270778044,
+        0.09023281014413517,
+        0.09023281014413517
+      ],
+      "n_confident": 1205,
+      "d2_mean": 2.0128114356333233,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.12448132783174515,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise_magbins": {
+      "completeness": 0.8791768350027063,
+      "matched": 1199,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        2.139500646884718,
+        2.139500646884718,
+        0.9071638268947054,
+        1.9167972408746996,
+        2.098150245036142,
+        2.253083869109892
+      ],
+      "fitted_floor_mas": [
+        0.04509027251257101,
+        0.04509027251257101,
+        17.05917347585812,
+        19.302511788212275,
+        35.15615729900234,
+        43.077754997396895
+      ],
+      "n_confident": 1190,
+      "d2_mean": 1.8632482062239062,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.1184873953461647,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise_indep": {
+      "completeness": 0.8992992279890683,
+      "matched": 1212,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        1.9757222558668386,
+        6.2098244339269515,
+        2.152192950894176,
+        2.152192950894176
+      ],
+      "fitted_floor_mas": [
+        0.20006612044344105,
+        184.381332237776,
+        0.012388446397502442,
+        0.012388446397502442
+      ],
+      "n_confident": 1219,
+      "d2_mean": 1.9780774470667724,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.11977030336856842,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "nway_s": 0.1401715350075392,
+    "nway": {
+      "completeness": [
+        1.0,
+        0.4773556774505155,
+        0.7527451613779925
+      ],
+      "map_agrees_with_pairwise_2mass": 0.991911768913269,
+      "max_residual_mass": 0.0,
+      "n_hypotheses": 3591
+    },
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "south_pole",
+    "library": "torchsky",
+    "ra": 180.0,
+    "dec": -89.95,
+    "radius_deg": 0.25,
+    "read_s": 5.1637373300036415,
+    "partitions_read": {
+      "gaia": 4,
+      "2mass": 4,
+      "catwise": 4
+    },
+    "n": {
+      "gaia": 3009,
+      "2mass": 1259,
+      "catwise": 7475
+    },
+    "dropped_invalid_covariance": {
+      "gaia": 0,
+      "catwise": 0
+    },
+    "gaia_levels": {
+      "2": 332,
+      "4": 2570,
+      "6": 107
+    },
+    "gaia_2mass_s": 0.4398344079963863,
+    "gaia_catwise_s": 39.562570495007094,
+    "gaia_catwise_indep_s": 19.290751910986728,
+    "gaia_2mass": {
+      "completeness": 0.3456333844617272,
+      "matched": 1040,
+      "capped": 0,
+      "fitted_right_error_scale": 0.7742107704381682,
+      "fitted_floor_mas": 94.45290094837817,
+      "n_confident": 1034,
+      "d2_mean": 1.9627214467802527,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.11411992460489273,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise": {
+      "completeness": 0.6868536787846994,
+      "matched": 1955,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        2.4257524169509184,
+        5.584814006087843,
+        2.6237174472458595,
+        2.6237174472458595
+      ],
+      "fitted_floor_mas": [
+        0.002868649844382944,
+        0.20768299510023464,
+        0.05719160181488041,
+        0.05719160181488041
+      ],
+      "n_confident": 1902,
+      "d2_mean": 1.8096941389324053,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.11409042775630951,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise_magbins": {
+      "completeness": 0.6262661030655053,
+      "matched": 0,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        2.1242189855132265,
+        2.1242189855132265,
+        2.1242189855132265,
+        2.1242189855132265,
+        2.1242189855132265,
+        2.1242189855132265
+      ],
+      "fitted_floor_mas": [
+        0.011397341142170236,
+        0.011397341142170236,
+        0.011397341142170236,
+        0.011397341142170236,
+        0.011397341142170236,
+        0.011397341142170236
+      ],
+      "n_confident": 0
+    },
+    "gaia_catwise_indep": {
+      "completeness": 0.6963189144828964,
+      "matched": 1949,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        2.395931969369182,
+        7.351863252344843,
+        2.626604174283981,
+        2.626604174283981
+      ],
+      "fitted_floor_mas": [
+        0.008423897056317613,
+        0.2466254985814923,
+        0.07329382840236487,
+        0.07329382840236487
+      ],
+      "n_confident": 1931,
+      "d2_mean": 1.809174795551894,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.11082340776920319,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "nway_s": 0.14083486300660297,
+    "nway": {
+      "completeness": [
+        1.0,
+        0.3456130123811028,
+        0.5126209691860087
+      ],
+      "map_agrees_with_pairwise_2mass": 0.9963443279266357,
+      "max_residual_mass": 0.0,
+      "n_hypotheses": 6232
+    },
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "ra_wrap",
+    "library": "torchsky",
+    "ra": 0.02,
+    "dec": 2.0,
+    "radius_deg": 0.4,
+    "read_s": 4.625220592002734,
+    "partitions_read": {
+      "gaia": 4,
+      "2mass": 4,
+      "catwise": 5
+    },
+    "n": {
+      "gaia": 1651,
+      "2mass": 866,
+      "catwise": 15224
+    },
+    "dropped_invalid_covariance": {
+      "gaia": 0,
+      "catwise": 0
+    },
+    "gaia_levels": {
+      "2": 329,
+      "4": 1223,
+      "6": 99
+    },
+    "gaia_2mass_s": 0.44269129799795337,
+    "gaia_catwise_s": 15.47969207999995,
+    "gaia_catwise_indep_s": 3.204697824010509,
+    "gaia_2mass": {
+      "completeness": 0.49760456074056153,
+      "matched": 817,
+      "capped": 0,
+      "fitted_right_error_scale": 1.0556124762219483,
+      "fitted_floor_mas": 36.5799699053183,
+      "n_confident": 816,
+      "d2_mean": 1.9463304354679751,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.09558823704719543,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise": {
+      "completeness": 0.8427349080405361,
+      "matched": 1395,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        1.7680576895524556,
+        1.786416893422292,
+        1.786416893422292,
+        1.786416893422292
+      ],
+      "fitted_floor_mas": [
+        29.845215651850882,
+        30.28922115368536,
+        30.28922115368536,
+        30.28922115368536
+      ],
+      "n_confident": 1382,
+      "d2_mean": 1.9422788301596199,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.1157742366194725,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise_magbins": {
+      "completeness": 0.8538009457237078,
+      "matched": 1413,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        1.816040744142581,
+        0.7818669945195823,
+        1.1366137722018388,
+        1.3226992698820887,
+        2.61108386617415,
+        1.831505886578302
+      ],
+      "fitted_floor_mas": [
+        29.251936227911692,
+        41.64160494551472,
+        37.97706934119163,
+        38.882707197517654,
+        0.032536731911089946,
+        0.3633290911614624
+      ],
+      "n_confident": 1397,
+      "d2_mean": 1.8624794996855598,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.11023622006177902,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise_indep": {
+      "completeness": 0.8434578933014846,
+      "matched": 1395,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        1.7644310557668628,
+        1.7873319202914422,
+        1.7873319202914422,
+        1.7873319202914422
+      ],
+      "fitted_floor_mas": [
+        29.886037945805537,
+        30.244571894587057,
+        30.244571894587057,
+        30.244571894587057
+      ],
+      "n_confident": 1382,
+      "d2_mean": 1.9405189641689686,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.1157742366194725,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "high_pm": {
+      "n": 1,
+      "assoc_recovered": 1,
+      "naive_2arcsec_recovered": 0,
+      "max_pm_mas_yr": 292.6510316886793
+    },
+    "nway_s": 0.13412942600552924,
+    "nway": {
+      "completeness": [
+        1.0,
+        0.49515162996325535,
+        0.7549771019197078
+      ],
+      "map_agrees_with_pairwise_2mass": 0.9975772500038147,
+      "max_residual_mass": 0.0,
+      "n_hypotheses": 4418
+    },
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "pleiades",
+    "library": "torchsky",
+    "ra": 56.75,
+    "dec": 24.12,
+    "radius_deg": 0.6,
+    "read_s": 4.393709038005909,
+    "partitions_read": {
+      "gaia": 3,
+      "2mass": 3,
+      "catwise": 4
+    },
+    "n": {
+      "gaia": 9675,
+      "2mass": 4813,
+      "catwise": 27998
+    },
+    "dropped_invalid_covariance": {
+      "gaia": 0,
+      "catwise": 0
+    },
+    "gaia_levels": {
+      "2": 1328,
+      "4": 7820,
+      "6": 527
+    },
+    "gaia_2mass_s": 0.6898120719997678,
+    "gaia_catwise_s": 21.486491068993928,
+    "gaia_catwise_indep_s": 10.917278317996534,
+    "gaia_2mass": {
+      "completeness": 0.4643778060458719,
+      "matched": 4485,
+      "capped": 0,
+      "fitted_right_error_scale": 1.0741799061966266,
+      "fitted_floor_mas": 18.211127851733053,
+      "n_confident": 4469,
+      "d2_mean": 1.999672221651377,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.102036252617836,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise": {
+      "completeness": 0.7259852737138176,
+      "matched": 7057,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        2.2219322346299744,
+        5.762357665789895,
+        2.3097751543353042,
+        2.3097751543353042
+      ],
+      "fitted_floor_mas": [
+        45.75563445023248,
+        95.0938083190747,
+        46.68799422781778,
+        46.68799422781778
+      ],
+      "n_confident": 6868,
+      "d2_mean": 1.8399365705384936,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.11196854710578918,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise_magbins": {
+      "completeness": 0.7194882756137159,
+      "matched": 6986,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        1.4006608427356626,
+        1.4867182658651283,
+        1.9692886703203085,
+        1.9695403838139234,
+        2.328368143665314,
+        2.3466939509721585
+      ],
+      "fitted_floor_mas": [
+        49.61700067220794,
+        49.89461855385696,
+        48.85660297749773,
+        52.647945968031955,
+        61.55077781378089,
+        104.71140009012026
+      ],
+      "n_confident": 6848,
+      "d2_mean": 1.832907197510295,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.11141939461231232,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise_indep": {
+      "completeness": 0.7411307265204732,
+      "matched": 7070,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        2.2135591770250067,
+        8.001332493745876,
+        2.32742246439464,
+        2.32742246439464
+      ],
+      "fitted_floor_mas": [
+        45.94737533968446,
+        156.0037505475299,
+        47.14063229198108,
+        47.14063229198108
+      ],
+      "n_confident": 7040,
+      "d2_mean": 1.8229533135130322,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.11079545319080353,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "high_pm": {
+      "n": 1,
+      "assoc_recovered": 1,
+      "naive_2arcsec_recovered": 0,
+      "max_pm_mas_yr": 244.4773150596854
+    },
+    "nway_s": 0.26148849399760365,
+    "nway": {
+      "completeness": [
+        1.0,
+        0.46291586345588687,
+        0.5702303415575191
+      ],
+      "map_agrees_with_pairwise_2mass": 0.9975193738937378,
+      "max_residual_mass": 0.0,
+      "n_hypotheses": 23077
+    },
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "barnards_star",
+    "library": "torchsky",
+    "ra": 269.452,
+    "dec": 4.6934,
+    "radius_deg": 0.2,
+    "read_s": 4.560921508003958,
+    "partitions_read": {
+      "gaia": 5,
+      "2mass": 2,
+      "catwise": 4
+    },
+    "n": {
+      "gaia": 9958,
+      "2mass": 2280,
+      "catwise": 8456
+    },
+    "dropped_invalid_covariance": {
+      "gaia": 0,
+      "catwise": 0
+    },
+    "gaia_levels": {
+      "2": 1135,
+      "4": 8644,
+      "6": 179
+    },
+    "gaia_2mass_s": 0.9578178450028645,
+    "gaia_catwise_s": 356.8345476129907,
+    "gaia_catwise_indep_s": 51.62931579699216,
+    "gaia_2mass": {
+      "completeness": 0.22447569368223066,
+      "matched": 2235,
+      "capped": 0,
+      "fitted_right_error_scale": 1.1822054406969513,
+      "fitted_floor_mas": 31.594393708039355,
+      "n_confident": 2229,
+      "d2_mean": 1.9954899965982085,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.10049349814653397,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise": {
+      "completeness": 0.5739899862301119,
+      "matched": 5748,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        3.4746882194425335,
+        6.093436867610079,
+        7.651994095246175,
+        4.630652231822798
+      ],
+      "fitted_floor_mas": [
+        0.0008981794939981286,
+        0.06906662239298032,
+        0.9543186620618699,
+        0.05533038996948565
+      ],
+      "n_confident": 5056,
+      "d2_mean": 1.6070217541800418,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.08544303476810455,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise_magbins": {
+      "completeness": 0.5765813890723345,
+      "matched": 0,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        4.743860044048458,
+        4.743860044048458,
+        4.743860044048458,
+        4.743860044048458,
+        4.743860044048458,
+        4.743860044048458
+      ],
+      "fitted_floor_mas": [
+        0.07974757263522832,
+        0.07974757263522832,
+        0.07974757263522832,
+        0.07974757263522832,
+        0.07974757263522832,
+        0.07974757263522832
+      ],
+      "n_confident": 0
+    },
+    "gaia_catwise_indep": {
+      "completeness": 0.6400490717736078,
+      "matched": 5722,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        3.282456379154132,
+        7.339280773422252,
+        12.071407016206882,
+        4.8052036411679255
+      ],
+      "fitted_floor_mas": [
+        0.0011839943162803015,
+        0.09536215054190754,
+        0.029303202502764428,
+        0.052421034390141626
+      ],
+      "n_confident": 5551,
+      "d2_mean": 1.434176709714178,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.06503332406282425,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "high_pm": {
+      "n": 1,
+      "assoc_recovered": 1,
+      "naive_2arcsec_recovered": 0,
+      "max_pm_mas_yr": 10393.348722273944
+    },
+    "nway_s": 0.32462955500523094,
+    "nway": {
+      "completeness": [
+        1.0,
+        0.22279717723246512,
+        0.2468810013815896
+      ],
+      "map_agrees_with_pairwise_2mass": 0.9977906942367554,
+      "max_residual_mass": 0.0,
+      "n_hypotheses": 16243
+    },
+    "status": "OK",
+    "subject_version": "0.5.0"
+  },
+  {
+    "case": "baade_window",
+    "library": "torchsky",
+    "ra": 270.92,
+    "dec": -30.03,
+    "radius_deg": 0.12,
+    "read_s": 7.321338788999128,
+    "partitions_read": {
+      "gaia": 6,
+      "2mass": 4,
+      "catwise": 4
+    },
+    "n": {
+      "gaia": 51580,
+      "2mass": 4992,
+      "catwise": 3708
+    },
+    "dropped_invalid_covariance": {
+      "gaia": 0,
+      "catwise": 0
+    },
+    "gaia_levels": {
+      "2": 21415,
+      "4": 30032,
+      "6": 133
+    },
+    "gaia_2mass_s": 4.646408294996945,
+    "gaia_catwise_s": 251.5084222669975,
+    "gaia_catwise_indep_s": 216.57700920899515,
+    "gaia_catwise_transfer_s": 0.41903706299490295,
+    "transfer_from": "ra_wrap",
+    "gaia_2mass": {
+      "completeness": 0.08881466605177894,
+      "matched": 4606,
+      "capped": 0,
+      "fitted_right_error_scale": 1.5657848086778026,
+      "fitted_floor_mas": 67.36823133879322,
+      "n_confident": 4446,
+      "d2_mean": 1.6959403082860867,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.09851551800966263,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise": {
+      "completeness": 0.07144401059880032,
+      "matched": 2820,
+      "capped": 11,
+      "fitted_right_error_scale": [
+        34.4291039505791,
+        34.4291039505791,
+        34.4291039505791,
+        34.51118753189095
+      ],
+      "fitted_floor_mas": [
+        217.3566257249399,
+        217.3566257249399,
+        217.3566257249399,
+        222.8113900520961
+      ],
+      "n_confident": 1242,
+      "d2_mean": 1.0321041555800217,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.04106280207633972,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise_magbins": {
+      "completeness": 0.07002971158955959,
+      "matched": 2801,
+      "capped": 7,
+      "fitted_right_error_scale": [
+        15.075969925312302,
+        20.902638794435806,
+        27.759631474393036,
+        39.996085270601135,
+        32.02522084343058,
+        32.81888954666384
+      ],
+      "fitted_floor_mas": [
+        60.205647593296874,
+        664.0292967300896,
+        840.1430855155002,
+        43.545798482822015,
+        40.857001285170625,
+        0.9026118073839303
+      ],
+      "n_confident": 1305,
+      "d2_mean": 1.302363731608872,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.06590038537979126,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise_indep": {
+      "completeness": 0.5049689971877462,
+      "matched": 3445,
+      "capped": 58,
+      "fitted_right_error_scale": [
+        137.14924216425,
+        137.14924216425,
+        141.88462043444017,
+        137.1310752877607
+      ],
+      "fitted_floor_mas": [
+        5.986063797741905,
+        5.986063797741905,
+        5.9860649656639575,
+        5.986074395323992
+      ],
+      "n_confident": 4244,
+      "d2_mean": 1.2916570438330166,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.0004712535301223397,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "gaia_catwise_transfer": {
+      "completeness": 0.005221700010078691,
+      "matched": 278,
+      "capped": 0,
+      "fitted_right_error_scale": [
+        1.816040744142581,
+        0.7818669945195823,
+        1.1366137722018388,
+        1.3226992698820887,
+        2.61108386617415,
+        1.831505886578302
+      ],
+      "fitted_floor_mas": [
+        29.251936227911692,
+        41.64160494551472,
+        37.97706934119163,
+        38.882707197517654,
+        0.032536731911089946,
+        0.3633290911614624
+      ],
+      "n_confident": 182,
+      "d2_mean": 2.5758463712295177,
+      "d2_mean_theory_all_true_pairs": 1.9981577477003747,
+      "d2_tail_p90": 0.19780220091342926,
+      "d2_tail_p90_theory_all_true_pairs": 0.09991850151160685
+    },
+    "nway_s": 0.5350059810007224,
+    "nway": {
+      "completeness": [
+        1.0,
+        0.07739554631208366,
+        0.001940963540617954
+      ],
+      "map_agrees_with_pairwise_2mass": 0.9889879822731018,
+      "max_residual_mass": 0.0,
+      "n_hypotheses": 56092
+    },
+    "status": "OK",
+    "subject_version": "0.5.0"
+  }
+]
