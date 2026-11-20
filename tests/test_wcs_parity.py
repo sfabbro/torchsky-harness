@@ -319,7 +319,7 @@ def test_off_equator_cylindrical_forward_matches_astropy(
 
 
 
-def test_lonpole_180_fused_and_stacked_match_astropy() -> None:
+def test_lonpole_180_two_arg_and_stacked_match_astropy() -> None:
     header = _make_header("CEA")
     header["LONPOLE"] = 180.0
     awcs = AstropyWCS(header)

@@ -390,82 +390,6 @@ def _angular_sep_deg(
     return np.rad2deg(2.0 * np.arcsin(np.sqrt(np.clip(a, 0.0, 1.0))))
 
 
-def _measure_center_cpp_vs_python(
-    twcs: TorchWCS,
-    x_t: torch.Tensor,
-    y_t: torch.Tensor,
-    ra_t: torch.Tensor,
-    dec_t: torch.Tensor,
-    *,
-    origin: int,
-    runs: int,
-    device: torch.device,
-) -> dict[str, Any]:
-    result = {
-        "center_cpp_forward_active": False,
-        "center_cpp_inverse_active": False,
-        "torch_forward_python_only_ms": float("nan"),
-        "torch_inverse_python_only_ms": float("nan"),
-        "center_cpp_forward_speedup_vs_python": float("nan"),
-        "center_cpp_inverse_speedup_vs_python": float("nan"),
-    }
-
-    if device.type != "cpu":
-        return result
-    if x_t.numel() > 4096 or not getattr(twcs, "_use_center_equator_fast", False):
-        return result
-
-    forward_active = twcs._use_cpp_center_pixel_to_world_small_n(  # type: ignore[attr-defined]
-        x_t, y_t, device_ok=True, dtype_ok=True
-    )
-    inverse_active = twcs._use_cpp_center_world_to_pixel_small_n(  # type: ignore[attr-defined]
-        ra_t, dec_t, device_ok=True, dtype_ok=True
-    )
-    result["center_cpp_forward_active"] = bool(forward_active)
-    result["center_cpp_inverse_active"] = bool(inverse_active)
-
-    if not forward_active and not inverse_active:
-        return result
-
-    old_center_p2w = twcs._cpp_center_pixel_to_world
-    old_center_w2p = twcs._cpp_center_world_to_pixel
-    old_disable_p2w = twcs._disable_cpp_pixel_to_world
-    old_disable_w2p = twcs._disable_cpp_world_to_pixel
-    old_disable_fused_p2w = twcs._disable_fused_pixel_to_world
-    old_disable_fused_w2p = twcs._disable_fused_world_to_pixel
-    try:
-        twcs._cpp_center_pixel_to_world = None
-        twcs._cpp_center_world_to_pixel = None
-        twcs._disable_cpp_pixel_to_world = True
-        twcs._disable_cpp_world_to_pixel = True
-        twcs._disable_fused_pixel_to_world = True
-        twcs._disable_fused_world_to_pixel = True
-
-        if forward_active:
-            py_fw_s = _time_many(
-                lambda: twcs.pixel_to_world(x_t, y_t, origin=origin),
-                runs,
-                sync_device=device,
-            )
-            result["torch_forward_python_only_ms"] = py_fw_s * 1000.0
-        if inverse_active:
-            py_inv_s = _time_many(
-                lambda: twcs.world_to_pixel(ra_t, dec_t, origin=origin),
-                runs,
-                sync_device=device,
-            )
-            result["torch_inverse_python_only_ms"] = py_inv_s * 1000.0
-    finally:
-        twcs._cpp_center_pixel_to_world = old_center_p2w
-        twcs._cpp_center_world_to_pixel = old_center_w2p
-        twcs._disable_cpp_pixel_to_world = old_disable_p2w
-        twcs._disable_cpp_world_to_pixel = old_disable_w2p
-        twcs._disable_fused_pixel_to_world = old_disable_fused_p2w
-        twcs._disable_fused_world_to_pixel = old_disable_fused_w2p
-
-    return result
-
-
 def _bench_case(
     case: CaseSpec,
     n_points: int,
@@ -701,25 +625,6 @@ def _bench_case(
         ),
         "max_inverse_pixel_error_pole_excluded": max_inverse_pixel_error_pole_excluded,
     }
-    center_cpp = _measure_center_cpp_vs_python(
-        twcs,
-        x_t,
-        y_t,
-        ra_v_t if np.any(valid) else x_t[:0],
-        dec_v_t if np.any(valid) else y_t[:0],
-        origin=origin,
-        runs=runs,
-        device=device,
-    )
-    result.update(center_cpp)
-    if np.isfinite(result["torch_forward_python_only_ms"]):
-        result["center_cpp_forward_speedup_vs_python"] = (
-            result["torch_forward_python_only_ms"] / result["torch_forward_ms"]
-        )
-    if np.isfinite(result["torch_inverse_python_only_ms"]):
-        result["center_cpp_inverse_speedup_vs_python"] = (
-            result["torch_inverse_python_only_ms"] / result["torch_inverse_ms"]
-        )
     return result
 
 

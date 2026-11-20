@@ -233,17 +233,9 @@ def _refine_neural_scene_pcg(
     render_observations = []
     for observation in observations:
         if observation.detector_to_sky is None:
-            # Fixed WCS needs no derivative. Use the existing tensor path because
-            # C++ DLPack kernels cannot inspect torch.func's wrapped tensors.
+            # Fixed WCS needs no derivative. torchsky's WCS is pure torch, so it
+            # composes with torch.func's wrapped tensors as-is.
             wcs = torchsky.WCS(observation.header)
-            wcs._cpp_center_pixel_to_world = None
-            wcs._cpp_spherical_rotation_pole = None
-            wcs._disable_cpp_pixel_to_world = True
-            wcs._disable_fused_pixel_to_world = True
-            if wcs.tpv is not None:
-                wcs.tpv.distort = wcs.tpv._distort_impl
-            if wcs.sip is not None:
-                wcs.sip._cpp_sip_quadratic_distort = None
             render_observations.append(replace(
                 observation, detector_to_sky=wcs,
                 detector_x0_pix=0.0, detector_y0_pix=0.0,

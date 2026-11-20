@@ -192,7 +192,7 @@ print("tiny arc area:", float(area))
     "dispatcher_healpix_contract": r"""
 import torch
 import torchsky._ops as ops
-assert ops.has_wcs_dispatcher() and ops.has_spectral_dispatcher() and ops.has_fixed_dispatcher()
+assert ops.has_spectral_dispatcher() and ops.has_fixed_dispatcher()
 lon = torch.tensor([10.0, 20.0, 30.0, 40.0], dtype=torch.float64)
 lat = torch.tensor([-5.0, 0.0, 5.0, 85.0], dtype=torch.float64)
 direct = torch.ops.torchsky.healpix_ang2pix_ring(64, lon, lat)

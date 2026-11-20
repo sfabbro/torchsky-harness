@@ -446,14 +446,6 @@ case "${mode}" in
       --cases PCO,XPH,TSC,CSC,QSC,NCP \
       --n-points 100000 --runs 3 --device cpu \
       --json-out "${artifact_root}/wcs_paper2.json"
-    TORCHSKY_WCS_FUSED=1 pixi run --manifest-path "${source_root}/pixi.toml" -e bench-all -- \
-      python "${source_root}/benchmarks/bench_wcs.py" \
-      --cases CSC --n-points 20000 --runs 1 --device cpu \
-      --json-out "${artifact_root}/wcs_paper2_fused1.json"
-    TORCHSKY_WCS_FUSED=0 pixi run --manifest-path "${source_root}/pixi.toml" -e bench-all -- \
-      python "${source_root}/benchmarks/bench_wcs.py" \
-      --cases CSC --n-points 20000 --runs 1 --device cpu \
-      --json-out "${artifact_root}/wcs_paper2_fused0.json"
     ;;
   wcs-tpv)
     install_env bench-all

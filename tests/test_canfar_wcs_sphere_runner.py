@@ -93,7 +93,8 @@ def test_canfar_wcs_sphere_runner_contract() -> None:
     assert "vos_run" in runner
     assert "timeout --foreground" in runner
     assert 'vcp "${artifact_root}/."' not in runner
-    assert "wcs_paper2_fused0.json" in runner
+    assert "wcs_paper2.json" in runner
+    assert "TORCHSKY_WCS_FUSED" not in runner
     assert "test_wcs_observed_frames.py" in runner
     assert "test_catalogs.py" in runner
     assert "bench_wcs_spectral_temporal.py" in runner

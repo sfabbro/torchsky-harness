@@ -32,7 +32,7 @@ Out of this program: ducc0 internals, lsst.sphgeom, wcslib/pyast (optional WCS b
 | Area | Typical references | torchsky entry / notes |
 |------|-------------------|-------------------------|
 | HEALPix pixel + harmonic API | **healpy**, **hpgeom** (strict queries), **astropy-healpix** | `torchsky.sphere.healpix`, `torchsky.sphere.compat`; spectral transforms are torch-native—compare to healpy in tests/benchmarks only |
-| WCS / projections | **Astropy** `astropy.wcs`, FITS WCS | `torchsky.wcs.WCS`, C++/fused paths; parity tests vs Astropy where scoped |
+| WCS / projections | **Astropy** `astropy.wcs`, FITS WCS | `torchsky.wcs.WCS` (pure-torch path); parity tests vs Astropy where scoped |
 | FITS I/O & tables | **torchfits** | `torchfits` only; torchsky has no I/O or table namespace; never `astropy.io.fits` or Python `fitsio` |
 | Spherical geometry / polygons | **spherical_geometry**, **astropy-healpix** (where applicable) | `torchsky.sphere` and `torchsky.sphere.geom`; exact regions and benchmarks vs upstream fixtures |
 | Catalogs / coordinates | **Astropy** `SkyCoord` / ERFA | `torchsky.wcs.CatalogState` and `torchsky.wcs.frames`; see [coordinates.md](https://github.com/astroai/torchsky/blob/main/docs/coordinates.md). Not a SkyCoord clone. |

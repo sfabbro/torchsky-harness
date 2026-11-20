@@ -4,12 +4,12 @@ Small-N WCS dispatch matrix: Astropy vs torchsky call shapes (legacy reference).
 
 Measures median wall time per batch for the same pixel sample using:
   - Astropy ``all_pix2world`` / ``all_world2pix`` (NumPy reference),
-  - torchsky ``pixel_to_world(x, y)`` (may use C++/fused fast paths on CPU),
+  - torchsky ``pixel_to_world(x, y)`` (pure-torch two-argument path),
   - torchsky ``pixel_to_world(pixels)`` with ``pixels.shape == (N, 2)`` (tensor transform path),
-  - same stacked forward call after ``wcs.compile()`` (fused ``pixels -> rel -> world`` graph with
-    Torch-only pole rotation for FITS ``origin`` in ``{0, 1}``),
+  - same stacked forward call after ``wcs.compile()`` (``torch.compile``-d ``pixels -> rel -> world``
+    graph for FITS ``origin`` in ``{0, 1}``),
   - torchsky ``world_to_pixel(ra, dec)``, ``world_to_pixel(world)`` stacked, and stacked after
-    ``compile()`` (fused inverse graph with Torch-only inverse pole rotation).
+    ``compile()`` (``torch.compile``-d inverse graph).
 
 Emits median ms per batch for each path plus max |ΔRA|,|ΔDec| vs Astropy on the stacked
 path (sanity). **Do not assume torchsky is faster than Astropy at small ``N``:** on a

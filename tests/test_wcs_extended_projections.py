@@ -465,9 +465,7 @@ def test_quadcube_inverse_matches_astropy(projection: str, origin: int) -> None:
 
 
 
-def test_csc_cpu_matches_wcslib(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_csc_cpu_matches_wcslib() -> None:
     """CSC CPU (batched ATen path) agrees with WCSLIB to double-precision rounding.
 
     torchsky 87f8c3ce rounds the CSC polynomial with uncontracted float32
@@ -477,7 +475,6 @@ def test_csc_cpu_matches_wcslib(
     oracle itself sits one float32 ulp (~8 mas, measured 8.4e-7 deg on Apple
     silicon) away; bound that at 3e-6 deg (1 mas = 2.78e-7 deg).
     """
-    monkeypatch.setenv("TORCHSKY_WCS_FUSED", "0")
     header = _make_header("CSC", cd_scale=0.3)
     awcs = AstropyWCS(header)
     x, y = _sample_pixels(header, n_side=15)

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Dedicated large-N TPV world-to-pixel benchmark."""
+"""Dedicated large-N TPV world-to-pixel benchmark.
+
+Compares torchsky's TPV inverse (the pure-torch tensor-core Newton solve that
+backs the public ``WCS.world_to_pixel``) against Astropy ``all_world2pix``.
+"""
 
 from __future__ import annotations
 
@@ -136,7 +140,7 @@ def _error_summary(
     }
 
 
-def _bench_torchsky_method(
+def _bench_torchsky(
     *,
     header: dict,
     ra_t: torch.Tensor,
@@ -144,14 +148,9 @@ def _bench_torchsky_method(
     x_true: np.ndarray,
     y_true: np.ndarray,
     runs: int,
-    method: str,
     device: torch.device,
 ) -> dict[str, Any]:
     twcs = TorchWCS(dict(header)).to(device)
-    if method == "tensor_core":
-        twcs._disable_fused_world_to_pixel = True
-    elif method != "fused":
-        raise ValueError(f"Unknown torchsky TPV method {method}")
 
     best_s, (x_pred_t, y_pred_t) = _time_many(
         lambda: twcs.world_to_pixel(ra_t, dec_t, origin=0),
@@ -162,25 +161,19 @@ def _bench_torchsky_method(
     y_pred = y_pred_t.detach().cpu().numpy()
     row = {
         "library": "torchsky",
-        "method": method,
+        "method": "tensor_core",
         "status": "OK",
         "device": str(device),
         "time_ms": best_s * 1000.0,
         "mpts_s": float(ra_t.numel() / max(best_s, 1.0e-12) / 1.0e6),
     }
     row.update(_error_summary(x_true, y_true, x_pred, y_pred))
-    if method == "tensor_core":
-        twcs.tpv.set_invert_trace(True)
-        twcs.world_to_pixel(ra_t, dec_t, origin=0)
-        trace = twcs.tpv.get_last_invert_trace() or {}
-        twcs.tpv.set_invert_trace(False)
-        row["mean_point_iterations"] = float(trace.get("mean_point_iterations", 0.0))
-        row["iterations_max"] = int(
-            trace.get("iterations_max", trace.get("iterations", 0))
-        )
-    else:
-        row["mean_point_iterations"] = None
-        row["iterations_max"] = None
+    twcs.tpv.set_invert_trace(True)
+    twcs.world_to_pixel(ra_t, dec_t, origin=0)
+    trace = twcs.tpv.get_last_invert_trace() or {}
+    twcs.tpv.set_invert_trace(False)
+    row["mean_point_iterations"] = float(trace.get("mean_point_iterations", 0.0))
+    row["iterations_max"] = int(trace.get("iterations_max", trace.get("iterations", 0)))
     return row
 
 
@@ -292,22 +285,15 @@ def main() -> int:
         ra_t = torch.from_numpy(np.asarray(ra_np, dtype=np.float64)).to(device)
         dec_t = torch.from_numpy(np.asarray(dec_np, dtype=np.float64)).to(device)
 
-        methods = (
-            ("fused", "tensor_core") if device.type == "cpu" else ("tensor_core",)
+        torchsky_row = _bench_torchsky(
+            header=header,
+            ra_t=ra_t,
+            dec_t=dec_t,
+            x_true=x_true,
+            y_true=y_true,
+            runs=args.runs,
+            device=device,
         )
-        torchsky_rows = [
-            _bench_torchsky_method(
-                header=header,
-                ra_t=ra_t,
-                dec_t=dec_t,
-                x_true=x_true,
-                y_true=y_true,
-                runs=args.runs,
-                method=method,
-                device=device,
-            )
-            for method in methods
-        ]
         astropy_row = _bench_astropy_method(
             awcs=awcs,
             ra_np=np.asarray(ra_np, dtype=np.float64),
@@ -317,7 +303,7 @@ def main() -> int:
             runs=args.runs,
         )
         astropy_row["device"] = "cpu"
-        for row in (*torchsky_rows, astropy_row):
+        for row in (torchsky_row, astropy_row):
             row["case"] = spec.name
             row["description"] = spec.description
             row["n_points"] = int(args.n_points)
