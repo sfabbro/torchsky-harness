@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Launch CANFAR headless CPU and/or CUDA jobs for torchsky WCS + sphere.
-# Usage: launch_canfar_wcs_sphere.sh [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|world|depth]
+# Usage: launch_canfar_wcs_sphere.sh [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|gpu-validate|torchsky-tests-cuda|world|depth]
 #
 # Jobs clone TORCHSKY_COMMIT from GitHub (must already be pushed), run
 # scripts/run_canfar_wcs_sphere.sh from that clone, write
@@ -10,6 +10,8 @@
 # sht: spectral + sparse + spin only.
 # world: paper2/tpv/spectral/tabular WCS, moc, catalog, observed-place, world-cuda.
 # world-cuda: CUDA pytest + world-layer benches with tensors on the GPU.
+# torchsky-tests-cuda: torchsky's own test suite (main + map tests) on one GPU,
+# JUnit XML per suite plus a skip-reason summary.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -21,9 +23,9 @@ case "${MODE}" in
   wcs-paper2 | wcs-tpv | wcs-spectral | wcs-tabular | sht-profile | moc | catalog | \
   catalog-scale | catalog-scale-1e6 | catalog-scale-1e7 | catalog-scale-real | \
   catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | catalog-match-cuda | catalog-match-gpu-peers | \
-  observed | geom-cuda | world-cuda | gpu-validate | world | depth) ;;
+  observed | geom-cuda | world-cuda | gpu-validate | torchsky-tests-cuda | world | depth) ;;
   *)
-    echo "usage: $0 [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|world|depth]" >&2
+    echo "usage: $0 [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|gpu-validate|torchsky-tests-cuda|world|depth]" >&2
     exit 2
     ;;
 esac
@@ -247,6 +249,9 @@ if [[ "${MODE}" == "observed" ]]; then
 fi
 if [[ "${MODE}" == "gpu-validate" ]]; then
   launch_one gpu-validate 1 "gpu-validate-${STAMP}"
+fi
+if [[ "${MODE}" == "torchsky-tests-cuda" ]]; then
+  launch_one torchsky-tests-cuda 1 "torchsky-tests-cuda-${STAMP}"
 fi
 if [[ "${MODE}" == "geom-cuda" ]]; then
   launch_one geom-cuda 1 "geom-cuda-${STAMP}"
