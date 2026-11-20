@@ -1,0 +1,413 @@
+{
+  "meta": {
+    "device": "mps",
+    "subject_commit": "601968a797bcf522c9cdf309c298490f778114a5"
+  },
+  "suites": {
+    "main": {
+      "path": "benchmarks_results/torchsky-tests-mps-20261120-045851/torchsky_tests_main_mps.xml",
+      "counts": {
+        "total": 4303,
+        "passed": 4164,
+        "failed": 2,
+        "error": 0,
+        "skipped": 137,
+        "xfailed": 0
+      },
+      "device_absent_skips": 92,
+      "failures": [
+        {
+          "file": "tests/test_device_to.py",
+          "classname": "tests.test_device_to",
+          "name": "test_no_fused_device_dtype_conversions_outside_helper",
+          "time_s": 28.386,
+          "outcome": "failed",
+          "type": null,
+          "message": "AssertionError: use torchsky.device._to / _as_tensor (MPS float64 copy bug):",
+          "error": "assert not ['catalogs/_exclusive.py:170: .to(device, dtype) in one call: init.to(dtype=_F64, device=dev)', 'catalogs/association....ev, dt)', 'map/exposure_fit/_items.py:510: .to(device, dtype) in one call: lw0[:, None].repeat(1, 2).to(dev, dt)', ...]"
+        },
+        {
+          "file": "tests/test_examples_runner.py",
+          "classname": "tests.test_examples_runner",
+          "name": "test_every_example_script_runs",
+          "time_s": 1025.122,
+          "outcome": "failed",
+          "type": null,
+          "message": "AssertionError: examples/test_examples.py failed (exit 1)",
+          "error": "+  where 1 = CompletedProcess(args=['/private/tmp/claude-502/-Users-fabbros--claude-spares-spare-H6Fgsd/6b027666-2bd2-4a86-af2e-c7b...ples`\\nPASS  survey_split.py  (27.9 s)\\nPASS  wcs_tour.py  (14.1 s)\\n\\n14/32 examples passed, 16 skipped\\n\", stderr='').returncode"
+        }
+      ],
+      "skip_groups": [
+        {
+          "reason": "CUDA unavailable",
+          "count": 42,
+          "device_absent": true,
+          "examples": [
+            "tests/test_additive_stage_contract.py::test_tensor_device_dtype_and_gradient_contract[cuda]",
+            "tests/test_evidence_lifecycle.py::test_version_tracking_device_contract_without_tensor_transfer[cuda]",
+            "tests/test_detector_response.py::test_device_dtype_preservation_and_mismatches[cuda]",
+            "tests/test_field_gaussian_likelihood.py::test_joint_query_dtype_device_and_normal_quadratic_contract[cuda-dtype2]",
+            "tests/test_forced_photometry.py::test_signed_fit_preserves_device_and_image_gradient[cuda]"
+          ]
+        },
+        {
+          "reason": "CUDA not available",
+          "count": 33,
+          "device_absent": true,
+          "examples": [
+            "tests/test_healpix_parity.py::test_cuda_matches_cpu_small_sample",
+            "tests/test_healpix_primitives.py::test_query_disc_cuda_vec_matches_cpu",
+            "tests/test_healpix_primitives.py::test_lonlat_xyz_cuda_matches_cpu",
+            "tests/test_audit_critical_regressions.py::test_moc_flatten_dense_mask_matches_uniq_device_cuda",
+            "tests/test_catalog_compat.py::test_crossmatch_sky_matches_cpu_results_on_cuda"
+          ]
+        },
+        {
+          "reason": "cuda unavailable",
+          "count": 7,
+          "device_absent": true,
+          "examples": [
+            "tests/test_cosmology.py::test_lookback_time_and_age_on_device[cuda]",
+            "tests/test_gaussian_likelihood.py::test_available_device_likelihood_and_sampling_query[cuda]",
+            "tests/test_spectrophotometry.py::test_weighting_gradient_and_device[cuda]",
+            "tests/test_sphere_native_ranges.py::test_query_polygon_nest_follows_input_device[cuda]",
+            "tests/test_extinction.py::test_recent_laws_on_device[cuda-g23]"
+          ]
+        },
+        {
+          "reason": "could not import 'healpy': No module named 'healpy'",
+          "count": 6,
+          "device_absent": false,
+          "examples": [
+            "tests/test_catalog_covering.py::test_cap_covering_matches_healpy_query_disc",
+            "tests/test_sphere_pixwin.py::test_pixwin_matches_healpy[2]",
+            "tests/test_sphere_pixwin.py::test_pixwin_matches_healpy[8]",
+            "tests/test_sphere_pixwin.py::test_pixwin_matches_healpy[32]",
+            "tests/test_sphere_pixwin.py::test_pixwin_matches_healpy[128]"
+          ]
+        },
+        {
+          "reason": "healpy not importable in a child process",
+          "count": 6,
+          "device_absent": false,
+          "examples": [
+            "tests/test_sht_high_lmax.py::test_map2alm_matches_healpy_subprocess[16-1]",
+            "tests/test_sht_high_lmax.py::test_map2alm_matches_healpy_subprocess[16-2]",
+            "tests/test_sht_high_lmax.py::test_map2alm_matches_healpy_subprocess[16-3]",
+            "tests/test_sht_high_lmax.py::test_scalar_sht_at_three_nside_matches_healpy[512]",
+            "tests/test_sht_high_lmax.py::test_scalar_sht_at_three_nside_matches_healpy[1024]"
+          ]
+        },
+        {
+          "reason": "MPS unavailable or float64 unsupported",
+          "count": 5,
+          "device_absent": true,
+          "examples": [
+            "tests/test_continuous_response.py::test_dtype_device_and_empty_contracts[mps-dtype1]",
+            "tests/test_joint_native_likelihood.py::test_dtype_device[mps-dtype1]",
+            "tests/test_pixel_calibration.py::test_device_dtype_and_empty_contract[mps-dtype1]",
+            "tests/test_native_integrated_read.py::test_dtype_device_and_zero_source_law[mps-dtype1]",
+            "tests/test_native_integrated_read.py::test_chunked_zero_rate_and_device_contract[mps-dtype1]"
+          ]
+        },
+        {
+          "reason": "could not import 'dust_extinction': No module named 'dust_extinction'",
+          "count": 5,
+          "device_absent": false,
+          "examples": [
+            "tests/test_extinction.py::test_dust_extinction_v_band_point",
+            "tests/test_extinction.py::test_f99_optional_dust_extinction_parity",
+            "tests/test_extinction.py::test_recent_laws_match_live_dust_extinction[g23-G23-0.0912-32.0-r_vs0]",
+            "tests/test_extinction.py::test_recent_laws_match_live_dust_extinction[f19-F19-0.1149425287356322-3.3333333333333335-r_vs1]",
+            "tests/test_extinction.py::test_recent_laws_match_live_dust_extinction[gcc09-GCC09-0.09090909090909091-0.30303030303030304-r_vs2]"
+          ]
+        },
+        {
+          "reason": "C++ sphere geometry kernels unavailable",
+          "count": 4,
+          "device_absent": false,
+          "examples": [
+            "tests/test_sphere_polygons.py::test_spherical_polygon_contains_cpp_matches_python_fallback",
+            "tests/test_sphere_polygons.py::test_spherical_polygons_intersect_cpp_matches_python_fallback",
+            "tests/test_sphere_polygons.py::test_cpp_geometry_predicate_accepts_autograd_inputs",
+            "tests/test_sphere_polygons.py::test_cpp_geometry_predicates_reject_invalid_tolerances"
+          ]
+        },
+        {
+          "reason": "needs CUDA",
+          "count": 3,
+          "device_absent": true,
+          "examples": [
+            "tests/test_device_placement.py::test_infer_linear_affine_pixel_map_accepts_accelerator_wcs",
+            "tests/test_device_placement.py::test_synfast_returns_on_the_spectrum_device_and_is_seed_stable",
+            "tests/test_wcs_extended_projections.py::test_csc_s2x_x2s_cuda_matches_cpu"
+          ]
+        },
+        {
+          "reason": "prototype not available",
+          "count": 3,
+          "device_absent": false,
+          "examples": [
+            "tests/test_scene_gaussians_functional.py::test_agrees_with_prototype_rasteriser[direct-30.0-128]",
+            "tests/test_scene_gaussians_functional.py::test_agrees_with_prototype_rasteriser[pyramid-30.0-128]",
+            "tests/test_scene_gaussians_functional.py::test_agrees_with_prototype_rasteriser[pyramid-60.0-512]"
+          ]
+        },
+        {
+          "reason": "cuda not available",
+          "count": 2,
+          "device_absent": true,
+          "examples": [
+            "tests/test_wcs_sip.py::test_sip_wcs_to_cuda_moves_sip_coeffs",
+            "tests/test_wcs_sip.py::test_high_order_sip_cuda_pixels_without_explicit_wcs_to"
+          ]
+        },
+        {
+          "reason": "healpy not available",
+          "count": 2,
+          "device_absent": false,
+          "examples": [
+            "tests/test_sphere_spectral.py::test_pol_map2alm_alm2map_and_anafast_paths",
+            "tests/test_sphere_spectral.py::test_compat_spin_and_smoothing"
+          ]
+        },
+        {
+          "reason": "torch-native HEALPix query_disc C++ binding unavailable",
+          "count": 2,
+          "device_absent": false,
+          "examples": [
+            "tests/test_healpix_primitives.py::test_query_disc_cpp_matches_python_fallback",
+            "tests/test_healpix_primitives.py::test_query_disc_mps_vec_matches_cpu"
+          ]
+        },
+        {
+          "reason": "MPS does not support float64",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_wcs_astrometry.py::test_tangent_plane_block_residuals_use_full_covariance_and_autograd[mps-dtype1]"
+          ]
+        },
+        {
+          "reason": "catalogs/containers.md:2 imports optional module pyarrow",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_docs_snippets.py::test_doc_imports_resolve[catalogs/containers.md:2]"
+          ]
+        },
+        {
+          "reason": "could not import 'cdshealpix': No module named 'cdshealpix'",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_sphere_multiorder.py::test_cdshealpix_interchange_optional"
+          ]
+        },
+        {
+          "reason": "could not import 'gwcs': No module named 'gwcs'",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_wcs_mapping_graph.py::test_linear_pipeline_matches_gwcs_when_available"
+          ]
+        },
+        {
+          "reason": "could not import 'healsparse': No module named 'healsparse'",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_sphere_multiorder.py::test_healsparse_interchange_optional"
+          ]
+        },
+        {
+          "reason": "could not import 'hpgeom': No module named 'hpgeom'",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_catalog_covering.py::test_cap_covering_matches_hpgeom_query_circle"
+          ]
+        },
+        {
+          "reason": "could not import 'mhealpy': No module named 'mhealpy'",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_sphere_multiorder.py::test_mhealpy_interchange_optional"
+          ]
+        },
+        {
+          "reason": "could not import 'mocpy': No module named 'mocpy'",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_sphere_multiorder.py::test_mocpy_probability_and_json_interchange_optional"
+          ]
+        },
+        {
+          "reason": "could not import 'pysiaf': No module named 'pysiaf'",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_wcs_telescope_frame.py::test_against_pysiaf_oracle_optional"
+          ]
+        },
+        {
+          "reason": "could not import 'speclite': No module named 'speclite'",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_spectrophotometry.py::test_energy_weighting_matches_live_speclite"
+          ]
+        },
+        {
+          "reason": "could not import 'synphot': No module named 'synphot'",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_spectrophotometry.py::test_vega_zero_point_matches_live_synphot"
+          ]
+        },
+        {
+          "reason": "mocpy not importable in a child process",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_sphere_native_ranges.py::test_native_moc_algebra_matches_mocpy"
+          ]
+        },
+        {
+          "reason": "native crossmatch kernel not built",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_crossmatch_engine.py::test_native_and_torch_paths_agree_at_scale[torch]"
+          ]
+        },
+        {
+          "reason": "torch-native HEALPix C++ bindings unavailable",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_healpix_primitives.py::test_cpp_torch_bindings_core_healpix_match_python"
+          ]
+        },
+        {
+          "reason": "torch-native HEALPix bindings unavailable",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_healpix_primitives.py::test_native_healpix_contracts_reject_invalid_domains"
+          ]
+        },
+        {
+          "reason": "torch-native HEALPix interp C++ bindings unavailable",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_healpix_primitives.py::test_cpp_torch_bindings_interp_val_match_python"
+          ]
+        },
+        {
+          "reason": "x86_64 binary instruction inspection",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_cpu_isa_dispatch.py::test_scalar_leaf_has_no_avx_instructions"
+          ]
+        }
+      ],
+      "xfails": []
+    },
+    "map": {
+      "path": "benchmarks_results/torchsky-tests-mps-20261120-045851/torchsky_tests_map_mps.xml",
+      "counts": {
+        "total": 1420,
+        "passed": 1388,
+        "failed": 0,
+        "error": 0,
+        "skipped": 32,
+        "xfailed": 0
+      },
+      "device_absent_skips": 29,
+      "failures": [],
+      "skip_groups": [
+        {
+          "reason": "CUDA not available",
+          "count": 12,
+          "device_absent": true,
+          "examples": [
+            "tests/test_map_field_foam_intersection.py::test_power_pixel_operator_cuda_matches_cpu",
+            "tests/test_map_field_foam.py::test_smooth_bounded_weights_cuda_matches_cpu",
+            "tests/test_map_field_foam.py::test_sparse_cech_graph_cuda_matches_cpu",
+            "tests/test_map_field_foam.py::test_tile_disk_candidate_csr_cuda_matches_cpu",
+            "tests/test_map_ifu_variance.py::test_ifu_cube_dtype_device_and_data_gradient[cuda]"
+          ]
+        },
+        {
+          "reason": "CUDA is unavailable",
+          "count": 5,
+          "device_absent": true,
+          "examples": [
+            "tests/test_map_field_frequency_adaptive.py::test_frequency_adaptive_models_accelerator_contract[cuda-bacon]",
+            "tests/test_map_field_frequency_adaptive.py::test_frequency_adaptive_models_accelerator_contract[cuda-sasnet]",
+            "tests/test_map_field_rendering.py::test_fit_field_model_amp_skips_overflowing_step",
+            "tests/test_map_field_losses.py::test_gaussian_nll_gradient_dtype_and_device[device1-dtype0]",
+            "tests/test_map_field_losses.py::test_gaussian_nll_gradient_dtype_and_device[device1-dtype1]"
+          ]
+        },
+        {
+          "reason": "CUDA unavailable",
+          "count": 5,
+          "device_absent": true,
+          "examples": [
+            "tests/test_map_field_render_precision.py::test_fine_pixels_preserve_source_and_parameter_gradients[cuda-center-_NarrowSource]",
+            "tests/test_map_field_render_precision.py::test_fine_pixels_preserve_source_and_parameter_gradients[cuda-center-_BandpassSource]",
+            "tests/test_map_field_render_precision.py::test_fine_pixels_preserve_source_and_parameter_gradients[cuda-gauss_legendre_2x2-_NarrowSource]",
+            "tests/test_map_field_render_precision.py::test_fine_pixels_preserve_source_and_parameter_gradients[cuda-gauss_legendre_2x2-_BandpassSource]",
+            "tests/test_map_ifu_vectorised.py::test_vectorised_planner_on_gpu_matches_cpu[cuda]"
+          ]
+        },
+        {
+          "reason": "needs CUDA",
+          "count": 4,
+          "device_absent": true,
+          "examples": [
+            "tests/test_map_drizzle_overlap.py::test_scatter_add_ordered_is_bitwise_reproducible_on_cuda",
+            "tests/test_map_auto_tiling.py::test_tiled_coadd_on_cuda_returns_cuda_maps[weighted_mean]",
+            "tests/test_map_auto_tiling.py::test_tiled_coadd_on_cuda_returns_cuda_maps[median]",
+            "tests/test_map_auto_tiling.py::test_tiled_coadd_on_cuda_keeps_host_maps_with_warning_when_they_do_not_fit"
+          ]
+        },
+        {
+          "reason": "cuda unavailable",
+          "count": 3,
+          "device_absent": true,
+          "examples": [
+            "tests/test_map_field_domain_bandpass.py::test_decomposition_diagnostics_accept_truth_and_anchor_on_other_device[cuda]",
+            "tests/test_map_field_domain_bandpass.py::test_fourier_mlp_features_build_on_device[cuda]",
+            "tests/test_map_ifu_cube.py::test_legacy_ifu_coadd_accepts_cpu_ifu_wcs_on_device[cuda]"
+          ]
+        },
+        {
+          "reason": "collection skipped",
+          "count": 2,
+          "device_absent": false,
+          "examples": [
+            "::tests.test_map_healpix_coadd_bridge_smoke",
+            "::tests.test_map_healpix_native_tan"
+          ]
+        },
+        {
+          "reason": "MPS does not support float64",
+          "count": 1,
+          "device_absent": false,
+          "examples": [
+            "tests/test_map_field_losses.py::test_gaussian_nll_gradient_dtype_and_device[device2-dtype1]"
+          ]
+        }
+      ],
+      "xfails": []
+    }
+  }
+}
