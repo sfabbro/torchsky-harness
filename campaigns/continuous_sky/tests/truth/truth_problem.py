@@ -225,7 +225,7 @@ def fit_kernel_to_truth(model, steps=2500, log=print, seed=0):
 # ----------------------------------------------------------------------------- model construction and fit
 from fieldop.cli import default_config, make_sky  # noqa: E402
 from fieldop.model import FieldOperator  # noqa: E402
-from fieldop.train import chi2_exposure, fit, fit_heldout, heldout_stage, predict_exposure, register_prepass, warm_kernel  # noqa: E402
+from fieldop.train import fit, heldout_stage, predict_exposure, register_prepass, warm_kernel  # noqa: E402
 
 
 class TruthOperator(FieldOperator):

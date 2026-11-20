@@ -155,7 +155,6 @@ def make_field(seed=0, n_per_filter=8, n_val=2, n_held=1, noise=1.0, Q=3, dev="c
                 else:
                     d = gmap * (clean + bk) + noise * torch.randn(n, n, generator=torch.Generator().manual_seed(1000 + k))
                 split = "held" if j < n_held else ("val" if j < n_held + n_val else "train")
-                ins_name = ins.name
                 if name in train_exclude and split != "held":      # unseen-band test: the exposure is generated (same random stream) and then dropped
                     k += 1
                     continue

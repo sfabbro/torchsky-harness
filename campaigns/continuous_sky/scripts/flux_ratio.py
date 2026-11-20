@@ -6,8 +6,10 @@ Fitted sky band image = sum_k Phi_band[f, k] x coefficients (MJy/sr on the sky n
   (b) total flux in the central 20 arcsec box above the 20th percentile level.
 Approximations: one object for (a); annulus background in a crowded cluster field; no astrometric matching beyond the common frame;
 item skies are rasterised by the package (needs the package on sys.path) - grid skies are read directly."""
-import sys, json
-import numpy as np, torch
+import sys
+import json
+import numpy as np
+import torch
 from astropy.io import fits
 from scipy.ndimage import uniform_filter
 torch.set_num_threads(1)

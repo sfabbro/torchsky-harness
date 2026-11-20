@@ -1,5 +1,8 @@
 """Stage 2: learned-kernel azimuthal profiles (reusing kernel_check loaders). Writes kern_<key>.npz to the cache."""
-import sys, time, numpy as np, torch
+import sys
+import time
+import numpy as np
+import torch
 torch.set_num_threads(1)
 sys.path.insert(0, "/home/claude/work/kernel_check")
 from prep import CACHE, STATES
@@ -16,7 +19,7 @@ def run(key, name):
         es = np.nonzero(fit.e_filt == f)[0]; dets, cnt = np.unique(fit.e_det[es], return_counts=True); det = int(dets[np.argmax(cnt)])
         e_rot = int(es[fit.e_det[es] == det][0]); lat = fit.ref_lattice_xi(det).numpy()
         t = time.time(); o, (r, prof) = Q.measure(fit, f, det, lat[4], e_rot, full=False)
-        out[f"r"] = r; out[f"p{f}"] = prof; out[f"tot{f}"] = o["integral_continuous_over_levels"]
+        out["r"] = r; out[f"p{f}"] = prof; out[f"tot{f}"] = o["integral_continuous_over_levels"]
         print(key, K.FILTERS[f], "det", det, round(time.time() - t, 1), "s; cont integral/quadrature", round(o["integral_continuous_over_levels"], 4), flush=True)
     np.savez(f"{CACHE}/kern_{key}.npz", **out)
 if __name__ == "__main__":

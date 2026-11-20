@@ -1,5 +1,4 @@
 """Unit tests of the per-pixel gain map (--pixel-gain, F43-F45). CPU, a few seconds.  python tests/test_pixel_gain.py  (or pytest)."""
-import math
 import os
 import sys
 

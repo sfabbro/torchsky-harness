@@ -13,7 +13,12 @@ Conventions (all lengths in detector pixels of the kernel's own channel, short-w
     sampled with 6x6 sub-samples in the cells near its centre (as e2). Errors are max |error| / peak of the reference, worst of 3 sub-pixel positions.
 Stages (each resumable; --budget seconds): fits, refs, trunc, local, final.  Usage: python3 render_test_learned.py --stage fits --kernel F090W
 """
-import os, sys, json, time, argparse, math
+import os
+import sys
+import json
+import time
+import argparse
+import math
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ[_v] = "1"
 import numpy as np

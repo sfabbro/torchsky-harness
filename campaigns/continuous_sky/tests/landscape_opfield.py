@@ -5,7 +5,6 @@ Trains the L6 case itself (extra args as for ladder_opfield.py).  Usage: python 
 Saves runs/opfield_synth/landscape_<tag>.png / .json."""
 import argparse
 import json
-import math
 import os
 import sys
 

@@ -88,7 +88,7 @@ def run(inject, coarse, steps, log=lambda s: None):
     ts = TileSet.single(model, exps, cfg, log)
     rec = coarse_register(model, exps, cfg, log=log, ts=ts, inst_names=["A", "B"]) if coarse else {}
     rec_after = recovery(model, exps, gauge_free=bool(coarse))
-    rec_pre = train.register_prepass(model, exps, cfg, log=log, ts=ts)
+    train.register_prepass(model, exps, cfg, log=log, ts=ts)
     out = dict(coarse=rec, recovery_after_coarse=rec_after)
     if steps:
         train.fit(model, exps, cfg, log=log, ts=ts)

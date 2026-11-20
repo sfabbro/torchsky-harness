@@ -6,7 +6,12 @@ growing with the band), noise sigma 0.3. Checks: (1) the combined shift of every
 (3) the shifts are applied to tx, ty of both tiles (the pixel positions move by the shift, in pixels); (4) the combination is the pixel-count weighted mean (direct unit test of
 combine_tile_shifts); (5) coarse_shifts.json has the documented content.
 Run: python3 tests/test_tilefit_register.py"""
-import json, math, os, sys, tempfile, types
+import json
+import math
+import os
+import sys
+import tempfile
+import types
 import numpy as np
 import torch
 

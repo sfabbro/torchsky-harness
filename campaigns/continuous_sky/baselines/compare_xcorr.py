@@ -2,7 +2,10 @@
 """Compare the WCS shifts applied by tweakreg (stage3_blot LMC task summaries) with our cross-correlation shifts
 (register_xcorr.json), per task up to a common offset (median of the difference), in the tile frame (x west, y north, mas).
 Usage: compare_xcorr.py RESULTS_DIR XCORR_JSON [OUT_JSON]"""
-import glob, json, os, sys
+import glob
+import json
+import os
+import sys
 from collections import defaultdict
 import numpy as np
 res_dir, xj = sys.argv[1:3]

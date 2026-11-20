@@ -43,7 +43,7 @@ def test1():
     print("== test 1: real files, same numbers as score.py")
     sp, mask_for, pred_for, data_for, held = real_loaders()
     methods = ["fieldop_fix_200", "stage3_blot"]
-    ex = {e["rootname"]: e for e in sp["exposures"]}
+    {e["rootname"]: e for e in sp["exposures"]}
     n_ok, n_tot = 0, 0
     for r in held:
         mk, d = mask_for(r), data_for(r)
@@ -142,7 +142,7 @@ def test2():
         lv = bs["levels"]["all"]
         dp = np.array([np.nan if v is None else v for v in lv["diff"]["flat|patterned"]["value"]])
         pk = int(np.nanargmax(dp))
-        others = np.delete(dp, pk)
+        np.delete(dp, pk)
         # expected band power: total power N*A^2/2 shared over the modes of the band (modes counted for this shape)
         bm = SP.band_map(*shape)
         nmodes = (bm == band_of(lam)).sum()
@@ -164,7 +164,7 @@ def test2():
     pr, bs = run_syn({"a": same, "b": same}, ref="a")
     h = pr["methods"]["b"]["levels"]["field"]["all"]["with_offset"]["headline"]
     zero = all(h["diff"][k] == 0.0 for k in ("value", "lo68", "hi68", "lo95", "hi95")) and h["diff"]["frac_equal"] == 1.0 and h["diff"]["frac_better"] == 0.0
-    b0 = all(all(v == 0.0 for v in bn["diff"]["value"]) and bn["diff"]["lo68"] == bn["diff"]["hi68"] == 0.0 for bn in
+    all(all(v == 0.0 for v in bn["diff"]["value"]) and bn["diff"]["lo68"] == bn["diff"]["hi68"] == 0.0 for bn in
              pr["methods"]["b"]["levels"]["field"]["all"]["with_offset"]["bins"] if bn["diff"]["value"] is not None) if False else True
     bins0 = all(bn["diff"]["value"] in (0.0, None) and bn["diff"]["lo68"] in (0.0, None) and bn["diff"]["hi68"] in (0.0, None)
                 for bn in pr["methods"]["b"]["levels"]["field"]["all"]["with_offset"]["bins"])

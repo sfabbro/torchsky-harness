@@ -10,10 +10,8 @@
 
 Run: venvT/bin/python tests/test_opfield_wings.py   (add --smoke for 4)
 """
-import json
 import math
 import os
-import subprocess
 import sys
 
 import numpy as np
@@ -142,7 +140,7 @@ def test_importance_sampling_without_peaks_reduces_to_the_default_pmf():
     assert sum(S.counts) == 0
     B = 1000
     bt = S.draw(B, 0.25, torch.Generator().manual_seed(1))
-    nb, nu = 250, 750
+    _nb, nu = 250, 750
     assert S.last["n_is"] == 0
     # q = (nu / N + nb 1_bright / N_b) / B  ->  w = 1 / (N q)
     w_expected_nonbright = B / nu
@@ -258,7 +256,7 @@ def test_two_scale_gradients_and_prior():
 
 def test_two_scale_untrained_cells_are_aliased_and_default_has_no_wing_parameters():
     m, a, st = T.make_multi(flags=TS)
-    moves = m.set_train_rows([0, 1, 3, 4, 5])                                 # no training exposure in (detector 1, band 0) = exposure 2
+    m.set_train_rows([0, 1, 3, 4, 5])                                 # no training exposure in (detector 1, band 0) = exposure 2
     assert any("-> " in x for x in m.untrained_wing_cells), m.untrained_wing_cells
     r2 = int(m.m_wrow0[2])
     assert int(m.wing_alias[r2]) != r2 and int(m.m_wrow[2]) == int(m.wing_alias[r2]) and m.wing_row_band[int(m.wing_alias[r2])] == m.wing_row_band[r2]

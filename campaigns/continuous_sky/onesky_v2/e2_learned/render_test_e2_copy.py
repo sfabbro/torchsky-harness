@@ -14,7 +14,12 @@ Usage: python3 render_test.py            (all stages, in order; the reference im
        python3 render_test.py --fresh   (delete the cache first)
 All lengths are detector pixels. Single thread everywhere.
 """
-import os, sys, json, time, argparse, math, shutil
+import os
+import json
+import time
+import argparse
+import math
+import shutil
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
     os.environ[_v] = "1"
 import numpy as np
@@ -515,7 +520,7 @@ def sersic_gauss_fit(n, re, q, K, rmax):
     for s0, s1 in [(np.log(0.1 * re), np.log(3 * re)), (np.log(0.03 * re), np.log(6 * re)), (np.log(0.3 * re), np.log(2 * re))]:
         res = minimize(cost, [s0, s1], method="Nelder-Mead", options=dict(maxiter=250, xatol=1e-3, fatol=1e-14))
         if best is None or res.fun < best.fun: best = res
-    lo = np.log(0.01 * re)
+    np.log(0.01 * re)
     p = best.x
     sg, A = design(*p)
     w, rn = solve(A)
@@ -539,7 +544,6 @@ def irregular_gauss_fit(K, iters=60):
     pk = Z.max()
     Rg = np.hypot(X, Y); eps = 0.01 * float(Z[Rg < 8].mean())
     wz = 1.0 / (Zt + eps); norm = float((wz * Zt ** 2).sum())      # same flux-weighted objective as the Sersic fits
-    comps = []
 
     def model(par):
         la, mx, my, l11, l21, l22 = [par[:, i] for i in range(6)]
@@ -909,7 +913,7 @@ def make_figure(out):
             ax.axhline(1e-3, color="k", ls=":", lw=1.5); ax.text(0.02, 1.15e-3, "target 1e-3 of peak", transform=ax.get_yaxis_transform(), fontsize=10)
             ax.set_xscale("log"); ax.set_yscale("log"); ax.grid(alpha=0.3, which="both")
             ax.set_title(f"{case} kernel (FWHM {out['kernel_info'][case]['fwhm_axis_mean_px']:.2f} px): {lab}", fontsize=9)
-            ax.set_xlabel("time per item, ms (one thread)"); 
+            ax.set_xlabel("time per item, ms (one thread)") 
             if ci == 0: ax.set_ylabel("max |error| / peak pixel (worst of 3 positions)")
     axs[0, 0].legend(fontsize=7.5, loc="lower left")
     fig.suptitle("E2: render accuracy against cost (stand-in kernels, kernel support +-32 px)", fontsize=12)

@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 """Post-hoc star diagnostics of stage3_blot predictions: for isolated bright stars of the held-out _cal, aperture-sum ratio model/data
 vs radius, centroid offset model-data (pixels) and width ratio. Usage: star_diag.py CAL_DIR PRED_DIR [rootname ...]"""
-import glob, json, os, sys
+import glob
+import os
+import sys
 import numpy as np
 from astropy.io import fits
 from scipy import ndimage as ndi

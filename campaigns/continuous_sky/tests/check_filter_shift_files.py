@@ -66,7 +66,7 @@ def main():
         h0 = dict(torchfits.read_header(rp, 0))
         key = f"{str(h0.get('DETECTOR')).strip()}/{str(h0.get('FILTER')).strip()}"
         ex.setdefault(key, []).append((base, TelescopeRateWCS(rp), WCS(header=hd).pixel_to_world_differentiable(pc, origin=0)))
-    rows, res = [], {}
+    rows, _res = [], {}
     for key, lst in sorted(ex.items()):
         # one shared shift: stack the exposures' normal equations by fitting the concatenated lattices
         s = torch.zeros(2, dtype=torch.float64)

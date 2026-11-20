@@ -4,7 +4,11 @@ fit, model incl. background, detector pixels): the brightest isolated peaks of t
 matched by their mutual separations to peaks of my full-kernel render on the 0.04" sky grid (q4_wing_<F>.npz, 'full'), and the peak
 heights above the local level are compared. Held-out exposures: jw02736001001_02101_00009_nrcb3 (F090W, from the dither group / filter
 pairing in metrics.json val_groups: 02101 = F090W + F277W, 02105 = F200W + F444W) and jw02736001001_02105_00002_nrcblong (F444W)."""
-import itertools, json, math, os, sys
+import itertools
+import json
+import math
+import os
+import sys
 import numpy as np
 from scipy import ndimage
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -17,7 +21,7 @@ def peaks(img, valid, pitch, n=6, sep=1.0, ann=(0.6, 1.0)):
     ii, jj = np.nonzero((np.nan_to_num(d, nan=-1e9) == mx) & valid)
     out = []
     for i, j in zip(ii, jj):
-        r1, r2 = int(ann[0] / pitch), int(ann[1] / pitch) + 1
+        _r1, r2 = int(ann[0] / pitch), int(ann[1] / pitch) + 1
         i0, i1, j0, j1 = max(i - r2, 0), min(i + r2 + 1, d.shape[0]), max(j - r2, 0), min(j + r2 + 1, d.shape[1])
         sl = d[i0:i1, j0:j1]
         yy, xx = np.mgrid[i0:i1, j0:j1]

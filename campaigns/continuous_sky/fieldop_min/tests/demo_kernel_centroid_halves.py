@@ -20,7 +20,6 @@ The model predicts F = a_reg + kappa (the true kernel is centred). Between the h
 construction, so the free part of the frame is gone and dF - da_reg should be zero within its error.
 """
 import argparse
-import copy
 import json
 import math
 import os

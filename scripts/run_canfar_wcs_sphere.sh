@@ -25,9 +25,9 @@ case "${mode}" in
   wcs-paper2 | wcs-tpv | wcs-spectral | wcs-tabular | sht-profile | moc | catalog | \
   catalog-scale | catalog-scale-1e6 | catalog-scale-1e7 | catalog-scale-real | \
   catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | catalog-match-cuda | catalog-match-gpu-peers | \
-  observed | geom-cuda | world-cuda | gpu-validate) ;;
+  observed | geom-cuda | world-cuda | gpu-validate | torchsky-tests-cuda) ;;
   *)
-    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, catalog-match-real, catalog-match-cuda, catalog-match-gpu-peers, observed, geom-cuda, or world-cuda)" >&2
+    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, catalog-match-real, catalog-match-cuda, catalog-match-gpu-peers, observed, geom-cuda, world-cuda, gpu-validate, or torchsky-tests-cuda)" >&2
     exit 2
     ;;
 esac
@@ -730,6 +730,92 @@ PY
     if [[ "${gpu_rc}" -ne 0 ]]; then
       echo "gpu-validate job failures rc=${gpu_rc}"
       exit "${gpu_rc}"
+    fi
+    ;;
+  torchsky-tests-cuda)
+    # torchsky's own test suite on a CUDA host: the main suite (as torchsky's
+    # `pixi run test`) plus the separately run map tests. On a CUDA host the
+    # library default device is CUDA and the `compute_device` fixture adds
+    # cuda params, so this is the device validation that local CPU/MPS runs
+    # skip. Per-test outcomes go to JUnit XML; skip reasons to the summary.
+    install_env cuda-bench
+    pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+      python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'"
+    # torchsky's [feature.test] dependencies (cuda-bench has torch + build tools only).
+    pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+      python -m pip install "astropy>=5.0" scipy "fastapi>=0.110" "httpx>=0.27" "pillow>=10.0" \
+      "matplotlib>=3.8" "pandas>=2.2" "polars>=1.0" "pyarrow>=25" "pytest-xdist>=3.0" "requests>=2.28"
+    pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+      python -m pip freeze > "${artifact_root}/pip_freeze_cuda-bench.txt" || true
+    record_versions cuda-bench || true
+    tests_rc=0
+    pytest_workers="${TORCHSKY_PYTEST_WORKERS:-4}"
+    (
+      cd "${TORCHSKY_SUBJECT_ROOT}"
+      # The import path pytest sees (torchsky's conftest puts src/ first).
+      pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+        python - "${artifact_root}/device_probe.json" <<'PY'
+import json
+import platform
+import sys
+
+sys.path.insert(0, "src")
+import torch
+import torchsky
+from torchsky.device import default_compute_device
+
+probe = {
+    "python": sys.version,
+    "platform": platform.platform(),
+    "torch": torch.__version__,
+    "torch_cuda": torch.version.cuda,
+    "cuda_available": torch.cuda.is_available(),
+    "device_count": torch.cuda.device_count(),
+    "device_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+    "capability": list(torch.cuda.get_device_capability(0)) if torch.cuda.is_available() else None,
+    "torchsky": getattr(torchsky, "__version__", None),
+    "torchsky_file": torchsky.__file__,
+    "default_compute_device": str(default_compute_device()),
+}
+try:
+    import torchsky._cpp as cpp
+
+    probe["cpp_ext"] = cpp._ext.__file__
+    probe["cpu_isa"] = cpp.selected_cpu_isa()
+except Exception as exc:  # recorded, not fatal: tests report it too
+    probe["cpp_error"] = repr(exc)
+print(json.dumps(probe, indent=2))
+json.dump(probe, open(sys.argv[1], "w"), indent=2)
+PY
+    ) || tests_rc=$?
+    (
+      cd "${TORCHSKY_SUBJECT_ROOT}"
+      KMP_DUPLICATE_LIB_OK=TRUE timeout --foreground --signal=TERM --kill-after=60 \
+        "${TORCHSKY_TESTS_TIMEOUT_S:-14400}" \
+        pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+        pytest tests --ignore-glob='tests/test_map_*.py' -n "${pytest_workers}" \
+        -p no:cacheprovider -q -rfEs --tb=short \
+        --junitxml="${artifact_root}/torchsky_tests_main_cuda.xml"
+    ) || tests_rc=$?
+    vos_upload after_main_suite || echo "after_main_suite VOS upload failed; continuing job" >&2
+    (
+      cd "${TORCHSKY_SUBJECT_ROOT}"
+      KMP_DUPLICATE_LIB_OK=TRUE timeout --foreground --signal=TERM --kill-after=60 \
+        "${TORCHSKY_TESTS_TIMEOUT_S:-14400}" \
+        pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+        pytest -n 4 -p no:cacheprovider -q -rfEs --tb=short tests/test_map_*.py \
+        --junitxml="${artifact_root}/torchsky_tests_map_cuda.xml"
+    ) || tests_rc=$?
+    pixi run --manifest-path "${source_root}/pixi.toml" -e cuda-bench -- \
+      python "${source_root}/scripts/summarize_junit.py" \
+      "main=${artifact_root}/torchsky_tests_main_cuda.xml" \
+      "map=${artifact_root}/torchsky_tests_map_cuda.xml" \
+      --meta "device=cuda" --meta "subject_commit=${TORCHSKY_COMMIT}" \
+      --meta "harness_commit=${commit}" --meta "image=${container_image}" \
+      --json-out "${artifact_root}/torchsky_tests_cuda_summary.json" || tests_rc=$?
+    if [[ "${tests_rc}" -ne 0 ]]; then
+      echo "torchsky-tests-cuda job failures rc=${tests_rc}"
+      exit "${tests_rc}"
     fi
     ;;
   world-cuda)

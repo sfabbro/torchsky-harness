@@ -11,12 +11,10 @@ render (16000, the default of SkyFit.product). The prototype tree is not written
 import argparse
 import copy
 import dataclasses
-import math
 import os
 import sys
 import types
 
-import numpy as np
 import torch
 
 PROTO = "/home/claude/work/fieldop_min"

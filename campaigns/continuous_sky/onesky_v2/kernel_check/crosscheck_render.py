@@ -5,7 +5,9 @@ sources, for F090W and F444W (one exposure each, code z_e, throughput exp(gamma)
 Mine = fine part (kernel |u| <= 2.7" on a 0.005" grid, exact tent sky, FFT) + coarse part (cell-integrated kernel |u| > 2.7" on the
 0.04" grid, applied to the node values), interpolated bilinearly to the points.
 Run: python3 crosscheck_render.py  (about 1-2 min)"""
-import json, math, os, sys
+import json
+import os
+import sys
 import numpy as np
 import torch
 from scipy import ndimage

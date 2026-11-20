@@ -287,7 +287,6 @@ def render_fft(sky, A, Phi_q, levels, kernels, node_w, pos, os_, shift0=None, in
         S = torch.einsum("qk,khw->qhw", Phi_q, Sk)                   # (Q, h, w)
         Cimg = correlate_same(S[None], kernels[l])                   # (n, Q, h, w)
         org = (X0g + j0 * pr, X0g + i0 * pr)
-        n = Cimg.shape[0]
         Ci = Cimg.permute(1, 0, 2, 3)
         if interp == "bspline":
             rd = bspline_read(bspline_prefilter(Ci), org, pr, pos[..., 0], pos[..., 1])         # (Q, n, Npix)

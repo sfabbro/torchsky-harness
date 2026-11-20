@@ -352,7 +352,6 @@ def test_swap_gradients_and_chunks():
         fit = fresh_fit(ctx)
         train_cycles(fit, tmp, 6)
         tA, tB, tC = ctx.tiles
-        m = fit.model
 
         def grads(f, t, bt):
             f.model.zero_grad(set_to_none=True)
@@ -412,7 +411,6 @@ def test_swap_gradients_and_chunks():
 
 def test_shared_exposure_ids():
     with tempfile.TemporaryDirectory() as tmp:
-        W = WORLD2
         blobs = truth_sky(11)
         e1 = make_tile_exps2("S", blobs, {"bA": 3, "bB": 3}, 5)
         e2 = [dict(e) for e in e1[:4]] + make_tile_exps2("S2", blobs, {"bA": 1}, 6)       # four exposures appear in both tiles

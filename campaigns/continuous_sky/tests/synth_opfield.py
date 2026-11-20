@@ -100,8 +100,7 @@ def sky_kernel(inst, roll_deg, wscale, hw=HW_KERNEL, step=SCALE / FINE, nsub=5):
 def make_truth_sky(rng, lam_grid, x_min, n_fine):
     """band-independent truth: list of (sky_fine(lam)) callables via a stack of components with power-law colours.
     Returns a function lam -> fine image."""
-    yy, xx = None, None
-    comps = []
+    _yy, _xx = None, None
     # point sources: positions in grid px inside [HALO-10, HALO+NPIX+10]
     npt = 30
     pos = rng.uniform(HALO - 8, HALO + NPIX + 8, (npt, 2))
@@ -164,7 +163,6 @@ def build_world(seed=0, quick=False, cfg=None):
     w_nodes = torch.full((len(INSTR), Q), 1.0 / Q)
     exps, info = [], []
     seq = 0
-    splits = []
     for name, inst in INSTR.items():
         band_fine = band_image_fine(T, inst["lam"])
         pix_t = inst["pix"] / SCALE
@@ -219,7 +217,6 @@ def build_world(seed=0, quick=False, cfg=None):
             d = expect + sig * r.standard_normal(expect.shape)
             cr = (r.random(expect.shape) < 0.01) & cfg["cr"]
             d = d + cr * r.exponential(40.0, expect.shape)
-            n = d.size
             t = lambda x, dt=torch.float32: torch.as_tensor(np.asarray(x), dtype=dt)  # noqa: E731
             e = dict(name=f"{name}_r{int(roll):03d}_{seq:02d}", band=inst["band"], tx=t(xy0[keep, 0]), ty=t(xy0[keep, 1]), d=t(d), ivar=t(1.0 / sig ** 2),
                      row=t(row, torch.long), col=t(col, torch.long), dx=t(dxn), dy=t(dyn), bkg0=float(np.median(d)), detname=name.upper() + "1",
@@ -315,7 +312,7 @@ def analyse(ctx, world, label=""):
     R = {}
     names = list(INSTR)
     # ---- held-out scores vs oracle
-    M = ctx["log"]["metrics"]
+    ctx["log"]["metrics"]
     keep = ctx["keep"]
     sm = ctx["src_masks"]
     rows = {}
@@ -369,7 +366,7 @@ def analyse(ctx, world, label=""):
     sharp = 0
     try:
         cm_, rk_ = common_mode(Kt, Kl), rel_kernel_err(Kt, Kl, sharp)
-    except Exception as ex_:  # a single instrument has no relative kernel
+    except Exception:  # a single instrument has no relative kernel
         cm_, rk_ = dict(raw=float("nan"), free_g=float("nan"), gauss_g=float("nan"), gauss_s2=float("nan")), []
     R["kernels"] = dict(common_mode=cm_, relative_vs_sharp=rk_,
                         ee_truth=[ee_curve(k, 1.0, [1.0, 2.0, 4.0, 8.0]) for k in Kt], ee_learned=[ee_curve(k, 1.0, [1.0, 2.0, 4.0, 8.0]) for k in Kl],

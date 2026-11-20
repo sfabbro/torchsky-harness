@@ -691,7 +691,7 @@ def read_galex(path, grid, opts):
         return []
     lam = PIVOT_UM["GALEX"][band]
     detname = f"GALEX_{band}"
-    stem = os.path.basename(base) + f"-int"
+    stem = os.path.basename(base) + "-int"
     extra.update({"ab_zero_point": zp, "k_mjysr_per_cps_pix": k_mjysr, "variance_model": "max(int, skybg)/rrhr [cps^2], x K^2",
                   "flags_bin": GALEX_FLAG_BIN, "ivar_floor_note": "pixels with skybg<=0 are masked"})
     meta = dict(
@@ -1060,7 +1060,7 @@ def cmd_summary(a):
     store = Path(a.store)
     ex = {r["exposure_id"]: r for r in read_exposures(store)}
     per_tile = {}
-    inst_tot, mission_tot = {}, {}
+    inst_tot, _mission_tot = {}, {}
     nbytes_tot = 0
     nfiles = len(list((store / "rows").glob("tile_ix=*/tile_iy=*/*.parquet")))
     for pc in scan_pieces(store):                       # both layouts: fragments and part files (one row group per exposure)

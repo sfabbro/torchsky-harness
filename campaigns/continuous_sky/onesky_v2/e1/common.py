@@ -13,7 +13,10 @@ feature is `zoom` times larger in pixels. Nothing is interpolated: the scene is 
 Pixel values are the mean over OVERSAMPLE^2 sub-samples (stars: exact pixel integrals).
 """
 from __future__ import annotations
-import json, math, os, time
+import json
+import math
+import os
+import time
 import numpy as np
 from scipy.special import erf, gammaincinv
 

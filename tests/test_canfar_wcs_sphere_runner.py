@@ -105,6 +105,97 @@ def test_canfar_wcs_sphere_runner_contract() -> None:
     assert "catalog_cuda.json" in runner
 
 
+def test_canfar_torchsky_tests_cuda_mode() -> None:
+    runner = (ROOT / "scripts" / "run_canfar_wcs_sphere.sh").read_text(encoding="utf-8")
+    launcher = (ROOT / "scripts" / "launch_canfar_wcs_sphere.sh").read_text(
+        encoding="utf-8"
+    )
+    assert "\n  torchsky-tests-cuda)" in runner
+    body = runner[runner.index("\n  torchsky-tests-cuda)") :]
+    body = body[: body.index("\n    ;;")]
+    # Subject installed into the CUDA env the other GPU modes use, CUDA asserted
+    # before any test runs, torchsky's test-feature dependencies installed.
+    assert "install_env cuda-bench" in body
+    assert body.index("torch.cuda.is_available()") < body.index("pytest tests")
+    assert '"pytest-xdist>=3.0"' in body and '"pyarrow>=25"' in body
+    # Main suite as torchsky's `pixi run test`, map tests run separately.
+    assert "pytest tests --ignore-glob='tests/test_map_*.py'" in body
+    assert "KMP_DUPLICATE_LIB_OK=TRUE" in body
+    assert "pytest -n 4" in body and "tests/test_map_*.py" in body
+    # Per-test outcomes and skip reasons are artifacts; failures fail the job
+    # only after both suites and the summary ran.
+    assert "torchsky_tests_main_cuda.xml" in body
+    assert "torchsky_tests_map_cuda.xml" in body
+    assert "-rfEs" in body
+    assert "summarize_junit.py" in body
+    assert "torchsky_tests_cuda_summary.json" in body
+    assert "device_probe.json" in body
+    assert body.index("summarize_junit.py") < body.index('exit "${tests_rc}"')
+    assert (ROOT / "scripts" / "summarize_junit.py").exists()
+    assert 'launch_one torchsky-tests-cuda 1 "torchsky-tests-cuda-${STAMP}"' in launcher
+    assert "| torchsky-tests-cuda |" in launcher
+
+
+def test_summarize_junit_counts_and_device_skips(tmp_path) -> None:
+    import json
+    import subprocess
+    import sys
+
+    xml = tmp_path / "r.xml"
+    xml.write_text(
+        """<?xml version="1.0" encoding="utf-8"?>
+<testsuites><testsuite name="pytest" tests="6">
+<testcase classname="tests.test_a" name="test_ok" time="0.1"/>
+<testcase classname="tests.test_a" name="test_bad[cuda]" time="0.2">
+  <failure message="AssertionError: x">def f():
+E   AssertionError: tensors differ</failure></testcase>
+<testcase classname="tests.test_b" name="test_dev[mps]" time="0.0">
+  <skipped type="pytest.skip" message="mps unavailable">tests/test_b.py:9: mps unavailable</skipped></testcase>
+<testcase classname="tests.test_b" name="test_f64[mps]" time="0.0">
+  <skipped type="pytest.skip" message="needs float64; MPS has none">x</skipped></testcase>
+<testcase classname="tests.test_c" name="test_xf" time="0.0">
+  <skipped type="pytest.xfail" message="known">x</skipped></testcase>
+<testcase classname="tests.test_c" name="test_err" time="0.0">
+  <error message="fixture failed">E   RuntimeError: boom</error></testcase>
+</testsuite></testsuites>
+""",
+        encoding="utf-8",
+    )
+    out = tmp_path / "s.json"
+    subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "summarize_junit.py"),
+            f"main={xml}",
+            f"absent={tmp_path / 'nope.xml'}",
+            "--meta",
+            "device=cuda",
+            "--json-out",
+            str(out),
+        ],
+        check=True,
+    )
+    summary = json.loads(out.read_text())
+    assert summary["meta"] == {"device": "cuda"}
+    assert summary["suites"]["absent"]["missing"] is True
+    main = summary["suites"]["main"]
+    assert main["counts"] == {
+        "total": 6,
+        "passed": 1,
+        "failed": 1,
+        "error": 1,
+        "skipped": 2,
+        "xfailed": 1,
+    }
+    assert main["device_absent_skips"] == 1
+    reasons = {g["reason"]: g["device_absent"] for g in main["skip_groups"]}
+    assert reasons == {"mps unavailable": True, "needs float64; MPS has none": False}
+    bad = {f["name"]: f for f in main["failures"]}
+    assert bad["test_bad[cuda]"]["error"] == "AssertionError: tensors differ"
+    assert bad["test_bad[cuda]"]["file"] == "tests/test_a.py"
+    assert bad["test_err"]["outcome"] == "error"
+
+
 def test_canfar_wcs_sphere_launcher_payload_has_no_shell_vars() -> None:
     launcher = (ROOT / "scripts" / "launch_canfar_wcs_sphere.sh").read_text(
         encoding="utf-8"

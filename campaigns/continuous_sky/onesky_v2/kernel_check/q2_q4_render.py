@@ -100,7 +100,6 @@ def q2():
             jj, ii = np.meshgrid(np.arange(N), np.arange(N))
             rr = np.hypot((jj - jc) * SKY_PITCH, (ii - ic) * SKY_PITCH)
             src = np.where(rr <= MASK_R, B - lvl, 0.0)
-            n = len(g)
             fx = Xc + g                                           # fine grid coordinates (same spacing as the kernel table)
             cols = fx / SKY_PITCH + (N - 1) / 2
             rows_ = (Yc + g) / SKY_PITCH + (N - 1) / 2

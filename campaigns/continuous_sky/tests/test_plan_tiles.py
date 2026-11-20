@@ -3,8 +3,11 @@
    (coverage >= n_min in all bands, no overlap + gap, distinct positions grow, determinism).
 2. The real test data (testdata/nircam, one exposure per band): 3 tiles of 4 arcsec, n_min 1.
 Run: python3 tests/test_plan_tiles.py   (astropy, numpy, matplotlib only)"""
-import json, math, os, shutil, sys, tempfile
-import numpy as np
+import math
+import os
+import shutil
+import sys
+import tempfile
 from astropy.io import fits
 
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.abspath(os.path.join(HERE, ".."))

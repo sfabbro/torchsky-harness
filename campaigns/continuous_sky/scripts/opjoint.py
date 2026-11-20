@@ -817,7 +817,7 @@ class Fit:
         Everything of the previously active tile leaves the GPU."""
         if self.cur is not None and self.cur is not t:
             self.deactivate()
-        m, dev, a = self.model, self.dev, self.a
+        m, dev, _a = self.model, self.dev, self.a
         if self.cur is not t:
             st = self.sky_for(t).to(dev)
             m.sky = st.sky
@@ -1044,7 +1044,7 @@ class Fit:
 
     # ---- training
     def train(self, out, LOG, resume=True):
-        a, aj, dev, m = self.a, self.aj, self.dev, self.model
+        a, aj, dev, _m = self.a, self.aj, self.dev, self.model
         tiles = self.train_tiles
         if not tiles:
             return

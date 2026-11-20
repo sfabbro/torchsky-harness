@@ -1,4 +1,8 @@
-import sys, types, torch, tempfile, pathlib
+import sys
+import types
+import torch
+import tempfile
+import pathlib
 sys.path.insert(0, "/home/claude/work/scripts")
 import smacs_four_v21 as S
 torch.manual_seed(0)

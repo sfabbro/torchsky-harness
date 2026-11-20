@@ -1,5 +1,9 @@
 """Stage 1 of make_figs.py (kept in one place by make_figs.py importing it): cache band images and kernel profiles."""
-import sys, os, time, numpy as np, torch
+import sys
+import os
+import time
+import numpy as np
+import torch
 torch.set_num_threads(1)
 sys.path.insert(0, "/home/claude/work/flux_check"); sys.path.insert(0, "/home/claude/work/kernel_check")
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache"); os.makedirs(CACHE, exist_ok=True)

@@ -4,7 +4,12 @@ usage: make_joint_splits.py SPLITS_IN HST_DIR CANFAR_HST_DIR OUT [--filters F105
 Coverage of a box = fraction of a 21 x 21 lattice of the box (size_arcsec, tangent plane at the box centre) that lands on the chip
 (1014 x 1014) through the file's own header solution (astropy, all distortion terms). Entries: see INSTRUMENT_INTERFACE.md section 7.
 dither_group = first six characters of the rootname (the visit) + filter. Held-out sets are unchanged (JWST only)."""
-import sys, json, glob, os, warnings, datetime
+import sys
+import json
+import glob
+import os
+import warnings
+import datetime
 import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS

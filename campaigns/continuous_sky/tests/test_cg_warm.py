@@ -1,4 +1,7 @@
-import sys, time, torch, torch.nn as nn
+import sys
+import time
+import torch
+import torch.nn as nn
 sys.path.insert(0, "/home/claude/work/scripts")
 import smacs_four_v27 as S
 torch.manual_seed(0); H, K = 96, 8

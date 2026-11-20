@@ -103,7 +103,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.utils.checkpoint
 
 HERE = Path(__file__).resolve().parent
@@ -1059,7 +1058,7 @@ def main(argv=None):
             t.model.sky.load_state_dict(sn["sky"][t.id])
 
     def validate(steps):
-        recs, rob = [], []
+        recs, _rob = [], []
         for t in train_tiles:
             which = "val" if any(tt.val_names for tt in train_tiles) else "hold"
             r, *_ = score_tile(t, t.model, a, dev, which, steps)

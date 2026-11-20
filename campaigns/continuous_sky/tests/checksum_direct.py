@@ -1,6 +1,9 @@
 """Checksum of the direct item rasteriser (values and gradients), to show that --item-raster direct is bit-identical before and after
 the pyramid change. Run: python tests/checksum_direct.py  (prints one sha256 per case)."""
-import hashlib, math, os, sys
+import hashlib
+import math
+import os
+import sys
 import torch
 torch.set_num_threads(1)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

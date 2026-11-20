@@ -405,7 +405,7 @@ def cutout_records(states, mask, methods, snr_min, taper, min_size=16, min_fill=
     sigma = mask["sigma"].astype(np.float64)
     snr = mask["snr_ref"].astype(np.float64)
     box = mask["box_id"]
-    validm = mask["valid"].astype(bool)
+    mask["valid"].astype(bool)
     common = np.ones(sigma.shape, bool)
     for m in methods:
         common &= states[m]["sel"]

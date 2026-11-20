@@ -22,7 +22,7 @@ import torch.nn.functional as F
 torch.set_num_threads(1)
 sys.path.insert(0, "/home/claude/arc/fieldop_latest")
 from fieldop.kernel import Codes, KernelNet, LogPolarEncoding, lam_feats  # noqa: E402
-from fieldop.render import Levels, kernel_level_values, smooth_down  # noqa: E402
+from fieldop.render import Levels, kernel_level_values  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATE = "/home/claude/work/e2_learned/dl/fieldop_state.pt"

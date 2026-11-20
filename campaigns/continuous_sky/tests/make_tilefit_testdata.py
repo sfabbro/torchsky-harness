@@ -3,7 +3,8 @@ For every file, 5 'dithers' are made by cropping a 1024 x 1024 window (different
 SIP relative to CRPIX is unchanged) around the SMACS pointing. Pixel data of the 5 'dithers' are therefore the SAME real pixels (same noise), consistently
 registered: enough to run every code path (selection, held-out dithers, shared exposures, tiles), NOT to measure anything: held-out scores of such data are
 optimistic. Output: runs/tilefit_testdata/*.fits (about 12 MB each)."""
-import os, sys
+import os
+import sys
 import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS

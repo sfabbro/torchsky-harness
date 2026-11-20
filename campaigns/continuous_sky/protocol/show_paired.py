@@ -1,4 +1,5 @@
-import json, sys
+import json
+import sys
 for f in sys.argv[1:]:
     d = json.load(open(f)); print("== reference:", d["reference"])
     for m, M in d["methods"].items():

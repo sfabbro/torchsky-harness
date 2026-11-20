@@ -2,10 +2,14 @@
 """Mean of the fitted detector background (constant + quadratic Legendre + per-detector 8x8 pattern, zero mean over the whole
 detector) over each exposure's training footprint, written from model.background (stripes have zero mean over the rows/columns used
 and are left out). The footprint is recovered from the 3x3 reference lattice in the state (cell centres of the footprint box)."""
-import json, os, sys
-import numpy as np, torch, torch.nn.functional as F
+import json
+import os
+import sys
+import numpy as np
+import torch
+import torch.nn.functional as F
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from kc_common import Fit, FILTERS, HERE
+from kc_common import Fit, HERE
 torch.set_num_threads(1)
 
 

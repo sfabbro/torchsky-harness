@@ -214,7 +214,7 @@ def register_prepass(model, exps, cfg, log=print, ts=None):
     the translations are re-centred on their mean (common-shift gauge, per connected component of tiles). Plays the role of the v31
     coarse-shift code (F19). Several tiles: per iteration, --reg-prepass-steps on each tile in turn (translations are shared), then every
     tile's sky is rebuilt."""
-    from .data import splat_coadd, untrained_filters
+    from .data import splat_coadd
     from .sky import spectral_init
     from .tiles import TileSet
     if cfg.reg_prepass_iters <= 0 or cfg.reg_prepass_steps <= 0:

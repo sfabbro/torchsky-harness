@@ -15,7 +15,11 @@ Checks:
    --coarse-shift-jwst, and the module docstring / approximation line exist (skipped if torch is not importable).
 Without cross-band edges the SW/LW simultaneity links F150W+F277W and F200W+F356W separately (2 components, each with its own gauge): checked as such; the recovery test uses --xband.
 Run: python3 tests/test_register_xcorr.py   (or pytest -q tests/test_register_xcorr.py)"""
-import json, math, os, sys, tempfile
+import json
+import math
+import os
+import sys
+import tempfile
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.abspath(os.path.join(HERE, ".."))

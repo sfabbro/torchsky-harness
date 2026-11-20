@@ -1,6 +1,10 @@
 """BSplineField (v23) tests, no data needed. Run: python3 test_bspline.py"""
-import sys, math, time
-import numpy as np, torch, torch.nn as nn
+import sys
+import math
+import time
+import numpy as np
+import torch
+import torch.nn as nn
 from scipy.interpolate import BSpline
 sys.path.insert(0, "/home/claude/work/scripts")
 import smacs_four_v23 as S

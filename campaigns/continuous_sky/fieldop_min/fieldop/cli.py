@@ -248,7 +248,7 @@ def make_sky(exps, fset, cfg, half, dev, basis=None):
 
 
 def filt_info_of(exps, fset, insts):
-    from .data import CHAN_PIX, INST_DIAM
+    from .data import INST_DIAM
     out = {}
     for e in exps:
         if e.filt in out:

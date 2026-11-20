@@ -1,7 +1,7 @@
 """Medium and small test fields (section 5 of SOLVER_DIAGNOSIS_2026-11-19.md): python tests/solver_repro/medium_field.py JSON_OPTIONS
 (environment: MODES=filter,fourier; NPROBES=1). Logs of the 19 Nov runs: logs/medium_t5a.log (two LW exposures, Q = 2, both modes),
 t5b (three LW exposures, Q = 2, the filter mode before the probe option existed), t5c (three LW, Q = 3, one probe), t5d (three LW, Q = 2, 9 probes)."""
-import os, sys, torch, json, time; sys.path.insert(0, __import__('os').path.dirname(__import__('os').path.abspath(__file__))); torch.set_num_threads(1)
+import os; import sys; import torch; import json; import time; sys.path.insert(0, __import__('os').path.dirname(__import__('os').path.abspath(__file__))); torch.set_num_threads(1)
 from repro_field import build_model
 from fieldop import uncertainty as U
 kw=json.loads(sys.argv[1])

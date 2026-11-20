@@ -11,7 +11,6 @@ import csv
 import re
 import glob
 import json
-import math
 import os
 import sys
 import time
@@ -88,7 +87,6 @@ def read_exposure_rows(store, eid, columns=None):
 
 
 def _strip_sip(ih):
-    import re
     ih = ih.copy()
     for k in [k for k in ih.keys() if re.match(r"^(A|B|AP|BP)_(\d+_\d+|ORDER)$", k)]:
         del ih[k]
@@ -460,7 +458,6 @@ def test_g_size_estimate(store, exposures, grid):
     """Bytes per row from the sample fragments x expected rows for the full union. Expected rows per exposure =
     sum over tiles of footprint-polygon area inside (tile core + halo) / pixel area x kept fraction (measured on samples of the
     same instrument/detector class); HST from the number of overlapping chips x rows per chip measured on the samples."""
-    import shapely
     from shapely.geometry import Polygon, box as sbox
     dat = ROOT / "datasearch"
     # ---- measured per class on the samples
@@ -484,7 +481,6 @@ def test_g_size_estimate(store, exposures, grid):
     for k, m in sorted(meas.items()):
         print(f"    {k:10s} n={m['n']} rows/exposure(sample) {np.mean(m['rows_list']):>12,.0f}  bytes/row {m['bytes']/m['rows']:6.2f}  "
               f"kept(mask) {np.mean(m['kept']):.3f}  pixel {np.sqrt(np.mean(m['pixsr'])/ps.ARCSEC2_TO_SR):.4f}\"  t/exposure {np.mean(m['t']):.2f}s")
-    T = grid.T
     tiles = {fam: [sbox(*grid.tile_extent(i, j)[0:1], *grid.tile_extent(i, j)[2:3], grid.tile_extent(i, j)[1], grid.tile_extent(i, j)[3]).buffer(h, join_style=2)
                    for i in range(grid.n) for j in range(grid.n)] for fam, h in grid.halos.items()}
 
@@ -615,7 +611,7 @@ def test_h_cli_idempotence_shards_manifest(tmp_path):
     """Idempotent re-run, missing-fragment repair, shards, manifest discovery, mask-policy none, summary."""
     st = tmp_path / "s"
     sp = sorted(glob.glob(str(SAMPLES / "spitzer" / "*_cbcd.fits")))
-    gx = sorted(glob.glob(str(SAMPLES / "galex" / "*" / "*-int.fits.gz")))
+    sorted(glob.glob(str(SAMPLES / "galex" / "*" / "*-int.fits.gz")))
     base = ["extract", "--store", str(st), "--no-finalize"]
     ps.main(base + ["--mission", "spitzer", "--inputs", str(SAMPLES / "spitzer" / "*_cbcd.fits")])
     frs = sorted(st.glob("rows/*/*/exp_*.parquet"))

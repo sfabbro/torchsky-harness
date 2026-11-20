@@ -2,7 +2,10 @@
 initial widths; widths change during a fit, so the real-data numbers are for the seeding state). Also counts the patch nodes (nnz) that set
 the GPU memory: about nnz x (K + 4) x 4 bytes of transient tensors per chunk-free pass (chunks of ITEM_CHUNK elements bound it).
 Run: python tests/bench_items_raster.py"""
-import json, math, os, sys, time
+import json
+import os
+import sys
+import time
 import torch
 torch.set_num_threads(1)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

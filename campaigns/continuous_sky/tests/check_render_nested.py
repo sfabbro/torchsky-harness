@@ -14,7 +14,6 @@ prototype's defaults (0.5, 0.85, which NestedKernelPSF shares); output positions
 Errors are max |a - b| / max |b| over the output pixels."""
 import argparse
 import json
-import math
 import os
 import sys
 
@@ -74,7 +73,7 @@ def run(kind):
     # discrete kernel weights of the prototype, from the SAME analytic field
     logs = []
     for l in range(levels.L + 1):
-        u, w, m = levels.u[l].double(), levels.w[l].double(), levels.mask[l]
+        u, w, _m = levels.u[l].double(), levels.w[l].double(), levels.mask[l]
         r2 = ((u / P) ** 2).sum(-1)
         logs.append(kfun(r2) * w * levels.pitch[l] ** 2)
     Z = sum(float(t[m].sum()) for t, m in zip(logs, levels.mask))

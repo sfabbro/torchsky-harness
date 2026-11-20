@@ -2,7 +2,10 @@
 log size and latent. Matching rule (declared): an item at zoom 1 with flux S/N proxy flux > FMIN counts and
 size > 1 px is matched to the nearest item at zoom z within 0.5 x its size (scene units) whose flux is within a
 factor 1.5 and whose size is within a factor 2; each zoom-z item used at most once."""
-import json, math, os, sys
+import json
+import math
+import os
+import sys
 import numpy as np
 from scipy.spatial import cKDTree
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)

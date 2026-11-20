@@ -21,7 +21,7 @@ def main():
     ap.add_argument("--splits", default="", help="comma list; default all")
     a = ap.parse_args()
     sp = json.load(open(os.path.join(a.root, f"splits_{a.field}.json")))
-    ex = {e["rootname"]: e for e in sp["exposures"]}
+    {e["rootname"]: e for e in sp["exposures"]}
     names = a.splits.split(",") if a.splits else list(sp["splits"])
     for s in names:
         d = os.path.join(a.root, "pred", a.field, "zero", s)

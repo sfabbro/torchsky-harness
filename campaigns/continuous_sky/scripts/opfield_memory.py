@@ -61,11 +61,9 @@ OPTIONS = {
 def build(flags, n_pool_exp=190, hw=640, dev=torch.device("cpu")):
     a = O.parse_args(["--out", "/tmp/unused", "--scale", "0.04", "--size", "512", "--halo-px", "64"] + BASE + list(flags))
     bands = list(BANDS)
-    chan_names = list(CHANNELS)
     reg = O.OpReg(bands, [LAM[b] for b in bands], ["NIRCam" if BANDS[b].startswith("NIRCAM") else "WFC3IR" for b in bands], [BANDS[b] for b in bands], [False] * len(bands))
     dets = list(DETS)
     cells = [(d, b) for d in dets for b in bands if DETS[d] == BANDS[b]]
-    rng = np.random.default_rng(0)
     exp_cell = [cells[i % len(cells)] for i in range(n_pool_exp)]
     band = torch.tensor([reg.index[b] for _, b in exp_cell])
     det = torch.tensor([dets.index(d) for d, _ in exp_cell])

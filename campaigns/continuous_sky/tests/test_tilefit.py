@@ -6,7 +6,12 @@
   3. resume: the same command with more cycles continues from ckpt.pt;
   4. v40 --load-tables-from (frozen and fine-tuned) on testdata/nircam (SMACS test crop) with the E2-data flags.
 Run: python3 tests/test_tilefit.py [--skip-tilefit]"""
-import json, math, os, subprocess, sys, time
+import json
+import math
+import os
+import subprocess
+import sys
+import time
 import numpy as np
 import torch
 
@@ -65,7 +70,7 @@ def main(skip_tilefit=False):
         assert held and not (held & set(st["per_exposure"])), "held-out dither used by the instrument"
         assert len(st["per_exposure"]) == 18, len(st["per_exposure"])
         # tables moved from the generic start
-        d_ = max(float((v["table"] - v["table"].flip(0).flip(1)).abs().max()) for v in st["tables"].values())
+        max(float((v["table"] - v["table"].flip(0).flip(1)).abs().max()) for v in st["tables"].values())
         assert os.path.exists(os.path.join(out, "explicit_lib_3d_psf_groups.npy"))
         g = np.load(os.path.join(out, "explicit_lib_3d_psf_groups.npy"), allow_pickle=True).item()["detector_frame"]
         assert "NRCB3/F090W" in g and "table" in g["NRCB3/F090W"]

@@ -36,7 +36,6 @@ APPROXIMATIONS (stated, not hidden)
 """
 import argparse
 import datetime
-import glob
 import json
 import logging
 import math
@@ -154,7 +153,6 @@ def process_unit(job):
     log = logging.getLogger("official_align")
     res = dict(field=field, unit=unit, n_exposures=len(recs), preset=job["preset"], ok=False)
     try:
-        from jwst.datamodels import ModelLibrary
         from jwst.tweakreg import TweakRegStep
         from jwst.skymatch import SkyMatchStep
         from jwst.outlier_detection import OutlierDetectionStep
@@ -373,7 +371,7 @@ def main():
     for name, recs, box in units:
         if a.max_files:
             recs = recs[:a.max_files]
-        t = name.replace("tile", "")
+        name.replace("tile", "")
         jobs.append(dict(field=a.field, unit=name, recs=recs, box=box, out=adir if a.field == "SMACS" else os.path.join(adir, name),
                          work=os.path.join(a.work, a.field + (a.tag or ""), name), preset=a.preset, stage=a.stage, grid=a.grid, ref_path=None,
                          _ref=(a.out, a.field)))
