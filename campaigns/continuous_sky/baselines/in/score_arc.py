@@ -29,9 +29,7 @@ APPROXIMATIONS
 import argparse
 import glob
 import json
-import math
 import os
-import sys
 from collections import defaultdict
 
 import numpy as np

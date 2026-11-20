@@ -2,10 +2,14 @@
 on the noise-free seed-0 image at the 15000 budget. (a) frozen joint psi with the SAME number of items as the
 Gaussian (2499, i.e. 4 more numbers per item than the budget allows); (b) fixed Gaussian with the learned run's
 item count (1384)."""
-import sys, os, json, torch, numpy as np
+import sys
+import os
+import json
+import torch
 torch.set_num_threads(1)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import profiles as P, common
+import profiles as P
+import common
 d = common.make_data(common.make_spec(0), n=256)
 case = sys.argv[1]
 if case == 'frozen2499':

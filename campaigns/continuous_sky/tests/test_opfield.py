@@ -403,7 +403,7 @@ def test_base_per_rows_and_grads():
 def test_untrained_cells_are_aliased():
     m, a, st = make_multi(["--base-per", "detector_band"])
     # cells: (0,0) e0,e1,e4? bands=(0,0,0,1,1,1), dets=(0,0,1,1,0,1): cells (0,0):e0,e1  (1,0):e2  (1,1):e3,e5  (0,1):e4
-    lab = {r: m.row_label(r) for r in range(m.n_rows)}
+    {r: m.row_label(r) for r in range(m.n_rows)}
     moves = m.set_train_rows([0, 1, 3, 4, 5])      # exposure 2 = the only one of cell DET1/b0 is held out
     assert len(moves) == 1 and moves[0] == "DET1/b0 -> DET0/b0", moves
     assert int(m.m_brow[2]) == int(m.m_brow[0])
@@ -436,7 +436,6 @@ def test_shape_head_per_channel():
 
 
 def test_base_init_from_e2():
-    import tempfile
     m, a, st = make_multi(["--base-per", "detector_band", "--n-bank", "4"], core_radius=3.0, core_pitch=0.5, wing_arcsec=1.5)
     os_, N = 4, 2 * 24 * 4 + 1
     ax = (np.arange(N) - N // 2) / os_

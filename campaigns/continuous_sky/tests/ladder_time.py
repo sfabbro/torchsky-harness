@@ -7,7 +7,6 @@ import re
 import sys
 import time
 
-import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)

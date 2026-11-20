@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """Aggregate stage3_blot task summaries (results/<FIELD>/*_summary.json) per filter. Usage: make_report.py FIELD [DIR]"""
-import glob, json, os, sys
+import glob
+import json
+import os
+import sys
 from collections import defaultdict
 import numpy as np
 field = sys.argv[1]

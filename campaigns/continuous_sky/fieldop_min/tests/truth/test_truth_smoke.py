@@ -64,7 +64,7 @@ def test_smoke_items():
 
 
 if __name__ == "__main__":
-    for f in (test_smoke_grid, test_smoke_items):
+    for f in (test_smoke_items,):
         t = time.time()
         f()
         print(f.__name__, "ok %.1f s" % (time.time() - t))

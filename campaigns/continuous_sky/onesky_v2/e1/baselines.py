@@ -5,8 +5,16 @@ common.save_result. Usage example:
     python baselines.py --method gauss_adaptive --budget 15000 --steps 2000 --lr 1.0
 Declared approximations are listed in BASELINES_REPORT.md and next to the code concerned.
 """
-import argparse, math, os, sys, time, json
-import numpy as np, torch, torch.nn as nn, torch.nn.functional as F
+import argparse
+import math
+import os
+import sys
+import time
+import json
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from scipy.ndimage import gaussian_filter
 torch.set_num_threads(1)
 torch.set_flush_denormal(True)
@@ -51,7 +59,6 @@ def fit_grid(data, budget, target='noisy', max_iter=400, tol=1e-7):
         if rn / b2 < tol ** 2: break
         p = r + rn / rs * p; rs = rn
     model = A(c).reshape(n, n).numpy()
-    h = [x for x in hist if x is not None]
     loss = float((w * (A(c) - y) ** 2).mean())
     return model, G * G, time.time() - t0, dict(iterations=it, final_loss=loss, still_falling=bool(math.sqrt(float(rn / b2)) > 1e-3),
             relative_normal_residual=math.sqrt(float(rn / b2)), G=G, interpolation='bicubic (grid_sample, a=-0.75)', solver='conjugate gradients')

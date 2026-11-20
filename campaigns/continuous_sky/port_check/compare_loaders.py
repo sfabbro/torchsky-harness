@@ -22,7 +22,6 @@ from torchsky.instrument import instrument_description  # noqa: E402
 from torchsky.map.exposure_fit import load_exposures  # noqa: E402
 from torchsky.map.exposure_fit._bandpass import box_filter  # noqa: E402
 from torchsky.map.exposure_fit._observations import observation_to_record  # noqa: E402
-from torchsky.wcs import WCS  # noqa: E402
 
 # SMACS box of the prototype's protocol (splits_SMACS.json): centre and size; data region = size/2 + data_margin (1.0)
 BOX = dict(ra=110.8268, dec=-73.4544, size_arcsec=20.48)
@@ -91,7 +90,6 @@ def compare(label, key, files, centre):
             print(f"    sigma (all pixels): max relative diff {sig_rel:.3e}")
             print(f"    mask: {nd} pixels differ ({only0} valid only in the prototype, {only1} valid only in torchsky)")
             if nd:
-                dq_note = ""
                 print(f"       differing pixel rows/cols (first 5): {[tuple(int(a) for a in p) for p in np.argwhere(v0 != v1)[:5]]}")
             # float64 positions (before the float32 storage that both sides use), whole cut
             from torchsky.map.exposure_fit._observations import tangent_positions as ts_tangent

@@ -1,6 +1,7 @@
 """Read every results/*.json and print a Markdown table; save figs/e1_by_band.png."""
-import glob, json, os
-import numpy as np
+import glob
+import json
+import os
 import matplotlib; matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 

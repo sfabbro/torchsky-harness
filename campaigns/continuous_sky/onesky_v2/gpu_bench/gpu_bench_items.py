@@ -1,7 +1,10 @@
 """GPU timing of the item rasterisation (forward + backward), direct against pyramid, for several chunk sizes.
 Run: python gpu_bench_items.py <folder holding fieldop/> <out.json>.  States as tests/bench_items_pyramid.py (seed lattice; 'widened' = both
 log widths drawn independently, uniform in log between the floor and 0.32 arcsec; 'widened_iso' = one draw for both widths)."""
-import json, math, sys, time
+import json
+import math
+import sys
+import time
 import torch
 sys.path.insert(0, sys.argv[1])
 import fieldop.sky as SK

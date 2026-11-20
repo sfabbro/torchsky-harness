@@ -1,7 +1,9 @@
 """Default path unchanged with several tiles: the two-tile synthetic field (synth.make_field_tiles), grid sky, --sky-swap 1, registration
 pre-pass, 12 steps, held-out fit; prints a checksum of the final model and sky states. Run with the untouched and the modified package:
     python tests/tiles_grid_equiv.py untouched     python tests/tiles_grid_equiv.py ."""
-import hashlib, os, sys
+import hashlib
+import os
+import sys
 import torch
 torch.set_num_threads(1)
 sys.path.insert(0, os.path.abspath(sys.argv[1]))

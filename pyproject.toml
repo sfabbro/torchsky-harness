@@ -39,6 +39,15 @@ extend-exclude = ["build", "dist", "*.egg-info", ".local-artifacts"]
 "tests/**/*.py" = ["E402"]
 # frozen job sources as executed for the ADASS 2026 talk (see campaigns/adass2026/README.md)
 "campaigns/adass2026/jobs/*.py" = ["ALL"]
+# frozen versioned job sources as executed on CANFAR for the continuous-sky runs
+# (each vN is a snapshot cited by the runlog and checked by tests/check_vN_equiv.py)
+"campaigns/continuous_sky/scripts/smacs_four_v*.py" = ["ALL"]
+"campaigns/continuous_sky/scripts/patch_v*.py" = ["ALL"]
+# hash-pinned by campaigns/continuous_sky/tests/opfield.sha256 (test_opjoint.py)
+"campaigns/continuous_sky/scripts/opfield.py" = ["ALL"]
+# continuous-sky research code is written in a compact one-line style; only the
+# pure-style codes are waived, correctness codes (F*, E401, E703) stay enforced
+"campaigns/continuous_sky/**/*.py" = ["E402", "E701", "E702", "E731", "E741"]
 
 [project.optional-dependencies]
 bench = ["astropy>=5.0", "drizzle>=2.2.0", "dfreproject>=1.3.0", "pandas>=1.0", "matplotlib>=3.0", "seaborn>=0.11.0", "pytest-benchmark>=3.0", "pytest-xdist>=3.0", "psutil>=5.0", "reproject>=0.14", "pyarrow>=25", "polars>=1.0"]

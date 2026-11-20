@@ -130,7 +130,7 @@ def test_b():
     # T1
     o = os.path.join(tmp, "t1.json")
     MH.main(["t1", "--manifest", MANIFEST, "--out", o])
-    names = check_json_v38(o)
+    check_json_v38(o)
     obj = json.load(open(o))
     assert all(v["n_train"] >= 2 for v in obj["summary"]["per_band"].values() if v["n_test"])
     assert all(v["n_test"] in (0, 2) for v in obj["summary"]["per_band"].values())
@@ -165,7 +165,7 @@ def test_b():
     MH.main(["t2", "--manifest", MANIFEST, "--roll-csv", rolls, "--instruments", "WFC3/IR,ACS/WFC", "--out", o])
     t = check_json_v38(o)
     obj = json.load(open(o))
-    rolltab = {rr["name"]: rr for rr in recs}
+    {rr["name"]: rr for rr in recs}
     attach = {}
     for ln in open(rolls).read().splitlines()[1:]:
         n, v = ln.split(",")
@@ -317,7 +317,7 @@ def test_e():
     if "A" not in STATE:
         test_c()
     A = STATE["A"]
-    s = NS.main([A, "--splits", "all", "--peak-snr", "8", "--peak-radius", "4", "--min-n", "20"])
+    NS.main([A, "--splits", "all", "--peak-snr", "8", "--peak-radius", "4", "--min-n", "20"])
     od = os.path.join(A, "null_stacks", "explicit_lib_3d")
     for f in ("null_a_position.png", "null_b_rowcol.png", "null_c_roll.png", "null_d_mjd.png", "null_e_fractional.png", "null_summary.json"):
         assert os.path.getsize(os.path.join(od, f)) > 1000, f

@@ -813,7 +813,7 @@ class SkyNormalOperator:
         per band vector (the eigendecomposition does not depend on the scale)."""
         key = tuple(float(x) for x in phi.double().cpu().tolist())
         if key not in self._qcache:
-            N, c = self.N, (self.N - 1) // 2
+            _N, c = self.N, (self.N - 1) // 2
             fh = torch.fft.fft2(torch.roll(self.fc.double(), (-c, -c), (-2, -1))).permute(2, 3, 0, 1)
             ph = phi.double().to(fh.device)
 
@@ -1122,7 +1122,7 @@ class RestrictedOperator:
             Gy_f(D) = E^T [ (G_f * c2)(q D) ] E,   c2 = the autocorrelation of the fine-grid tent profile of B1 (separable),
         and the prior mu B^T B has kernel mu E^T E c2(q D). Regions, their weights and the per-filter coverage are the base's, read at the fine
         nodes under the coarse ones; P_y^{-1} = M^{-1/2} [sum_r a_r^{1/2} M_r^{1/2} C_r^{-1} M_r^{1/2} a_r^{1/2}] M^{-1/2} as in the base."""
-        op, q, N, Nc, F = self.base, self.factor, self.base.N, self.Nc, self.F
+        op, q, N, Nc, _F = self.base, self.factor, self.base.N, self.Nc, self.F
         E = self.E.double().cpu()
         prof = self.B1[:, Nc // 2].double().cpu()                                    # the tent profile of an interior coarse node on the fine grid
         b = prof[prof > 1e-12]                                                       # (aligned for odd N: q = 2 -> 0.5, 1, 0.5; offset for even N)

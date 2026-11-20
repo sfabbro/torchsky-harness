@@ -44,7 +44,6 @@ import json
 import math
 import os
 import re
-import sys
 import time
 import warnings
 
@@ -222,7 +221,6 @@ def plan(files, a):
         cvs = np.arange(math.ceil(ivmin / st) * st, ivmax + 1, st)
         cus = np.arange(math.ceil(iumin / st) * st, iumax + 1, st)
     CU, CV = np.meshgrid(cus, cvs)
-    shp = CU.shape
     ncand = CU.size
     cover_cnt = np.zeros((len(bands), ncand), np.int16)
     pos = np.zeros((ncand, len(dets) * 9), bool)

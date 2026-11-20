@@ -69,7 +69,6 @@ def main():
     for i in picks:
         y = (torch.tensor(S[:, i], dtype=torch.float32)[:, None] * Vm).sum(0)
         Fy = op.apply(y)
-        lam = float(y @ op.precond(Fy)) / float(y @ op.precond(op.apply(y)) ) if False else None
         e = (y * Fy)
         eA = e[:op.nA].view(op.K, op.N, op.N)
         tot = float(e.sum())

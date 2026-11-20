@@ -51,7 +51,6 @@ def parse():
 def main():
     a = parse()
     sys.path.insert(0, os.path.abspath(a.pkg))
-    import fieldop
     from fieldop.cli import default_config, make_sky
     from fieldop.model import FieldOperator
     from fieldop.synth import SynthInstrument, make_field

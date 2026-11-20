@@ -15,7 +15,6 @@ Then compare_operators.py (default vs basetable_init dumps) and null_stacks.py (
 """
 import argparse
 import json
-import math
 import os
 import subprocess
 import sys

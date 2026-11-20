@@ -206,7 +206,7 @@ def run_synthetic(seed=0, sources=True, steps=150, quiet=False):
 def associate(W_, co):
     """per truth source: the recovered splats within 3.5 sigma_max(truth) + 1 px; splats attached to no truth source = false."""
     Phi = W_["Phi"]
-    mu, sg = co.mu.detach(), co.sigma().detach()
+    mu, _sg = co.mu.detach(), co.sigma().detach()
     band_flux = (co.c @ Phi.T).detach()  # J nb
     owner = torch.full((co.n,), -1, dtype=torch.long)
     for t, tr in enumerate(W_["truth"]):
@@ -229,7 +229,6 @@ def test_c_recovery():
     print("    rounds:", [(r["round"], r["pruned"], r["split"], r["added"], r["total"], None if r["val_score"] is None else round(r["val_score"], 4)) for r in S.LOG["syn_splat_rounds"]],
           "(round, pruned, split, added, total, validation chi2/pix)")
     print(f"    final: {co.n} splats; best validation round {S.LOG.get('syn_best_round')}")
-    nb = len(BANDS)
     fails = []
     for t, tr in enumerate(W_["truth"]):
         js = torch.nonzero(owner == t).flatten()

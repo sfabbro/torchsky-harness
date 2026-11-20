@@ -1,6 +1,10 @@
 """Sanity checks for profiles.py: Gaussian reproduction, flux conservation, unit integral of psi, timing."""
-import math, time, sys, os
-import numpy as np, torch
+import math
+import time
+import sys
+import os
+import numpy as np
+import torch
 from scipy.special import erf
 torch.set_num_threads(1)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

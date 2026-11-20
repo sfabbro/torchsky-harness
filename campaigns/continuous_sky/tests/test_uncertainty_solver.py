@@ -10,7 +10,6 @@
 6. calibration difference of two products (known scale, shift and width recovered)
 7. the old preconditioner is still the class default and is unchanged (same operator, same mu, same preconditioner output as an explicit 'fourier')
 """
-import math
 import os
 import sys
 

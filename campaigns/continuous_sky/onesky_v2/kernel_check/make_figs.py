@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Figures for questions 2-4 from the results files."""
-import json, os, math
+import json
+import os
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")

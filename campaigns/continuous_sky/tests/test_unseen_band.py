@@ -1,6 +1,5 @@
 """A filter with no training exposure (--train-exclude-filters, 19 Nov 2026): what the package does with it, without a fit (about 20 s).
     PYTHONNOUSERSITE=1 python tests/test_unseen_band.py   (or pytest)"""
-import math
 import os
 import sys
 

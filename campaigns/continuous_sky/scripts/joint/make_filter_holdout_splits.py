@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Remove every TRAINING exposure of one filter from a list of exposures (protocol v1 format); the held-out set is unchanged, so the
 held-out exposures of that filter become a band the fit never saw in training.  usage: make_filter_holdout_splits.py IN FILTER OUT"""
-import sys, json
+import sys
+import json
 sin, filt, out = sys.argv[1:4]
 sp = json.load(open(sin))
 by = {e["rootname"]: e for e in sp["exposures"]}

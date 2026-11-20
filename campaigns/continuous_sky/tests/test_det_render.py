@@ -1,5 +1,8 @@
 """Deterministic zip renderer vs the v20 Monte Carlo sampler, on a synthetic asymmetric PSF and a random field."""
-import sys, math, torch, torch.nn as nn
+import sys
+import math
+import torch
+import torch.nn as nn
 sys.path.insert(0, "/home/claude/work/scripts")
 import smacs_four_v21 as S
 torch.manual_seed(1)

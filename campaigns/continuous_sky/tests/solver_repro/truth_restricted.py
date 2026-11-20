@@ -11,7 +11,6 @@ sigma = the restricted posterior's, from the pooled draws, locally averaged (0.2
 import argparse
 import glob
 import json
-import math
 import os
 import sys
 

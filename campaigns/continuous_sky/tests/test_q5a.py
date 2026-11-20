@@ -1,6 +1,9 @@
 """Q5a: name parser, test/validation selection, per-exposure bootstrap (no data needed). Run: python3 test_q5a.py"""
-import sys, math, random
-import numpy as np, torch
+import sys
+import math
+import random
+import numpy as np
+import torch
 sys.path.insert(0, "/home/claude/work/scripts")
 import smacs_four_v22 as S
 
@@ -197,7 +200,7 @@ def test_cluster_wider():
         for dI in range(8):
             base = dict(n=40000, n_src=2000, chi2_sum=40000 * rng.normal(1.5, 0.4), chi2_src_sum=2000 * rng.normal(2.5, 0.8),
                         robust_sum=40000 * rng.normal(1.2, 0.3), robust_src_sum=2000 * rng.normal(2.0, 0.6))
-            base["chi2_sum"] = 40000 * (1.5 + 0.4 * rng.normal()); 
+            base["chi2_sum"] = 40000 * (1.5 + 0.4 * rng.normal()) 
             for det in range(4):
                 recs.append(dict(base, name=mkname(len(recs), f"02{101 + 2 * bi}", dI + 1, f"nrcb{det + 1}"), band=b, det=det,
                                  pulls=list(np.full(10, 0.0) + 1.4 * rng.normal())))  # identical-ish across a dither is enough for sums

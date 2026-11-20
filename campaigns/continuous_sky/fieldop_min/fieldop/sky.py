@@ -313,7 +313,6 @@ class PyramidPlan:
 
     def up(self, G, l):
         """Level-l grid (K, n_l, n_l) -> its deposit on level l-1 (K, n_{l-1}, n_{l-1}). Ordinary autograd."""
-        K = G.shape[0]
         k = self.kernel(l, G.dtype, G.device)
         T = k.numel()
         r = self.rad[l]

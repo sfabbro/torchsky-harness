@@ -35,11 +35,9 @@ MASKS  (heldout/<FIELD>/<rootname>.npz, detector-shaped arrays; outside the scor
   M2  snr_ref uses the mosaic ERR as pipeline-propagated (no noise factor), so it is a pipeline S/N; the mosaic is a cut-out around the box.
 """
 import argparse
-import glob
 import json
 import math
 import os
-import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
 import multiprocessing as mp
@@ -252,7 +250,6 @@ def load_ref(path):
 def mask_one(job):
     root_dir, field, e, boxes, factors, chan_fb = job
     try:
-        from astropy.io import fits
         sci, err, dq = read_cal(e["path"])
         key = f'{e["detector"]}/{e["filter"]}'
         nf = factors.get(key, chan_fb["LW" if "LONG" in key else "SW"])

@@ -1,5 +1,7 @@
 """v24: the zip renderers must place a point source's response where the explicit model's convolve_basis does."""
-import sys, torch, torch.nn as nn
+import sys
+import torch
+import torch.nn as nn
 sys.path.insert(0, "/home/claude/work/scripts")
 import smacs_four_v24 as S
 H, os_, n = 32, 4, 7

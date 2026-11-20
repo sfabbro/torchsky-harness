@@ -21,7 +21,11 @@ The learned kernel is used here as the full "pixel-in-kernel" response (see repo
 Output: results/cache/learned_tables.npz (kernels at 16 samples per pixel, +-32 px), results/learned_kernels.json, figs/learned_kernels.png
 Run: python3 learned_kernels.py      (about 1 minute, one thread)
 """
-import os, sys, json, math, time
+import os
+import sys
+import json
+import math
+import time
 for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ[_v] = "1"
 import numpy as np
@@ -261,7 +265,6 @@ def main():
         outside = float(wn[sq > LSUP].sum() / wn.sum())
         res["kernels"][name] = dict(**info, **summarise(T, N, outside))
         # variation with detector position (check that the pruned spatial term does nothing) and with wavelength node
-        T2 = None
         h_c = mean_code(s, codes, tau, f, det, xi=(0.9, 0.9))
         d_pos = float((log_density(net, h_c, torch.tensor([[0.0, 0.0], [0.5 * pix, 0.0], [3 * pix, 0.0]]), dil) -
                        log_density(net, h, torch.tensor([[0.0, 0.0], [0.5 * pix, 0.0], [3 * pix, 0.0]]), dil)).abs().max())
@@ -287,7 +290,6 @@ def make_figure(tabs, res):
         c = T.shape[0] // 2
         pk = T.max()
         for i, (hw, ttl) in enumerate([(32, "+-32 px"), (4, "+-4 px")]):
-            ext = [-hw - 0.5 / N, hw + 0.5 / N] * 2
             sub = T[c - hw * N:c + hw * N + 1, c - hw * N:c + hw * N + 1] / pk
             im = axs[i, j].imshow(sub, origin="lower", extent=[-hw, hw, -hw, hw], norm=LogNorm(vmin=1e-7, vmax=1), cmap="magma")
             axs[i, j].set_title(f"{name} {ttl}" + (f"  (FWHM {res['kernels'][name]['fwhm_mean_cut_px']:.2f} px)" if i == 1 else ""), fontsize=10)

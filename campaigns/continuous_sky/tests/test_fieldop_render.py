@@ -16,7 +16,7 @@ import torch.nn.functional as F
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from fieldop.cli import default_config, filt_info_of, make_sky  # noqa: E402
 from fieldop.model import FieldOperator  # noqa: E402
-from fieldop.render import bspline_prefilter, bspline_read, correlate_same, quad_points, render_quad  # noqa: E402
+from fieldop.render import bspline_prefilter, bspline_read, correlate_same, quad_points  # noqa: E402
 from fieldop.synth import make_field  # noqa: E402
 from fieldop.train import warm_kernel  # noqa: E402
 

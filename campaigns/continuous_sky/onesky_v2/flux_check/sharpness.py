@@ -2,7 +2,9 @@
 Sources: the 12 most concentrated local maxima of the F200W mosaic inside the central 18 arcsec (evaluation only). Width = full width at
 half maximum from the azimuthally averaged profile about the local peak (linear interpolation of the half-maximum crossing), after
 subtracting the median in an annulus of 0.6 to 0.9 arcsec. Approximations: nearest-pixel peak, no deblending, one common source list."""
-import sys, numpy as np, torch
+import sys
+import numpy as np
+import torch
 from astropy.io import fits
 from scipy.ndimage import maximum_filter, uniform_filter
 sys.argv = sys.argv[:1] + sys.argv[1:]

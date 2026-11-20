@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Figures for the grid-sky versus item-sky comparison (SMACS J0723, JWST NIRCam). Run: python3 make_figs.py
 Reuses flux_check/flux_ratio.py (sky_coeffs) and kernel_check (kc_common, q1_kernel). Heavy steps are cached in ./cache (prep.py, kern.py)."""
-import os, sys
+import os
+import sys
 os.environ.setdefault("OMP_NUM_THREADS", "1")
-import numpy as np, torch
+import numpy as np
+import torch
 torch.set_num_threads(1)
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -12,7 +14,8 @@ from matplotlib.transforms import blended_transform_factory
 from astropy.io import fits
 from scipy.ndimage import map_coordinates
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
-import prep, kern
+import prep
+import kern
 CACHE = prep.CACHE
 FILTS = ["F090W", "F150W", "F200W", "F277W", "F356W", "F444W"]
 PUB = [0.033, 0.050, 0.066, 0.092, 0.116, 0.145]

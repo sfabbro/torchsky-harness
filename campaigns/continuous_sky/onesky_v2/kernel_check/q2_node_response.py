@@ -2,8 +2,11 @@
 """Question 2, sharpest possible sky source: the model's prediction for a sky that is ONE tent node (the narrowest object the 0.04" sky
 grid can hold), through the kernel of one exposure per filter (same exposures as q2). FWHM and encircled fraction of the total.
 The kernel beyond 2.7" is not rendered; its share is 1 - (kernel integral inside 2.7"), so fractions are of the full unit integral."""
-import json, math, os, sys
-import numpy as np, torch
+import json
+import os
+import sys
+import numpy as np
+import torch
 from scipy.signal import fftconvolve
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from kc_common import FILTERS, HERE, PIX, PUB_FWHM, SKY_PITCH, Fit

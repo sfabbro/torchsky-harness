@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 """Download stage3_blot task summaries from CANFAR (results/<FIELD>/) and print one line per task. Usage: fetch_summaries.py FIELD [root]"""
-import json, os, re, subprocess, sys
+import json
+import os
+import re
+import subprocess
+import sys
 import numpy as np
 field = sys.argv[1]
 root = sys.argv[2] if len(sys.argv) > 2 else "baselines/stage3_blot"

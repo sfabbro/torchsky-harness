@@ -13,7 +13,6 @@ import numpy as np
 import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from fieldop.bandpass import FilterSet, box_filter  # noqa: E402
 from fieldop.cli import default_config, make_sky  # noqa: E402
 from fieldop.model import FieldOperator  # noqa: E402
 from fieldop.synth import SynthInstrument, make_field  # noqa: E402

@@ -17,7 +17,6 @@ import math
 import os
 import sys
 
-import pytest
 import torch
 
 torch.set_num_threads(1)

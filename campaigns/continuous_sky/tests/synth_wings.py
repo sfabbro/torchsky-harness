@@ -171,7 +171,7 @@ def annulus_scores(world, out):
             continue
         z = np.load(os.path.join(out, "heldout_pixels", "opfield", f"{e['name']}.npz"))
         inf = world["info"][i]
-        R = np.array([[math.cos(math.radians(inf["roll"])), -math.sin(math.radians(inf["roll"]))], [math.sin(math.radians(inf["roll"])), math.cos(math.radians(inf["roll"]))]])
+        np.array([[math.cos(math.radians(inf["roll"])), -math.sin(math.radians(inf["roll"]))], [math.sin(math.radians(inf["roll"])), math.cos(math.radians(inf["roll"]))]])
         xy = np.stack([z["tx_hdr"], z["ty_hdr"]], 1)
         dmin = np.min([np.hypot(*(xy - b).T) for b in bright], axis=0)               # J = rotation: detector px = sky px
         chi_m = ((z["data"] - z["model"]) / z["sigma"]) ** 2

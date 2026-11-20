@@ -72,7 +72,7 @@ def build_field(**kw):
              "LW": SynthInstrument("LW", 0.063, o["lw_npix"], 6.5, 0.047, 3.5, chromatic=1.0, f_wing=0.1, wing_ratio=3.0)}
     names_inst = [n for n in ("SW", "LW") if any(f[0] == n for f in flist)]
     filters = [box_filter(name, "NIRCAM", lo, hi, o["Q"]) for ins, name, lo, hi in flist]
-    chan_of = {name: ins for ins, name, lo, hi in flist}
+    {name: ins for ins, name, lo, hi in flist}
     fset = FilterSet(filters)
     truth = _truth(rng, o["bright"])
     exps = []
