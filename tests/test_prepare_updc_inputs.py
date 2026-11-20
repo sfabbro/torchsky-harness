@@ -22,17 +22,16 @@ def _native_ops_healthy() -> bool:
     try:
         import torch
 
-        from torchsky import _cpp
+        import torchsky._cpp  # noqa: F401 - registers torch.ops.torchsky
 
-        _cpp.healpix_ring2nest_torch_cpu(4, torch.arange(12))
+        torch.ops.torchsky.healpix_ring2nest(4, torch.arange(12))
         return True
     except Exception:
         return False
 
 
-# The completion path dispatches through native WCS projection ops; skip
-# cleanly where the extension ABI is currently broken (macOS arm64 + conda
-# torch 2.13 at main; linux CI builds and runs these).
+# The completion path uses torchsky's native HEALPix operators; skip cleanly
+# when the native extension is not built.
 pytestmark = pytest.mark.skipif(
     not _native_ops_healthy(),
     reason="torchsky native extension non-functional on this platform",

@@ -18,9 +18,9 @@ def _native_ops_healthy() -> bool:
     try:
         import torch
 
-        from torchsky import _cpp
+        import torchsky._cpp  # noqa: F401 - registers torch.ops.torchsky
 
-        _cpp.healpix_ring2nest_torch_cpu(4, torch.arange(12))
+        torch.ops.torchsky.healpix_ring2nest(4, torch.arange(12))
         return True
     except Exception:
         return False
