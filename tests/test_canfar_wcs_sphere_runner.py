@@ -137,6 +137,37 @@ def test_canfar_torchsky_tests_cuda_mode() -> None:
     assert "| torchsky-tests-cuda |" in launcher
 
 
+def test_canfar_release_wheel_mode() -> None:
+    runner = (ROOT / "scripts" / "run_canfar_wcs_sphere.sh").read_text(encoding="utf-8")
+    launcher = (ROOT / "scripts" / "launch_canfar_wcs_sphere.sh").read_text(
+        encoding="utf-8"
+    )
+    check = (ROOT / "scripts" / "check_release_wheel.sh").read_text(encoding="utf-8")
+    assert "\n  release-wheel)" in runner
+    body = runner[runner.index("\n  release-wheel)") :]
+    body = body[: body.index("\n    ;;")]
+    # The published wheel, verified against the release manifest before use.
+    assert "gh release download" in body and "RELEASE-MANIFEST.sha256" in body
+    assert body.index("sha256sum -c") < body.index(
+        'bash "${source_root}/scripts/check_release_wheel.sh"'
+    )
+    # Tests, smoke script and quickstart come from torchsky at the same tag.
+    assert '--branch "${release_tag}"' in body
+    assert "smoke_installed_wheel.py" in body and "quickstart.md" in body
+    # Every Python runs; any failure fails the job after all of them ran.
+    assert "3.12,3.13,3.14,3.15" in body
+    assert body.index("for py in") < body.index('exit "${job_rc}"')
+    # No pixi and no subject build for this mode.
+    assert '"${mode}" != "release-wheel"' in runner
+    assert "install_env" not in body and "pixi run" not in body
+    # The check imports the installed wheel, not a source tree.
+    assert "/site-packages/torchsky/" in check
+    assert "uv venv" in check and "--no-project" in check
+    assert '--env "TORCHSKY_RELEASE_TAG=' in launcher
+    assert "| release-wheel |" in launcher
+    assert 'launch_one release-wheel ""' in launcher
+
+
 def test_summarize_junit_counts_and_device_skips(tmp_path) -> None:
     import json
     import subprocess

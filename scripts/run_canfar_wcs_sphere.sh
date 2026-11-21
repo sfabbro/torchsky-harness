@@ -25,9 +25,9 @@ case "${mode}" in
   wcs-paper2 | wcs-tpv | wcs-spectral | wcs-tabular | sht-profile | moc | catalog | \
   catalog-scale | catalog-scale-1e6 | catalog-scale-1e7 | catalog-scale-real | \
   catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | catalog-match-cuda | catalog-match-gpu-peers | \
-  observed | geom-cuda | world-cuda | gpu-validate | torchsky-tests-cuda | backend-matrix-cuda) ;;
+  observed | geom-cuda | world-cuda | gpu-validate | torchsky-tests-cuda | backend-matrix-cuda | release-wheel) ;;
   *)
-    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, catalog-match-real, catalog-match-cuda, catalog-match-gpu-peers, observed, geom-cuda, world-cuda, gpu-validate, torchsky-tests-cuda, or backend-matrix-cuda)" >&2
+    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, catalog-match-real, catalog-match-cuda, catalog-match-gpu-peers, observed, geom-cuda, world-cuda, gpu-validate, torchsky-tests-cuda, backend-matrix-cuda, or release-wheel)" >&2
     exit 2
     ;;
 esac
@@ -144,11 +144,14 @@ clone_source() {
 # backend-matrix-cuda runs from a staged tarball (benchmarks/backend_matrix/)
 # in a plain venv with a download.pytorch.org CUDA wheel: no harness clone, no
 # pixi. TORCHSKY_HARNESS_COMMIT is still recorded as the base of the staged tree.
+# release-wheel needs the harness clone (scripts/check_release_wheel.sh) but no
+# pixi: it installs the published wheel into plain uv venvs.
 if [[ "${mode}" != "backend-matrix-cuda" ]]; then
   clone_source
   test "$(git -C "${source_root}" rev-parse HEAD)" = "${commit}"
   git -C "${source_root}" status --short
-
+fi
+if [[ "${mode}" != "backend-matrix-cuda" && "${mode}" != "release-wheel" ]]; then
   export PIXI_HOME=/scratch/pixi
   export PIXI_CACHE_DIR=/scratch/pixi-cache
   export PATH="${PIXI_HOME}/bin:${PATH}"
@@ -1078,6 +1081,65 @@ PY
     record_versions cuda-bench || job_rc=$?
     if [[ "${job_rc}" -ne 0 ]]; then
       echo "world-cuda job failures rc=${job_rc}"
+      exit "${job_rc}"
+    fi
+    ;;
+  release-wheel)
+    # A published torchsky release on Linux: the release's manylinux x86_64
+    # wheel from GitHub, checked against RELEASE-MANIFEST.sha256, installed with
+    # uv into a fresh venv per Python. Each venv runs the install smoke test,
+    # the quickstart's runnable snippets and targeted tests, all taken from
+    # torchsky at the same tag (scripts/check_release_wheel.sh).
+    #   TORCHSKY_RELEASE_TAG      e.g. v0.6.0rc2 (required)
+    #   TORCHSKY_RELEASE_PYTHONS  comma list, default 3.12,3.13,3.14,3.15
+    release_tag=${TORCHSKY_RELEASE_TAG:?set TORCHSKY_RELEASE_TAG, e.g. v0.6.0rc2}
+    release_pythons=${TORCHSKY_RELEASE_PYTHONS:-3.12,3.13,3.14,3.15}
+    subject_repo=${TORCHSKY_SUBJECT_REPO:-astroai/torchsky}
+    work=/scratch/${run_id}-release
+    mkdir -p "${work}/dl" "${work}/t" "${work}/qs"
+    export UV_INSTALL_DIR=/scratch/uv/bin
+    export UV_CACHE_DIR=/scratch/uv-cache
+    export UV_PYTHON_INSTALL_DIR=/scratch/uv-python
+    export PATH="${UV_INSTALL_DIR}:${PATH}"
+    if ! command -v uv >/dev/null 2>&1; then
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+    fi
+    uv --version | tee "${artifact_root}/uv_version.txt"
+    gh release download "${release_tag}" --repo "${subject_repo}" --dir "${work}/dl" \
+      --pattern '*-manylinux_*x86_64.whl' --pattern 'RELEASE-MANIFEST.sha256'
+    wheel=$(ls "${work}"/dl/*.whl)
+    # Manifest lines are "sha256 size name"; sha256sum -c wants "sha256  name".
+    (cd "${work}/dl" \
+      && awk -v w="$(basename "${wheel}")" '$3 == w { print $1 "  " $3 }' RELEASE-MANIFEST.sha256 \
+      | sha256sum -c -) | tee "${artifact_root}/wheel_sha256.txt"
+    git clone -q --depth 1 --branch "${release_tag}" "https://github.com/${subject_repo}.git" "${work}/subject"
+    git -C "${work}/subject" rev-parse HEAD | tee "${artifact_root}/subject_tag_sha.txt"
+    cp -R "${work}/subject/tests" "${work}/t/tests"
+    cp "${work}/subject/scripts/smoke_installed_wheel.py" "${work}/t/"
+    python3 - "${work}/subject/docs/introduction/quickstart.md" "${work}/qs" <<'PY'
+import pathlib, re, sys
+text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+blocks = re.findall(r"<!-- docs: run -->\s*```python\n(.*?)```", text, flags=re.S)
+for i, block in enumerate(blocks, 1):
+    pathlib.Path(sys.argv[2], f"qs{i}.py").write_text(block, encoding="utf-8")
+print(f"quickstart snippets: {len(blocks)}")
+PY
+    export RELEASE_CHECK_WORKERS=${RELEASE_CHECK_WORKERS:-4}
+    job_rc=0
+    IFS=',' read -r -a release_pys <<< "${release_pythons}"
+    for py in "${release_pys[@]}"; do
+      py_rc=0
+      bash "${source_root}/scripts/check_release_wheel.sh" "${py}" "${wheel}" \
+        "${work}/t/tests" "${work}/qs" "${work}" \
+        > "${artifact_root}/release_wheel_py${py}.txt" 2>&1 || py_rc=$?
+      cat "${artifact_root}/release_wheel_py${py}.txt"
+      cp "${work}/pytest${py}.log" "${work}/install${py}.log" "${artifact_root}/" 2>/dev/null || true
+      echo "py${py} rc=${py_rc}" | tee -a "${artifact_root}/release_wheel_summary.txt"
+      [[ ${py_rc} -ne 0 ]] && job_rc=1
+      vos_upload "after_py${py}" || echo "after_py${py} VOS upload failed; continuing job" >&2
+    done
+    if [[ "${job_rc}" -ne 0 ]]; then
+      echo "release-wheel job failures rc=${job_rc}"
       exit "${job_rc}"
     fi
     ;;

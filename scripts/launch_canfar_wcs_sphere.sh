@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Launch CANFAR headless CPU and/or CUDA jobs for torchsky WCS + sphere.
-# Usage: launch_canfar_wcs_sphere.sh [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|gpu-validate|torchsky-tests-cuda|backend-matrix-cuda|world|depth]
+# Usage: launch_canfar_wcs_sphere.sh [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|gpu-validate|torchsky-tests-cuda|backend-matrix-cuda|release-wheel|world|depth]
 #
 # Jobs clone TORCHSKY_COMMIT from GitHub (must already be pushed), run
 # scripts/run_canfar_wcs_sphere.sh from that clone, write
@@ -14,6 +14,9 @@
 # JUnit XML per suite plus a skip-reason summary.
 # backend-matrix-cuda: benchmarks/backend_matrix/run_matrix.py on cuda+cpu from a
 # working-tree tarball staged on /arc (set TORCHFITS_COMMIT too).
+# release-wheel: a published release's manylinux wheel in fresh uv venvs on
+# each Python in TORCHSKY_RELEASE_PYTHONS (default 3.12,3.13,3.14,3.15); set
+# TORCHSKY_RELEASE_TAG (e.g. v0.6.0rc2) and TORCHSKY_COMMIT to the tag's commit.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -25,9 +28,9 @@ case "${MODE}" in
   wcs-paper2 | wcs-tpv | wcs-spectral | wcs-tabular | sht-profile | moc | catalog | \
   catalog-scale | catalog-scale-1e6 | catalog-scale-1e7 | catalog-scale-real | \
   catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | catalog-match-cuda | catalog-match-gpu-peers | \
-  observed | geom-cuda | world-cuda | gpu-validate | torchsky-tests-cuda | backend-matrix-cuda | world | depth) ;;
+  observed | geom-cuda | world-cuda | gpu-validate | torchsky-tests-cuda | backend-matrix-cuda | release-wheel | world | depth) ;;
   *)
-    echo "usage: $0 [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|gpu-validate|torchsky-tests-cuda|backend-matrix-cuda|world|depth]" >&2
+    echo "usage: $0 [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|gpu-validate|torchsky-tests-cuda|backend-matrix-cuda|release-wheel|world|depth]" >&2
     exit 2
     ;;
 esac
@@ -122,6 +125,11 @@ launch_one() {
   fi
   if [[ -n "${TORCHSKY_CATALOG_SIZES:-}" ]]; then
     create_args+=(--env "TORCHSKY_CATALOG_SIZES=${TORCHSKY_CATALOG_SIZES}")
+  fi
+  # release-wheel inputs (a tag and a comma list, no spaces).
+  if [[ "${job_mode}" == "release-wheel" ]]; then
+    create_args+=(--env "TORCHSKY_RELEASE_TAG=${TORCHSKY_RELEASE_TAG:?set TORCHSKY_RELEASE_TAG, e.g. v0.6.0rc2}")
+    create_args+=(--env "TORCHSKY_RELEASE_PYTHONS=${TORCHSKY_RELEASE_PYTHONS:-3.12,3.13,3.14,3.15}")
   fi
   # Only forward a GitHub token when explicitly requested. The AstroAI
   # notebook image already has session GitHub credentials; do not scrape
@@ -254,6 +262,9 @@ if [[ "${MODE}" == "gpu-validate" ]]; then
 fi
 if [[ "${MODE}" == "torchsky-tests-cuda" ]]; then
   launch_one torchsky-tests-cuda 1 "torchsky-tests-cuda-${STAMP}"
+fi
+if [[ "${MODE}" == "release-wheel" ]]; then
+  launch_one release-wheel "" "release-wheel-${TORCHSKY_RELEASE_TAG:?set TORCHSKY_RELEASE_TAG}-${STAMP}"
 fi
 if [[ "${MODE}" == "geom-cuda" ]]; then
   launch_one geom-cuda 1 "geom-cuda-${STAMP}"
