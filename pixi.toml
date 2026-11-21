@@ -1,7 +1,7 @@
 [workspace]
 channels = ["conda-forge"]
 platforms = [
-    # torchfits 1.3.1 ships macosx_14_0 arm64 wheels.
+    # torchfits 1.3.3 ships macosx_14_0 arm64 wheels.
     { name = "osx-arm64-14", platform = "osx-arm64", macos = "14.0" },
     "linux-64",
     { name = "linux-64-cuda", platform = "linux-64", cuda = "13.0" },
@@ -20,8 +20,8 @@ scikit-build-core = ">=1.0.0"
 cmake = ">=3.21"
 ninja = ">=1.10"
 nanobind = ">=2.10.2"
-# torchsky requires torch>=2.14 with no upper cap; torchfits 1.3.1 still caps
-# torch<2.15, so the lock resolves the 2.14 series until its port lands.
+# torchsky 0.6 requires torch>=2.13 with no upper cap, and torchfits 1.3.3 is
+# torch-free; the harness keeps the 2.14 floor its comparators were validated on.
 pytorch = ">=2.14"
 numpy = ">=1.20"
 twine = ">=5.0"
@@ -264,7 +264,7 @@ python = "==3.13.14"
 pyarrow = ">=25"
 
 [feature.prod.pypi-dependencies]
-torchfits = "==1.3.1"
+torchfits = ">=1.3.3"
 canfar = "*"
 vos = "*"
 
@@ -356,7 +356,7 @@ nanobind = ">=2.10.2"
 mpmath = ">=1.1,<1.4"
 
 [feature.cuda.pypi-dependencies]
-torchfits = "==1.3.1"
+torchfits = ">=1.3.3"
 torch = ">=2.14"
 
 [feature.smacs.dependencies]
@@ -467,7 +467,7 @@ astromatic-scamp = "==2.15.0"
 
 [feature.phase0-astrometry-portable.pypi-dependencies]
 drizzlepac = "==3.11.0"
-torchfits = "==1.3.1"
+torchfits = ">=1.3.3"
 
 [feature.phase0-sparse-sphere]
 platforms = ["osx-arm64-14", "linux-64"]
@@ -488,7 +488,7 @@ healsparse = "==1.15.0"
 mocpy = "==0.20.0"
 
 [feature.phase0-sparse-sphere.pypi-dependencies]
-torchfits = "==1.3.1"
+torchfits = ">=1.3.3"
 
 [feature.phase0-harmonics]
 platforms = ["linux-64"]
@@ -528,7 +528,7 @@ namaster = "==3.0.1"
 
 [feature.phase0-harmonics-portable.pypi-dependencies]
 s2fft = ">=1,<2"
-torchfits = "==1.3.1"
+torchfits = ">=1.3.3"
 
 [feature.phase0-drizzle]
 platforms = ["osx-arm64-14", "linux-64"]
@@ -544,7 +544,7 @@ numpy = ">=1.20"
 [feature.phase0-drizzle.pypi-dependencies]
 drizzlepac = "==3.11.0"
 stcal = ">=1,<2"
-torchfits = "==1.3.1"
+torchfits = ">=1.3.3"
 
 [feature.phase0-adaptive]
 platforms = ["osx-arm64-14", "linux-64"]
@@ -560,7 +560,7 @@ pytorch = ">=2.14"
 numpy = ">=1.20"
 
 [feature.phase0-adaptive.pypi-dependencies]
-torchfits = "==1.3.1"
+torchfits = ">=1.3.3"
 
 [feature.phase0-jwst-ifu]
 platforms = ["osx-arm64-14", "linux-64"]
@@ -576,7 +576,7 @@ numpy = ">=1.20"
 [feature.phase0-jwst-ifu.pypi-dependencies]
 jwst = "==3.0.0"
 crds = ">=13,<14"
-torchfits = "==1.3.1"
+torchfits = ">=1.3.3"
 
 [feature.phase0-photometry]
 platforms = ["osx-arm64-14", "linux-64"]
@@ -595,7 +595,7 @@ nanobind = ">=2.10.2"
 
 [feature.phase0-photometry.pypi-dependencies]
 scarlet2 = "==0.5.1"
-torchfits = "==1.3.1"
+torchfits = ">=1.3.3"
 
 # PyAST + AstroDrizzle run as out-of-process oracles (tests/_oracle.py); they need not share torchsky's
 # toolchain. On CANFAR run_campaign.sh builds dedicated venvs and exports TORCHSKY_HARNESS_ORACLE_*_PYTHON.
