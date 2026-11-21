@@ -8,6 +8,7 @@ import torchfits
 
 from torchsky.map import calibration as calibration_mod
 from torchsky.map import image_plane_projection as image_plane_projection_mod
+from torchsky.map import interpolated_mapping as interpolated_mapping_mod
 from torchsky.map import windowing as image_grid_mod
 from torchsky.map.operators import validate_image_plane_2d
 
@@ -336,9 +337,7 @@ def test_tpv_roundtrip_validity_gate_not_enabled_by_default(tmp_path: Path) -> N
         item for item in observations if "TPV" in str(item.header.get("CTYPE1", ""))
     )
     source_wcs = _truth_bench.WCS(tpv_obs.header)
-    assert not image_plane_projection_mod._requires_roundtrip_validity_check(
-        source_wcs
-    )
+    assert not image_plane_projection_mod._requires_roundtrip_validity_check(source_wcs)
 
 
 def test_distorted_sources_enable_target_pixel_quadrature(tmp_path: Path) -> None:
@@ -411,13 +410,16 @@ def test_prepare_target_skips_quadrature_world_grids_by_default(tmp_path: Path) 
     assert target.quadrature_world_grids is None
 
 
-def test_distorted_quadrature_batches_world_to_pixel_calls(tmp_path: Path) -> None:
+def _count_distorted_quadrature_world_to_pixel_calls(
+    tmp_path: Path, *, size: int, mapping: str
+) -> int:
+    tmp_path.mkdir(parents=True, exist_ok=True)
     observations, target_header, _truth = _truth_bench.make_case(
         tmp_path,
         case="tan_random10_large_union_rect_weighted_masked",
-        size=256,
-        width=256,
-        height=192,
+        size=size,
+        width=size,
+        height=size * 3 // 4,
         seed=1234,
     )
     tpv_obs = next(
@@ -452,22 +454,49 @@ def test_distorted_quadrature_batches_world_to_pixel_calls(tmp_path: Path) -> No
 
     source_wcs.world_to_pixel = _counted_world_to_pixel
     try:
-        image_plane_projection_mod._resample_weighted_to_target(
-            image,
-            source_weight,
-            source_wcs,
-            prepared_target,
-            resampling_kernel="bilinear",
-            value_semantics="flux",
-        )
+        with interpolated_mapping_mod.mapping_mode(mapping):
+            image_plane_projection_mod._resample_weighted_to_target(
+                image,
+                source_weight,
+                source_wcs,
+                prepared_target,
+                resampling_kernel="bilinear",
+                value_semantics="flux",
+            )
     finally:
         source_wcs.world_to_pixel = orig_world_to_pixel
+    return call_count
 
-    assert call_count == 1
 
+def test_distorted_quadrature_batches_world_to_pixel_calls(tmp_path: Path) -> None:
+    """Exact mapping: every quadrature sub-grid goes through one batched call."""
+    assert (
+        _count_distorted_quadrature_world_to_pixel_calls(
+            tmp_path / "exact", size=256, mapping="exact"
+        )
+        == 1
+    )
+
+
+def test_interpolated_mapping_call_count_does_not_grow_with_the_image(
+    tmp_path: Path,
+) -> None:
+    """Interpolated mapping (the default for TPV/SIP since torchsky 0.5.0): the
+    verified lattice is a fixed chain of batched solves, so the number of
+    world->pixel calls is independent of the image size (12 at 128-512 px)."""
+    small = _count_distorted_quadrature_world_to_pixel_calls(
+        tmp_path / "small", size=128, mapping="interpolated"
+    )
+    large = _count_distorted_quadrature_world_to_pixel_calls(
+        tmp_path / "large", size=512, mapping="interpolated"
+    )
+    assert small == large
+    assert large <= 16
 
 
 pytestmark = pytest.mark.slow
+
+
 def test_random10_rect_tpv_headers_are_locally_invertible(tmp_path: Path) -> None:
     observations, _target_header, _truth = _truth_bench.make_case(
         tmp_path,

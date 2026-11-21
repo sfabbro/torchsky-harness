@@ -292,8 +292,6 @@ def test_ud_grade_badmask_and_pess_matches_healpy(
     np.testing.assert_allclose(got, expected, atol=1e-10, rtol=1e-10, equal_nan=True)
 
 
-
-
 @pytest.mark.parametrize("nside", [8, 16, 32])
 def test_query_disc_matches_healpy(nside: int) -> None:
     rng = np.random.default_rng(202 + nside)
@@ -349,13 +347,19 @@ def test_query_strip_matches_healpy(nside: int) -> None:
         for _ in range(8):
             t1 = float(rng.uniform(0.0, np.pi))
             t2 = float(rng.uniform(0.0, np.pi))
-            got = np.sort(query_strip(nside, t1, t2, nest=nest).cpu().numpy())
-            expected = np.sort(
-                healpy.query_strip(
-                    nside, min(t1, t2), max(t1, t2), nest=nest, inclusive=False
-                )
-            )
-            np.testing.assert_array_equal(got, expected)
+            # Both orders, same arguments: theta1 > theta2 selects the two
+            # polar strips in healpy, and torchsky >= 0.6 does the same.
+            for a, b in ((t1, t2), (t2, t1)):
+                for inclusive in (False, True):
+                    got = np.sort(
+                        query_strip(nside, a, b, nest=nest, inclusive=inclusive)
+                        .cpu()
+                        .numpy()
+                    )
+                    expected = np.sort(
+                        healpy.query_strip(nside, a, b, nest=nest, inclusive=inclusive)
+                    )
+                    np.testing.assert_array_equal(got, expected)
 
 
 @pytest.mark.parametrize("nside,n", [(1, 256), (8, 4096), (64, 4096)])

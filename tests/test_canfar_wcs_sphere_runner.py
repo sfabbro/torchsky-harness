@@ -207,7 +207,9 @@ def test_canfar_wcs_sphere_launcher_payload_has_no_shell_vars() -> None:
     assert "refusing canfar payload" in launcher
     assert "gh repo clone ${harness_repo}" in launcher
     assert "TORCHSKY_HARNESS_REPO:-astroai/torchsky-harness" in launcher
-    assert launcher.count("gh auth setup-git") == 2
+    # Three CANFAR payloads: the CPU/CUDA suites, ADASS depth, and the
+    # backend matrix (staged on /arc; its job clones torchsky/torchfits).
+    assert launcher.count("gh auth setup-git") == 3
     assert "git push before launching CANFAR" in launcher
     assert "optimization-cpu" in launcher
     assert "optimization-cuda" in launcher
@@ -221,11 +223,20 @@ def test_canfar_wcs_sphere_launcher_payload_has_no_shell_vars() -> None:
     assert "world-cuda" in launcher
     assert "catalog-scale" in launcher
     assert "catalog-scale-1e7" in launcher
-    assert 'launch_one catalog-match-gpu-peers 1 "catalog-match-gpu-peers-${STAMP}"' in launcher
+    assert (
+        'launch_one catalog-match-gpu-peers 1 "catalog-match-gpu-peers-${STAMP}"'
+        in launcher
+    )
     assert "wcs-spectral" in launcher
     assert "wcs-tabular" in launcher
     assert launcher.count('--env "TORCHSKY_SPIN_THREADS=${CPU}"') >= 2
-    assert launcher.count("PATH=/opt/conda/bin:") == 2
+    assert launcher.count("PATH=/opt/conda/bin:") == 3
+    assert launcher.count("refusing canfar payload") == 3
+    assert (
+        "bash ${arc_dir}/run_canfar_wcs_sphere.sh backend-matrix-cuda ${run_id}"
+        in launcher
+    )
+    assert "TORCHFITS_COMMIT must be a full 40-char SHA" in launcher
     assert '--env "TORCHSKY_MAP_COMPAT_ENV=${map_compat_env}"' in launcher
     assert "map-compat-cuda" in launcher
     fetch = (ROOT / "scripts" / "fetch_canfar_wcs_sphere_run.sh").read_text(
@@ -241,7 +252,7 @@ def test_real_data_fleet_is_safe_by_default() -> None:
     ).read_text()
     assert "SUBMIT=0" in script
     assert "TORCHSKY_CANFAR_DRY_RUN=$((1 - SUBMIT))" in script
-    assert "git -C \"${repository}\" status --porcelain" in script
+    assert 'git -C "${repository}" status --porcelain' in script
     assert "real-data-gates catalog-scale-real" in script
     assert "MODES+=(observed optimization gpu-validate depth)" in script
     assert "status --porcelain" in script

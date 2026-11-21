@@ -21,6 +21,7 @@ import torchsky_harness.benchmarks.bench_map_compat as bench_map_compat  # noqa:
 _CFHT_SIZE = 1024
 _CFHT_N_OBS = 5
 _SPEED_FACTOR_MIN = 2.0
+_SPEED_RUNS = 3
 _QUALITY_TOLERANCE = 0.5
 _BORDER_CROP = 50
 
@@ -71,24 +72,40 @@ def test_megapipe_scale_torchsky_beats_swarp_on_speed(tmp_path: Path) -> None:
 
     import time
 
-    t0 = time.perf_counter()
-    ts = coadd_image_plane(
-        obs_list,
-        target=target_header,
-        kernel="bilinear",
-    )
-    t_torchsky = time.perf_counter() - t0
+    # Best of _SPEED_RUNS for each tool: a single cold sample swings by more
+    # than the margin (SWarp 1.2-1.7 s, torchsky first-call setup), so the gate
+    # compares steady-state throughput, not one noisy run.
+    # Same CPU budget for both tools: SWarp runs with NTHREADS 0 (every core),
+    # while conftest pins torch to one thread for determinism.
+    import os
 
-    t0 = time.perf_counter()
-    sw_data, sw_w = bench_map_compat._coadd_with_swarp(
-        obs_list, target_header=target_header, resampling_type="BILINEAR"
-    )
-    t_swarp = time.perf_counter() - t0
+    threads_before = torch.get_num_threads()
+    torch.set_num_threads(os.cpu_count() or 1)
+    try:
+        t_torchsky = float("inf")
+        for _ in range(_SPEED_RUNS):
+            t0 = time.perf_counter()
+            ts = coadd_image_plane(
+                obs_list,
+                target=target_header,
+                kernel="bilinear",
+            )
+            t_torchsky = min(t_torchsky, time.perf_counter() - t0)
+    finally:
+        torch.set_num_threads(threads_before)
+
+    t_swarp = float("inf")
+    for _ in range(_SPEED_RUNS):
+        t0 = time.perf_counter()
+        sw_data, sw_w = bench_map_compat._coadd_with_swarp(
+            obs_list, target_header=target_header, resampling_type="BILINEAR"
+        )
+        t_swarp = min(t_swarp, time.perf_counter() - t0)
 
     speed_ratio = t_swarp / t_torchsky
     mpix = h * w / 1e6
     print(
-        f"\nMegapipe-scale ({h}x{w}, {_CFHT_N_OBS} obs):"
+        f"\nMegapipe-scale ({h}x{w}, {_CFHT_N_OBS} obs, {os.cpu_count()} threads):"
         f"\n  torchsky: {t_torchsky * 1000:.1f}ms ({mpix / t_torchsky:.1f} mpix/s)"
         f"\n  SWarp:    {t_swarp * 1000:.1f}ms ({mpix / t_swarp:.1f} mpix/s)"
         f"\n  speed ratio: {speed_ratio:.1f}x"
@@ -100,10 +117,9 @@ def test_megapipe_scale_torchsky_beats_swarp_on_speed(tmp_path: Path) -> None:
 
     inner_y = slice(_BORDER_CROP, h - _BORDER_CROP)
     inner_x = slice(_BORDER_CROP, w - _BORDER_CROP)
-    mask = (
-        (ts.weight[inner_y, inner_x] > 0.0)
-        & torch.from_numpy(sw_w[inner_y, inner_x] > 0.0).to(ts.weight.device)
-    )
+    mask = (ts.weight[inner_y, inner_x] > 0.0) & torch.from_numpy(
+        sw_w[inner_y, inner_x] > 0.0
+    ).to(ts.weight.device)
     assert mask.any(), "no overlapping pixels in inner region"
     td = ts.data[inner_y, inner_x][mask].cpu()
     sd = torch.from_numpy(sw_data[inner_y, inner_x][mask.cpu().numpy()]).to(td.device)
