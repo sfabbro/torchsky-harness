@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Launch CANFAR headless CPU and/or CUDA jobs for torchsky WCS + sphere.
-# Usage: launch_canfar_wcs_sphere.sh [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|gpu-validate|torchsky-tests-cuda|world|depth]
+# Usage: launch_canfar_wcs_sphere.sh [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|gpu-validate|torchsky-tests-cuda|backend-matrix-cuda|world|depth]
 #
 # Jobs clone TORCHSKY_COMMIT from GitHub (must already be pushed), run
 # scripts/run_canfar_wcs_sphere.sh from that clone, write
@@ -12,6 +12,8 @@
 # world-cuda: CUDA pytest + world-layer benches with tensors on the GPU.
 # torchsky-tests-cuda: torchsky's own test suite (main + map tests) on one GPU,
 # JUnit XML per suite plus a skip-reason summary.
+# backend-matrix-cuda: benchmarks/backend_matrix/run_matrix.py on cuda+cpu from a
+# working-tree tarball staged on /arc (set TORCHFITS_COMMIT too).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -23,9 +25,9 @@ case "${MODE}" in
   wcs-paper2 | wcs-tpv | wcs-spectral | wcs-tabular | sht-profile | moc | catalog | \
   catalog-scale | catalog-scale-1e6 | catalog-scale-1e7 | catalog-scale-real | \
   catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | catalog-match-cuda | catalog-match-gpu-peers | \
-  observed | geom-cuda | world-cuda | gpu-validate | torchsky-tests-cuda | world | depth) ;;
+  observed | geom-cuda | world-cuda | gpu-validate | torchsky-tests-cuda | backend-matrix-cuda | world | depth) ;;
   *)
-    echo "usage: $0 [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|gpu-validate|torchsky-tests-cuda|world|depth]" >&2
+    echo "usage: $0 [cpu|cuda|all|optimization|optimization-cpu|optimization-cuda|real-data-gates|suite|sht|spectral|sparse|healsparse|spin|cuhpx|wcs-paper2|wcs-tpv|wcs-spectral|wcs-tabular|sht-profile|moc|catalog|catalog-scale|catalog-scale-1e6|catalog-scale-1e7|catalog-scale-real|catalog-match-1e7|catalog-match-1e8|catalog-match-real|catalog-match-cuda|catalog-match-gpu-peers|observed|geom-cuda|world-cuda|gpu-validate|torchsky-tests-cuda|backend-matrix-cuda|world|depth]" >&2
     exit 2
     ;;
 esac
@@ -395,4 +397,116 @@ launch_depth() {
 
 if [[ "${MODE}" == "depth" ]]; then
   launch_depth
+fi
+
+# backend-matrix-cuda: benchmarks/backend_matrix/ and this checkout's runner are
+# staged from the working tree (they need not be committed or pushed): tarball
+# + runner copied with vcp to arc:projects/ots/torchsky-runs/<run_id>-inputs/,
+# read by the job from /arc. The job builds torchsky@TORCHSKY_COMMIT from
+# TORCHSKY_SUBJECT_REPO and torchfits@TORCHFITS_COMMIT from TORCHFITS_REPO into a
+# plain venv with a download.pytorch.org CUDA torch wheel.
+launch_backend_matrix() {
+  local run_id="backend-matrix-cuda-${STAMP}"
+  local vos_dest="vos:sfabbro/torchsky-runs/${run_id}"
+  local arc_rel="projects/ots/torchsky-runs/${run_id}-inputs"
+  local arc_dir="/arc/${arc_rel}"
+  local torchfits_commit="${TORCHFITS_COMMIT:?set exact torchfits SHA}"
+  if [[ ! "${torchfits_commit}" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "TORCHFITS_COMMIT must be a full 40-char SHA, got ${torchfits_commit}" >&2
+    exit 2
+  fi
+  local name
+  name="$(printf 'torchsky-bm-cuda-%s' "${STAMP}" | tr '_.' '--' | tr -cd '[:alnum:]-')"
+  local local_out="${ROOT_DIR}/benchmarks_results/canfar_${run_id}"
+  local stage="${local_out}/inputs"
+  mkdir -p "${stage}"
+  COPYFILE_DISABLE=1 tar --exclude '__pycache__' -C "${ROOT_DIR}/benchmarks/backend_matrix" \
+    -czf "${stage}/backend_matrix.tar.gz" .
+  cp "${ROOT_DIR}/scripts/run_canfar_wcs_sphere.sh" "${stage}/run_canfar_wcs_sphere.sh"
+  cp "${ROOT_DIR}/scripts/canfar_sht_reference.py" "${stage}/canfar_sht_reference.py"
+  (cd "${stage}" && shasum -a 256 backend_matrix.tar.gz run_canfar_wcs_sphere.sh canfar_sht_reference.py | tee SHA256SUMS)
+
+  local remote_plain="PATH=/opt/conda/bin:/opt/astroai/venv/cadc/bin:/opt/astroai/bin:/usr/local/bin:/usr/bin:/bin; gh auth setup-git; bash ${arc_dir}/run_canfar_wcs_sphere.sh backend-matrix-cuda ${run_id}"
+  local remote_cmd
+  remote_cmd="$(printf '%s' "${remote_plain}" | tr ' ' '\t')"
+  case "${remote_cmd}" in
+    *'$'* | *'&'* | *' '*)
+      echo "refusing canfar payload with \$, &, or spaces: ${remote_plain}" >&2
+      exit 2
+      ;;
+  esac
+  local create_args=(
+    create headless "${IMAGE}"
+    --name "${name}"
+    --cpu "${CPU}"
+    --memory "${MEMORY}"
+    --gpu "${TORCHSKY_CANFAR_GPUS:-1}"
+    --env "TORCHSKY_HARNESS_COMMIT=${COMMIT}"
+    --env "TORCHSKY_COMMIT=${SUBJECT_COMMIT}"
+    --env "TORCHSKY_SUBJECT_ROOT=/scratch/${run_id}-subject"
+    --env "TORCHSKY_SUBJECT_REPO=${TORCHSKY_SUBJECT_REPO:-astroai/torchsky}"
+    --env "TORCHFITS_COMMIT=${torchfits_commit}"
+    --env "TORCHFITS_REPO=${TORCHFITS_REPO:-astroai/torchfits}"
+    --env "TORCHSKY_BACKEND_MATRIX_TARBALL=${arc_dir}/backend_matrix.tar.gz"
+    --env "TORCHSKY_TORCH_SPEC=${TORCHSKY_TORCH_SPEC:-torch==2.14.*}"
+    --env "TORCHSKY_TORCH_INDEX=${TORCHSKY_TORCH_INDEX:-cu130}"
+    --env "TORCHSKY_BM_STAMP=${TORCHSKY_BM_STAMP:-$(date -u +%F)}"
+    --env "TORCHSKY_BM_TIMEOUT=${TORCHSKY_BM_TIMEOUT:-600}"
+    --env "TORCHSKY_VOS_DEST=${vos_dest}"
+    --env "CONTAINER_IMAGE=${IMAGE}"
+    --env "PYTHONUNBUFFERED=1"
+  )
+  # Optional single custom part (comma lists) and the SHT reference step.
+  local v
+  for v in TORCHSKY_BM_KERNELS TORCHSKY_BM_SIZES TORCHSKY_BM_SKIP TORCHSKY_BM_SHT_REFERENCE; do
+    if [[ -n "${!v:-}" ]]; then
+      create_args+=(--env "${v}=${!v}")
+    fi
+  done
+  if [[ -n "${TORCHSKY_GH_TOKEN:-}" ]]; then
+    create_args+=(--env "GH_TOKEN=${TORCHSKY_GH_TOKEN}")
+  fi
+  echo "${run_id}" > "${local_out}/run_id.txt"
+  echo "${vos_dest}" > "${local_out}/vos_dest.txt"
+  echo "${COMMIT}" > "${local_out}/commit.txt"
+  if [[ "${TORCHSKY_CANFAR_DRY_RUN:-0}" == "1" ]]; then
+    echo "dry-run: stage ${stage} -> arc:${arc_rel}; canfar create headless ${IMAGE} --name ${name} --gpu ${TORCHSKY_CANFAR_GPUS:-1}"
+    echo "dry-run payload: ${remote_plain}"
+    return 0
+  fi
+  vmkdir "arc:${arc_rel}" 2>/dev/null || true
+  local f
+  for f in backend_matrix.tar.gz run_canfar_wcs_sphere.sh canfar_sht_reference.py SHA256SUMS; do
+    vcp "${stage}/${f}" "arc:${arc_rel}/${f}"
+  done
+  # vault PUT has stored 0-byte nodes; refuse to launch on a size mismatch.
+  local remote_size local_size
+  for f in backend_matrix.tar.gz run_canfar_wcs_sphere.sh canfar_sht_reference.py; do
+    local_size="$(wc -c < "${stage}/${f}" | tr -d ' ')"
+    remote_size="$(vls -l "arc:${arc_rel}/${f}" | awk '{print $5}')"
+    if [[ "${remote_size}" != "${local_size}" ]]; then
+      echo "staged ${f} size mismatch on arc (local ${local_size}, remote ${remote_size:-?})" >&2
+      exit 1
+    fi
+  done
+  echo "staged arc:${arc_rel} (backend_matrix.tar.gz, run_canfar_wcs_sphere.sh, canfar_sht_reference.py)"
+
+  echo "launching mode=backend-matrix-cuda name=${name} subject=${SUBJECT_COMMIT} torchfits=${torchfits_commit} vos=${vos_dest}"
+  local create_log="${local_out}/create.log"
+  set +o pipefail
+  canfar "${create_args[@]}" -- bash -c "${remote_cmd}" 2>&1 | tee "${create_log}"
+  local create_rc=${PIPESTATUS[0]}
+  set -o pipefail
+  if [[ "${create_rc}" -ne 0 ]]; then
+    echo "canfar create failed (rc=${create_rc}); see ${create_log}" >&2
+    exit 1
+  fi
+  local session_id
+  session_id="$(sed -n 's/.*ID:[[:space:]]*\([^)[:space:]]*\).*/\1/p' "${create_log}" | head -n1)"
+  echo "${session_id}" > "${local_out}/session_id.txt"
+  echo "session_id=${session_id} run_id=${run_id} vos=${vos_dest} arc=${arc_dir}"
+}
+
+if [[ "${MODE}" == "backend-matrix-cuda" ]]; then
+  launch_backend_matrix
 fi

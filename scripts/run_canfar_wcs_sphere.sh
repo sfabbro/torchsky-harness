@@ -25,9 +25,9 @@ case "${mode}" in
   wcs-paper2 | wcs-tpv | wcs-spectral | wcs-tabular | sht-profile | moc | catalog | \
   catalog-scale | catalog-scale-1e6 | catalog-scale-1e7 | catalog-scale-real | \
   catalog-match-1e7 | catalog-match-1e8 | catalog-match-real | catalog-match-cuda | catalog-match-gpu-peers | \
-  observed | geom-cuda | world-cuda | gpu-validate | torchsky-tests-cuda) ;;
+  observed | geom-cuda | world-cuda | gpu-validate | torchsky-tests-cuda | backend-matrix-cuda) ;;
   *)
-    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, catalog-match-real, catalog-match-cuda, catalog-match-gpu-peers, observed, geom-cuda, world-cuda, gpu-validate, or torchsky-tests-cuda)" >&2
+    echo "unknown mode: ${mode} (expected cpu, cuda, optimization-cpu, optimization-cuda, real-data-gates, spectral, sphere, sparse, healsparse, spin, geometry, cuhpx, wcs-paper2, wcs-tpv, wcs-spectral, wcs-tabular, sht-profile, moc, catalog, catalog-scale, catalog-scale-1e6, catalog-scale-1e7, catalog-scale-real, catalog-match-1e7, catalog-match-1e8, catalog-match-real, catalog-match-cuda, catalog-match-gpu-peers, observed, geom-cuda, world-cuda, gpu-validate, torchsky-tests-cuda, or backend-matrix-cuda)" >&2
     exit 2
     ;;
 esac
@@ -141,22 +141,27 @@ clone_source() {
   git -C "${source_root}" checkout --detach "${commit}"
 }
 
-clone_source
-test "$(git -C "${source_root}" rev-parse HEAD)" = "${commit}"
-git -C "${source_root}" status --short
+# backend-matrix-cuda runs from a staged tarball (benchmarks/backend_matrix/)
+# in a plain venv with a download.pytorch.org CUDA wheel: no harness clone, no
+# pixi. TORCHSKY_HARNESS_COMMIT is still recorded as the base of the staged tree.
+if [[ "${mode}" != "backend-matrix-cuda" ]]; then
+  clone_source
+  test "$(git -C "${source_root}" rev-parse HEAD)" = "${commit}"
+  git -C "${source_root}" status --short
 
-export PIXI_HOME=/scratch/pixi
-export PIXI_CACHE_DIR=/scratch/pixi-cache
-export PATH="${PIXI_HOME}/bin:${PATH}"
-if ! command -v pixi >/dev/null 2>&1; then
-  curl -fsSL https://pixi.sh/install.sh | bash
+  export PIXI_HOME=/scratch/pixi
+  export PIXI_CACHE_DIR=/scratch/pixi-cache
+  export PATH="${PIXI_HOME}/bin:${PATH}"
+  if ! command -v pixi >/dev/null 2>&1; then
+    curl -fsSL https://pixi.sh/install.sh | bash
+  fi
+  pixi --version
+
+  cd "${source_root}"
+  source "${source_root}/scripts/subject_install.sh"
+  echo "git_head=$(git rev-parse HEAD)"
+  pixi info || true
 fi
-pixi --version
-
-cd "${source_root}"
-source "${source_root}/scripts/subject_install.sh"
-echo "git_head=$(git rev-parse HEAD)"
-pixi info || true
 
 install_env() {
   local env_name=$1
@@ -808,6 +813,200 @@ PY
     if [[ "${tests_rc}" -ne 0 ]]; then
       echo "torchsky-tests-cuda job failures rc=${tests_rc}"
       exit "${tests_rc}"
+    fi
+    ;;
+  backend-matrix-cuda)
+    # Backend matrix (eager / torch.compile / native) on CUDA + CPU. Inputs:
+    #   TORCHSKY_BACKEND_MATRIX_TARBALL  staged benchmarks/backend_matrix tarball on /arc
+    #   TORCHSKY_COMMIT, TORCHSKY_SUBJECT_REPO  subject (built from source, editable,
+    #                                     so the env record carries its git SHA)
+    #   TORCHFITS_COMMIT, TORCHFITS_REPO  torchfits (torchsky.map imports it)
+    #   TORCHSKY_TORCH_SPEC (torch==2.14.*), TORCHSKY_TORCH_INDEX (cu130, as
+    #   scripts/canfar/run_campaign.sh), TORCHSKY_BM_STAMP, TORCHSKY_BM_TIMEOUT
+    bm_tarball=${TORCHSKY_BACKEND_MATRIX_TARBALL:?set TORCHSKY_BACKEND_MATRIX_TARBALL}
+    subject_commit=${TORCHSKY_COMMIT:?set the exact subject SHA}
+    subject_root=${TORCHSKY_SUBJECT_ROOT:-/scratch/${run_id}-subject}
+    torchfits_commit=${TORCHFITS_COMMIT:?set the exact torchfits SHA}
+    torchfits_root=/scratch/${run_id}-torchfits
+    torch_spec=${TORCHSKY_TORCH_SPEC:-torch==2.14.*}
+    torch_index=${TORCHSKY_TORCH_INDEX:-cu130}
+    bm_stamp=${TORCHSKY_BM_STAMP:-$(date -u +%F)}
+    bm_timeout=${TORCHSKY_BM_TIMEOUT:-600}
+    bm_dir=/scratch/${run_id}-bm
+    venv=/scratch/${run_id}-venv
+    out_jsonl="${artifact_root}/backend_matrix_cuda.jsonl"
+
+    sha256sum "${bm_tarball}" | tee "${artifact_root}/backend_matrix_tarball.sha256"
+    mkdir -p "${bm_dir}"
+    tar -xzf "${bm_tarball}" -C "${bm_dir}"
+    test -f "${bm_dir}/run_matrix.py"
+
+    gh_clone() {
+      local repo=$1 dest=$2 sha=$3
+      test ! -e "${dest}"
+      if command -v gh >/dev/null && gh auth status >/dev/null 2>&1; then
+        gh repo clone "${repo}" "${dest}" -- --filter=blob:none
+      else
+        git clone --filter=blob:none "https://github.com/${repo}.git" "${dest}"
+      fi
+      git -C "${dest}" checkout --detach "${sha}"
+      test "$(git -C "${dest}" rev-parse HEAD)" = "${sha}"
+    }
+    gh_clone "${TORCHSKY_SUBJECT_REPO:-astroai/torchsky}" "${subject_root}" "${subject_commit}"
+    gh_clone "${TORCHFITS_REPO:-astroai/torchfits}" "${torchfits_root}" "${torchfits_commit}"
+
+    py_bin=""
+    for candidate in python3.13 python3.12 python3; do
+      if command -v "${candidate}" >/dev/null 2>&1 \
+        && "${candidate}" -c 'import sys, venv; sys.exit(sys.version_info < (3, 12))' 2>/dev/null; then
+        py_bin=$(command -v "${candidate}")
+        break
+      fi
+    done
+    if [[ -z "${py_bin}" ]]; then
+      # No image Python >= 3.12: a uv-managed CPython 3.13.
+      export UV_INSTALL_DIR=/scratch/uv-bin UV_CACHE_DIR=/scratch/uv-cache
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+      /scratch/uv-bin/uv venv --python 3.13 --seed "${venv}"
+    else
+      echo "base_python=${py_bin}"
+      "${py_bin}" -m venv "${venv}"
+    fi
+    vpy="${venv}/bin/python"
+    "${vpy}" -m pip install -q -U pip
+    "${vpy}" -m pip install "${torch_spec}" --index-url "https://download.pytorch.org/whl/${torch_index}"
+    "${vpy}" -m pip install numpy "pyarrow>=25" "scikit-build-core>=1.0.3" "nanobind>=3.0.1" cmake ninja
+    # torchfits find_package(ZLIB): the AstroAI images ship libz.so.1 but no
+    # headers. Build a static, PIC zlib (pinned tarball, sha256-checked).
+    if [[ ! -f /usr/include/zlib.h ]]; then
+      zlib_prefix=/scratch/${run_id}-zlib
+      curl -fsSL -o /scratch/zlib-1.3.1.tar.gz \
+        https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
+      echo "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23  /scratch/zlib-1.3.1.tar.gz" \
+        | sha256sum -c -
+      tar -xzf /scratch/zlib-1.3.1.tar.gz -C /scratch
+      (cd /scratch/zlib-1.3.1 && CFLAGS="-O2 -fPIC" ./configure --static --prefix="${zlib_prefix}" \
+        && make -j"$(nproc)" && make install)
+      export ZLIB_ROOT="${zlib_prefix}" CMAKE_PREFIX_PATH="${zlib_prefix}${CMAKE_PREFIX_PATH:+:${CMAKE_PREFIX_PATH}}"
+    fi
+    # --no-deps: neither build may pull or replace the CUDA torch wheel.
+    "${vpy}" -m pip install --no-deps --no-build-isolation "${torchfits_root}"
+    "${vpy}" -m pip install --no-deps --no-build-isolation -e "${subject_root}"
+    if [[ "${TORCHSKY_BM_SHT_REFERENCE:-0}" == "1" ]]; then
+      # CPU SHT comparators; the constraint keeps the CUDA torch wheel in place.
+      "${vpy}" -m pip freeze | grep -E '^(torch|numpy)==' > /scratch/${run_id}-constraints.txt
+      "${vpy}" -m pip install -c /scratch/${run_id}-constraints.txt ducc0 healpy
+    fi
+    "${vpy}" -m pip freeze > "${artifact_root}/pip_freeze_backend_matrix.txt" || true
+
+    {
+      echo "nvidia_smi_L:"; nvidia-smi -L || true
+      echo "nvidia_smi_query:"
+      nvidia-smi --query-gpu=name,memory.total,driver_version,mig.mode.current --format=csv || true
+      echo "lscpu:"; lscpu || true
+      echo "nproc=$(nproc)"
+      echo "cgroup_cpu_max=$(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo n/a)"
+    } > "${artifact_root}/host_probe.txt" 2>&1
+    cat "${artifact_root}/host_probe.txt"
+    (
+      cd "${bm_dir}"
+      "${vpy}" - "${artifact_root}/device_probe.json" <<'PY'
+import json
+import os
+import platform
+import sys
+
+import torch
+import torchfits
+import torchsky
+import torchsky._cpp  # noqa: F401
+
+assert torch.cuda.is_available(), "CUDA not available"
+p = torch.cuda.get_device_properties(0)
+probe = {
+    "python": sys.version,
+    "platform": platform.platform(),
+    "torch": torch.__version__,
+    "torch_cuda": torch.version.cuda,
+    "cudnn": torch.backends.cudnn.version(),
+    "device_count": torch.cuda.device_count(),
+    "device_name": p.name,
+    "capability": [p.major, p.minor],
+    "total_memory_gib": round(p.total_memory / 2**30, 2),
+    "multi_processor_count": p.multi_processor_count,
+    "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+    "torch_threads": torch.get_num_threads(),
+    "os_cpu_count": os.cpu_count(),
+    "sched_affinity": len(os.sched_getaffinity(0)),
+    "torchsky_file": torchsky.__file__,
+    "torchfits": getattr(torchfits, "__version__", None),
+}
+print(json.dumps(probe, indent=2))
+json.dump(probe, open(sys.argv[1], "w"), indent=2)
+PY
+    )
+
+    # run_matrix.py --skip-variants is global per invocation, so the
+    # (kernel, size)-scoped skips are separate invocations into one JSONL:
+    #   k_sht_*  medium,large: cpu/compile* skipped (cold compile is minutes)
+    #   k_resample (lanczos) large: compile* skipped on every device
+    # Each part writes its own env record (run tags <stamp>, <stamp>#2, ...).
+    parts_dir="${artifact_root}/backend_matrix_parts"
+    mkdir -p "${parts_dir}"
+    bm_rc=0
+    bm_part() {
+      local tag=$1
+      shift
+      echo "backend-matrix part=${tag} start_utc=$(date -u +%FT%TZ) args=$*"
+      (
+        cd "${bm_dir}"
+        timeout --foreground --signal=TERM --kill-after=60 "${TORCHSKY_BM_PART_TIMEOUT_S:-10800}" \
+          "${vpy}" run_matrix.py --device cuda --device cpu --stamp "${bm_stamp}" \
+          --timeout "${bm_timeout}" --out "${parts_dir}/${tag}.jsonl" "$@"
+      ) || { local rc=$?; echo "backend-matrix part=${tag} rc=${rc}"; bm_rc=${rc}; }
+      echo "backend-matrix part=${tag} end_utc=$(date -u +%FT%TZ)"
+      cat "${parts_dir}"/*.jsonl > "${out_jsonl}" 2>/dev/null || true
+      vos_upload "after_${tag}" || echo "after_${tag} VOS upload failed; continuing job" >&2
+    }
+    if [[ -n "${TORCHSKY_BM_KERNELS:-}" ]]; then
+      # One custom part: TORCHSKY_BM_KERNELS / _SIZES / _SKIP (comma lists).
+      custom_args=(--kernels "${TORCHSKY_BM_KERNELS}" --sizes "${TORCHSKY_BM_SIZES:-small,medium,large}")
+      if [[ -n "${TORCHSKY_BM_SKIP:-}" ]]; then
+        custom_args+=(--skip-variants "${TORCHSKY_BM_SKIP}")
+      fi
+      bm_part p1_custom "${custom_args[@]}"
+    else
+      bm_part p1_other --sizes small,medium,large \
+        --kernels drizzle_square,healpix_ang2pix,healpix_interp,resample_bilinear,tpv_pixel_to_world,tpv_world_to_pixel,xmatch_bp,xmatch_search
+      bm_part p2_sht_small --sizes small --kernels 'sht_*'
+      bm_part p3_sht_medium_large --sizes medium,large --kernels 'sht_*' --skip-variants 'cpu/compile*'
+      bm_part p4_resample_small_medium --sizes small,medium --kernels resample
+      bm_part p5_resample_large --sizes large --kernels resample --skip-variants 'compile*'
+    fi
+    "${vpy}" "${bm_dir}/run_matrix.py" --summarize "${out_jsonl}" > "${artifact_root}/backend_matrix_cuda_summary.md" || bm_rc=$?
+    if [[ "${TORCHSKY_BM_SHT_REFERENCE:-0}" == "1" ]]; then
+      # ducc0/healpy CPU timings (4 threads) and torchsky(cuda, float64) vs ducc0.
+      sht_ref="$(dirname "${BASH_SOURCE[0]}")/canfar_sht_reference.py"
+      (
+        cd /scratch
+        "${vpy}" "${sht_ref}" timings --nsides 64,256,512 --threads 4 --reps 5 \
+          --json-out "${artifact_root}/sht_reference_cpu.json"
+      ) || { echo "sht reference timings rc=$?"; bm_rc=1; }
+      (
+        cd "${subject_root}/.."
+        "${vpy}" "${sht_ref}" correctness --device cuda --nsides 256,512 --threads 4 \
+          --json-out "${artifact_root}/sht_correctness_cuda.json"
+      ) || { echo "sht correctness rc=$?"; bm_rc=1; }
+      vos_upload after_sht_reference || echo "after_sht_reference VOS upload failed; continuing job" >&2
+    fi
+    if command -v vcp >/dev/null; then
+      vos_run 180 vcp "${out_jsonl}" "vos:sfabbro/torchsky-runs/${run_id}.backend_matrix_cuda.jsonl" \
+        && echo "vos_jsonl=vos:sfabbro/torchsky-runs/${run_id}.backend_matrix_cuda.jsonl" \
+        || echo "jsonl VOS upload failed" >&2
+    fi
+    if [[ "${bm_rc}" -ne 0 ]]; then
+      echo "backend-matrix-cuda job failures rc=${bm_rc}"
+      exit "${bm_rc}"
     fi
     ;;
   world-cuda)
