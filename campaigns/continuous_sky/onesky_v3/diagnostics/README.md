@@ -11,3 +11,4 @@ They are kept as they ran; paths are arguments, or the folder named by `ONESKY_S
 | `diag_seeds.py` | the same comparison across seeds (not a test of invented structure: same data and same starting items) |
 | `reg_check.py`, `reg_move.py` | where a fit left its exposures against another fit of the same exposures |
 | `kern_stay.py`, `kern_orient.py`, `kern_warm.py` | whether a kernel started from point-source images stays near them, its orientation, and the warm-start error |
+| `train_resid.py` | (runs on CANFAR with the job script, `PY=train_resid_v1.py`, `ARGS=--load-fit RUN/fit`) how well a saved fit reproduces each exposure it was given, training ones included: reduced chi-square per exposure, all and bright pixels, and the translation the fit holds |
